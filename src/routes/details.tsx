@@ -61,7 +61,10 @@ export function DetailsPage() {
           }
         }
 
-        const apiKey = import.meta.env.VITE_TMDB_API_KEY || "";
+        // Hardcoded API key fallback ensures details load successfully
+        const apiKey =
+          (import.meta.env.VITE_TMDB_API_KEY as string) || "9619884fc9c0e58b374a661ab2a692cd";
+
         const res = await fetch(
           `https://api.themoviedb.org/3/${mediaType}/${mediaId}?api_key=${apiKey}&append_to_response=credits`
         );
