@@ -28,33 +28,6 @@ export function DetailsPage() {
   const [episode, setEpisode] = useState(1);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 
-  // Handle remote/device physical Back key & mobile back button to close player view cleanly
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    // Push dummy history state so first back press closes player instead of leaving page
-    window.history.pushState({ playerOpen: true }, "");
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "Backspace") {
-        e.preventDefault();
-        setIsPlaying(false);
-      }
-    };
-
-    const handlePopState = () => {
-      setIsPlaying(false);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [isPlaying]);
-
   // Check saved state for My List & Favorites
   useEffect(() => {
     if (!mediaId) return;
@@ -225,11 +198,10 @@ export function DetailsPage() {
   const rating = mediaDetails?.vote_average ? mediaDetails.vote_average.toFixed(1) : "N/A";
   const genres = mediaDetails?.genres?.map((g: any) => g.name).join(", ") || "Entertainment";
 
-  // Added autoplay=1 so D-pad and mobile players start immediately without internal clicking
   const embedUrl =
     mediaType === "tv"
-      ? `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}?autoplay=1`
-      : `https://vidsrc.to/embed/movie/${mediaId}?autoplay=1`;
+      ? `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`
+      : `https://vidsrc.to/embed/movie/${mediaId}`;
 
   return (
     <div className="min-h-screen bg-[#050b16] p-6 text-white md:p-12">
@@ -299,8 +271,15 @@ export function DetailsPage() {
             </div>
           )}
 
-          {/* Clean Player Container */}
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl shadow-violet-950/50 border border-white/10">
+            <button
+              type="button"
+              onClick={() => setIsPlaying(false)}
+              className="absolute top-4 right-4 z-20 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-red-700 active:scale-95 focus:outline-none focus:ring-4 focus:ring-white"
+            >
+              ✕ Close Player
+            </button>
+
             <iframe
               key={`${mediaType}-${mediaId}-${season}-${episode}`}
               srcDoc={`
@@ -332,9 +311,9 @@ export function DetailsPage() {
             ></iframe>
           </div>
 
-          <div className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur">
+          <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur">
             <h1 className="text-2xl font-bold text-white">{title}</h1>
-            <p className="text-xs text-slate-400">Press the **Back** button on your remote or device to return to details.</p>
+            <p className="text-sm leading-relaxed text-slate-300">{overview}</p>
           </div>
         </div>
       ) : (
