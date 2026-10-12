@@ -272,14 +272,6 @@ export function DetailsPage() {
           )}
 
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl shadow-violet-950/50 border border-white/10">
-            <button
-              type="button"
-              onClick={() => setIsPlaying(false)}
-              className="absolute top-4 right-4 z-20 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-red-700 active:scale-95 focus:outline-none focus:ring-4 focus:ring-white"
-            >
-              ✕ Close Player
-            </button>
-
             <iframe
               key={`${mediaType}-${mediaId}-${season}-${episode}`}
               srcDoc={`
