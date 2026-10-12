@@ -28,6 +28,30 @@ export function DetailsPage() {
   const [episode, setEpisode] = useState(1);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 
+  // Handle remote/device physical Back key to exit player instead of navigating away
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.key === "Backspace") {
+        setIsPlaying(false);
+      }
+    };
+
+    const handlePopState = () => {
+      setIsPlaying(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("popstate", handlePopState);
+    window.history.pushState({ playerOpen: true }, "");
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [isPlaying]);
+
   // Check saved state for My List & Favorites
   useEffect(() => {
     if (!mediaId) return;
@@ -271,15 +295,8 @@ export function DetailsPage() {
             </div>
           )}
 
+          {/* Clean Player Container without interfering on-screen close buttons */}
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl shadow-violet-950/50 border border-white/10">
-            <button
-              type="button"
-              onClick={() => setIsPlaying(false)}
-              className="absolute top-4 right-4 z-20 rounded-full bg-red-600 px-4 py-2 text-sm font-bold text-white shadow-lg transition hover:bg-red-700 active:scale-95 focus:outline-none focus:ring-4 focus:ring-white"
-            >
-              ✕ Close Player
-            </button>
-
             <iframe
               key={`${mediaType}-${mediaId}-${season}-${episode}`}
               srcDoc={`
@@ -311,9 +328,9 @@ export function DetailsPage() {
             ></iframe>
           </div>
 
-          <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur">
+          <div className="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur">
             <h1 className="text-2xl font-bold text-white">{title}</h1>
-            <p className="text-sm leading-relaxed text-slate-300">{overview}</p>
+            <p className="text-xs text-slate-400">Press the **Back** button on your remote to return to details.</p>
           </div>
         </div>
       ) : (
