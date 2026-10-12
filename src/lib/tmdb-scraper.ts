@@ -20,7 +20,7 @@ export type ScrapeResult = {
 };
 
 const TMDB_API_KEY =
-  (import.meta.env.VITE_TMDB_API_KEY as string) || "YOUR_ACTUAL_TMDB_API_KEY_HERE";
+  (import.meta.env.VITE_TMDB_API_KEY as string) || "9619884fc9c0e58b374a661ab2a692cd";
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
