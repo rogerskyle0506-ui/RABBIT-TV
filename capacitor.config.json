@@ -1,0 +1,9 @@
+{
+  "appId": "com.rabbittv.app",
+  "appName": "RABBiTs TV",
+  "webDir": "dist/client",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}
