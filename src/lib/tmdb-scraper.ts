@@ -19,7 +19,6 @@ export type ScrapeResult = {
   totalPages?: number;
 };
 
-// Hardcoded fallback ensures Vite builds always have valid API access
 const TMDB_API_KEY =
   (import.meta.env.VITE_TMDB_API_KEY as string) || "YOUR_ACTUAL_TMDB_API_KEY_HERE";
 
@@ -119,24 +118,6 @@ export async function scrapeCategoryContent(
   page = 1
 ): Promise<ScrapeResult> {
   try {
-    if (!TMDB_API_KEY) {
-      return {
-        source: "TMDB API",
-        items: [
-          {
-            id: "demo-1",
-            title: "Demo: Add Your TMDB API Key",
-            description: "Set VITE_TMDB_API_KEY in your environment variables.",
-            image: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80",
-            href: "/details?id=demo-1&type=movie",
-            genre: "Demo",
-          },
-        ],
-        fetchedAt: new Date().toISOString(),
-        message: "No TMDB API Key found.",
-      };
-    }
-
     const items: MediaItem[] = [];
     let totalPages = 1;
 
@@ -165,7 +146,6 @@ export async function scrapeCategoryContent(
         if (mapped) items.push(mapped);
       });
     } else {
-      // Home tab: Combine movies and TV shows for the selected page
       const movieData = await fetchTmdb("trending/movie/week", page);
       const movieResults = (movieData.results as Record<string, unknown>[]) || [];
       movieResults.forEach((item) => {
@@ -175,9 +155,33 @@ export async function scrapeCategoryContent(
 
       const tvData = await fetchTmdb("trending/tv/week", page);
       const tvResults = (tvData.results as Record<string, unknown>[]) || [];
-      tvResults.forEach((itemThat explains everything! 
+      tvResults.forEach((item) => {
+        const mapped = mapTmdbItemToMediaItem(item, "tv");
+        if (mapped) items.push(mapped);
+      });
+      totalPages = Math.max(
+        (movieData.total_pages as number) || 1,
+        (tvData.total_pages as number) || 1
+      );
+    }
 
-In line 25 of `tmdb-scraper.ts`, the scraper checks for `TMDB_API_KEY`:
-
-```typescript
-const TMDB_API_KEY = (import.meta.env.VITE_TMDB_API_KEY as string) || "";
+    return {
+      source: "TMDB API",
+      items: items.length > 0 ? items : [],
+      fetchedAt: new Date().toISOString(),
+      message: `Fetched ${items.length} titles for ${category} (Page ${page}).`,
+      page,
+      totalPages,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return {
+      source: "TMDB API",
+      items: [],
+      fetchedAt: new Date().toISOString(),
+      message: `Could not fetch live data: ${message}`,
+      page: 1,
+      totalPages: 1,
+    };
+  }
+}
