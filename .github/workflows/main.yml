@@ -1,0 +1,116 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (Node 22 Required for TanStack Start)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Java 21 (Required for Gradle/Android Compilation)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Capacitor CLI, Android & Assets Packages
+        run: npm install @capacitor/cli @capacitor/android @capacitor/assets --save-dev
+
+      - name: Verify Capacitor Config & Icon Exists
+        run: |
+          if [ ! -f capacitor.config.json ]; then
+            echo "Error: capacitor.config.json is missing!"
+            exit 1
+          fi
+          if [ ! -f assets/icon.png ]; then
+            echo "Error: assets/icon.png is missing!"
+            exit 1
+          fi
+
+      - name: Create Temporary index.html for Capacitor Build
+        run: |
+          cat << 'EOF' > index.html
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>RABBiT TV</title>
+            </head>
+            <body>
+              <div id="root"></div>
+              <script type="module" src="/src/entry-client.tsx"></script>
+            </body>
+          </html>
+          EOF
+
+      - name: Build Web Assets for Capacitor
+        env:
+          CAPACITOR_BUILD: "true"
+          VITE_TMDB_API_KEY: ${{ secrets.VITE_TMDB_API_KEY }}
+          VITE_TMDB_READ_TOKEN: ${{ secrets.VITE_TMDB_READ_TOKEN }}
+        run: npx vite build
+
+      - name: Map TanStack Shell to Capacitor index.html
+        run: |
+          if [ -f dist/client/_shell.html ]; then
+            cp dist/client/_shell.html dist/client/index.html
+            echo "Successfully copied _shell.html to index.html"
+          elif [ ! -f dist/client/index.html ]; then
+            echo "Error: Could not find _shell.html or index.html in dist/client"
+            ls -R dist/ || true
+            exit 1
+          fi
+
+      - name: Create Dummy www Folder for Capacitor Init
+        run: |
+          mkdir -p www
+          cp dist/client/index.html www/index.html
+
+      - name: Add Android Platform
+        run: npx @capacitor/cli add android
+
+      - name: Generate App Icons and Splash Screens from Custom Icon
+        run: npx @capacitor/assets generate --android
+
+      - name: Sync Capacitor
+        run: npx @capacitor/cli sync android
+
+      - name: Verify Android Directory Exists
+        run: |
+          if [ ! -d android ]; then
+            echo "Error: android directory was not created!"
+            exit 1
+          fi
+
+      - name: Build APK with Gradle
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Rename and Prepare APK Artifact
+        run: |
+          mkdir -p output_apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk output_apk/RABBiT-TV.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: final app
+          path: output_apk/RABBiT-TV.apk
