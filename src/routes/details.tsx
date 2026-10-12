@@ -204,7 +204,7 @@ export function DetailsPage() {
       : `https://vidsrc.to/embed/movie/${mediaId}`;
 
   return (
-    <div className="min-h-screen bg-[#050b16] p-6 text-white md:p-12">
+    <div className="min-h-screen w-full bg-[#050b16] p-6 text-white md:p-12 overflow-y-auto scroll-smooth">
       <Link
         className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-violet-400 transition hover:text-violet-300 hover:underline focus:outline-none focus:ring-4 focus:ring-violet-400 focus:rounded-lg px-2 py-1"
         to="/"
