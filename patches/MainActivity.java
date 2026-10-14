@@ -2,6 +2,7 @@ package com.rabbittv.app;
 
 import android.os.Bundle;
 import android.os.Message;
+import android.view.View;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -11,6 +12,9 @@ import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 
 public class MainActivity extends BridgeActivity {
+    private View customView;
+    private WebChromeClient.CustomViewCallback customViewCallback;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,13 +53,64 @@ public class MainActivity extends BridgeActivity {
                 }
             });
 
-            // Prevent standard window.open() popups
+            // Prevent popups and enable proper Fullscreen video playback expansion
             webView.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
                     return false;
                 }
+
+                @Override
+                public void onShowCustomView(View view, CustomViewCallback callback) {
+                    // If a custom view exists already, stop it
+                    if (customView != null) {
+                        callback.onCustomViewHidden();
+                        return;
+                    }
+                    customView = view;
+                    customViewCallback = callback;
+                    // Hide decor/system UI or make video container visible fullscreen
+                    getWindow().getDecorView().setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                        View.SYSTEM_UI_FLAG_FULLSCREEN |
+                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    );
+                    // Add the custom video view to the activity root
+                    addContentView(customView, new WindowManager.LayoutParams(
+                        WindowManager.LayoutParams.MATCH_PARENT,
+                        WindowManager.LayoutParams.MATCH_PARENT
+                    ));
+                    webView.setVisibility(View.GONE);
+                }
+
+                @Override
+                public void onHideCustomView() {
+                    if (customView == null) {
+                        return;
+                    }
+                    // Restore original UI visibility and remove custom view
+                    getWindow().getDecorView().setSystemUiVisibility(0);
+                    ((android.view.ViewGroup) customView.getParent()).removeView(customView);
+                    customView = null;
+                    webView.setVisibility(View.VISIBLE);
+                    if (customViewCallback != null) {
+                        customViewCallback.onCustomViewHidden();
+                    }
+                }
             });
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Handle exiting fullscreen via hardware back button if a video is expanded
+        if (customView != null) {
+            webChromeClient.onHideCustomView(); // or call custom view logic
+        } else {
+            super.onBackPressed();
         }
     }
 }
