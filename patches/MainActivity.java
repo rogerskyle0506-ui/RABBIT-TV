@@ -24,29 +24,24 @@ public class MainActivity extends BridgeActivity {
             settings.setJavaScriptCanOpenWindowsAutomatically(false);
             settings.setMediaPlaybackRequiresUserGesture(false);
 
-            // Intercept top-level redirects to stop VidSrc from launching Chrome on click
+            // Use a blacklist approach: allow normal loading, but drop known ad/chrome redirect domains
             webView.setWebViewClient(new WebViewClient() {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                    String url = request.getUrl().toString();
+                    String url = request.getUrl().toString().toLowerCase();
 
-                    // ALWAYS allow localhost / capacitor local assets to load so the app UI works
-                    if (url.startsWith("http://localhost") || url.startsWith("https://localhost") || url.startsWith("capacitor://") || url.startsWith("file://")) {
-                        return false; 
-                    }
-
-                    // Block intent schemes or external app handlers trying to force Chrome/market
+                    // Block explicit external intent schemes and app store handoffs
                     if (url.startsWith("intent://") || url.startsWith("market://") || url.startsWith("vnd.youtube:")) {
                         return true; 
                     }
 
-                    // Allow the video streaming source/embed frames to load normally inside the app
-                    if (url.contains("vidsrc") || url.contains("embed") || url.contains("player") || url.contains("m3u8") || url.contains("ts")) {
-                        return false; 
+                    // If a known ad network, tracking domain, or popup-redirect URL is hit, block it
+                    if (url.contains("ads.") || url.contains("click") || url.contains("pop") || url.contains("track") || url.contains("serve")) {
+                        return true;
                     }
 
-                    // For any other unexpected external URL jump triggered by an ad click, block it completely
-                    return true; 
+                    // Let everything else load normally so the video stream and player assets aren't choked
+                    return false; 
                 }
             });
 
