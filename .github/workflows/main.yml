@@ -92,6 +92,11 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
+      - name: Inject Custom Popup-Blocking MainActivity
+        run: |
+          mkdir -p android/app/src/main/java/com/rabbittv/app
+          cp patches/MainActivity.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
+
       - name: Verify Android Directory Exists
         run: |
           if [ ! -d android ]; then
