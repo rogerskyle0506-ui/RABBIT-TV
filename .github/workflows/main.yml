@@ -92,10 +92,18 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Inject Custom Popup-Blocking MainActivity
+      - name: Inject Custom MainActivity, TV Banner & Manifest
         run: |
+          # 1. Inject popup-blocking MainActivity
           mkdir -p android/app/src/main/java/com/rabbittv/app
           cp patches/MainActivity.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
+
+          # 2. Copy TV banner into Android drawable resources
+          mkdir -p android/app/src/main/res/drawable
+          cp assets/tv_banner.png android/app/src/main/res/drawable/tv_banner.png
+
+          # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
+          cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
       - name: Verify Android Directory Exists
         run: |
