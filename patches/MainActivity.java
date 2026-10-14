@@ -69,7 +69,7 @@ public class MainActivity extends BridgeActivity {
                     }
                     customView = view;
                     customViewCallback = callback;
-                    // Hide decor/system UI or make video container visible fullscreen
+                    // Hide system UI or make video container visible fullscreen
                     getWindow().getDecorView().setSystemUiVisibility(
                         View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                         View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
@@ -108,9 +108,25 @@ public class MainActivity extends BridgeActivity {
     public void onBackPressed() {
         // Handle exiting fullscreen via hardware back button if a video is expanded
         if (customView != null) {
-            webChromeClient.onHideCustomView(); // or call custom view logic
+            onHideCustomView();
         } else {
             super.onBackPressed();
+        }
+    }
+
+    // Helper method to trigger custom view cleanup from onBackPressed
+    public void onHideCustomView() {
+        if (customView == null) {
+            return;
+        }
+        getWindow().getDecorView().setSystemUiVisibility(0);
+        ((android.view.ViewGroup) customView.getParent()).removeView(customView);
+        customView = null;
+        if (this.bridge != null && this.bridge.getWebView() != null) {
+            this.bridge.getWebView().setVisibility(View.VISIBLE);
+        }
+        if (customViewCallback != null) {
+            customViewCallback.onCustomViewHidden();
         }
     }
 }
