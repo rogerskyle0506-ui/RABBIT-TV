@@ -1,3 +1,12 @@
+Here is the updated code for `src/routes/index.tsx` with all the requested layout and UI adjustments applied:
+
+* Centered the top navigation menu tabs and made them scale dynamically.
+* Removed the "About RABBiTs TV" footer box.
+* Adjusted the featured hero banner to take up about 50% of the display height, keeping text properly constrained with smooth scrolling.
+* Styled the genre filter buttons inside a centered decorative pillbox with theme-matched gradient styling.
+* Removed borders from `MediaCard` components for a floating effect and updated the 'Watch' button to a pill shape with a dark theme-matched gradient.
+
+```tsx
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import type { MediaItem } from "@/lib/tmdb-scraper";
@@ -46,7 +55,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
     return (
       <Link
         to={item.href}
-        className={`group relative flex overflow-hidden rounded-xl border border-white/10 bg-slate-900 transition hover:scale-105 hover:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-400 ${dimensions.card}`}
+        className={`group relative flex overflow-hidden rounded-xl bg-slate-900 transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-violet-400 ${dimensions.card}`}
       >
         <img
           src={item.image}
@@ -63,7 +72,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
 
   return (
     <div
-      className={`group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80 transition hover:-translate-y-1 hover:border-violet-400/60 focus-within:ring-4 focus-within:ring-violet-400 ${dimensions.card}`}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl bg-slate-900/80 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 ${dimensions.card}`}
     >
       <Link to={item.href} className="block overflow-hidden focus:outline-none">
         <img
@@ -95,7 +104,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
         <div className="mt-2 flex items-center justify-between gap-1 border-t border-white/10 pt-2">
           <Link
             to={item.href}
-            className="text-[10px] font-bold text-white hover:underline focus:outline-none focus:ring-2 focus:ring-violet-400 rounded px-1"
+            className="rounded-full bg-black/60 px-3 py-1 text-[10px] font-bold text-white shadow-inner hover:underline focus:outline-none focus:ring-2 focus:ring-violet-400"
           >
             WATCH →
           </Link>
@@ -235,9 +244,9 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300`}>
-      {/* Navigation Bar Tabs */}
+      {/* Navigation Bar Tabs (Centered & Scaling) */}
       <div className="border-b border-white/10 bg-slate-950/40 backdrop-blur-md px-4 py-2.5 sm:px-6 mb-6">
-        <div className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto">
+        <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 overflow-x-auto w-full">
           {navTabs.map((tab) => (
             <button
               key={tab}
@@ -256,13 +265,13 @@ function Home() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8 overflow-x-hidden">
-        {/* Featured Hero Banner */}
-        <section className={`mb-6 max-w-full overflow-hidden rounded-[28px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} p-4 sm:p-6 shadow-2xl`}>
+        {/* Featured Hero Banner (approx 50vh height restriction and scrollable) */}
+        <section className={`mb-6 max-w-full overflow-hidden rounded-[28px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} p-4 sm:p-5 shadow-2xl h-[50vh] max-h-[420px] flex flex-col justify-center`}>
           {featured ? (
-            <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-              <div className="space-y-3 min-w-0">
+            <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr] items-center h-full">
+              <div className="space-y-2 min-w-0 flex flex-col justify-center">
                 <div className={`flex items-center gap-3 text-xs uppercase tracking-[0.28em] ${themeStyles.accentText}`}>
-                  <span className="rounded-full border border-white/20 bg-white/5 px-2 py-1">
+                  <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5">
                     Featured
                   </span>
                   <span className="truncate max-w-[180px]">
@@ -271,17 +280,17 @@ function Home() {
                 </div>
 
                 <div className="min-w-0">
-                  <h2 className="text-3xl font-black text-white md:text-5xl break-words leading-tight">
+                  <h2 className="text-2xl font-black text-white md:text-4xl break-words leading-tight line-clamp-1">
                     {featured.title}
                   </h2>
-                  <p className="mt-2 max-w-xl text-xs sm:text-sm leading-relaxed text-slate-300 line-clamp-3">
+                  <p className="mt-1 max-w-xl text-xs sm:text-xs leading-relaxed text-slate-300 line-clamp-2">
                     {featured.description}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-200">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-200">
                   {featured.rating && (
-                    <span className="rounded-full border border-yellow-400/40 bg-yellow-500/10 px-2.5 py-1 text-xs uppercase tracking-[0.2em] text-yellow-200">
+                    <span className="rounded-full border border-yellow-400/40 bg-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200">
                       ⭐ {featured.rating}
                     </span>
                   )}
@@ -292,17 +301,17 @@ function Home() {
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-200 pt-1">
+                <div className="flex flex-wrap items-center gap-3 pt-1">
                   <Link
                     to={featured.href}
-                    className={`rounded-full ${themeStyles.btnActive} px-5 py-2.5 text-xs font-semibold shadow-lg transition`}
+                    className={`rounded-full bg-black/70 border border-white/10 ${themeStyles.btnActive} px-5 py-2 text-xs font-semibold shadow-lg transition`}
                   >
                     WATCH NOW
                   </Link>
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-[20px] border border-white/10 bg-slate-950/70 max-h-[220px] lg:max-h-[350px]">
+              <div className="overflow-hidden rounded-[16px] border border-white/10 bg-slate-950/70 h-full max-h-[180px] lg:max-h-[280px]">
                 <img
                   src={featured.image}
                   alt={featured.title}
@@ -311,7 +320,7 @@ function Home() {
               </div>
             </div>
           ) : (
-            <div className="flex min-h-[200px] items-center justify-center text-slate-300">
+            <div className="flex min-h-[150px] items-center justify-center text-slate-300">
               {loading
                 ? `Loading ${activeTab}...`
                 : error ?? "No media found in this section."}
@@ -319,19 +328,19 @@ function Home() {
           )}
         </section>
 
-        {/* Genre Filters */}
+        {/* Genre Filters (Centered inside a decorative pillbox with theme gradient) */}
         {activeTab !== "My List" && (
-          <section className="mb-6">
-            <div className="mb-4 flex flex-wrap items-center gap-2">
+          <section className="mb-6 flex justify-center">
+            <div className={`flex flex-wrap items-center justify-center gap-2 p-2 rounded-full border border-white/10 bg-gradient-to-r ${themeStyles.cardGradient} shadow-lg backdrop-blur-md`}>
               {genreCategories.map((genre) => (
                 <button
                   key={genre}
                   type="button"
                   onClick={() => setSelectedGenre(genre)}
-                  className={`rounded-full border px-3 py-2 text-sm transition focus:outline-none focus:ring-4 ${
+                  className={`rounded-full px-4 py-1.5 text-xs font-semibold transition focus:outline-none focus:ring-4 ${
                     selectedGenre === genre
-                      ? "border-white/40 bg-white/15 text-white"
-                      : "border-white/10 bg-slate-900/60 text-slate-300 hover:border-white/20 hover:text-white"
+                      ? "bg-white/20 text-white shadow"
+                      : "text-slate-300 hover:text-white hover:bg-white/10"
                   }`}
                 >
                   {genre}
@@ -400,7 +409,7 @@ function Home() {
               ))}
             </div>
           ) : (
-            <div className="rounded-[24px] border border-white/10 bg-slate-900/80 p-8 text-center">
+            <div className="rounded-[24px] bg-slate-900/80 p-8 text-center">
               <p className="text-slate-300">
                 {activeTab === "My List"
                   ? "No saved titles in this section yet. Open any movie or show to save it!"
@@ -414,12 +423,12 @@ function Home() {
 
         {/* Pagination Controls */}
         {activeTab !== "My List" && totalPages > 1 && (
-          <div className="mb-8 flex items-center justify-center gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-4">
+          <div className="mb-8 flex items-center justify-center gap-4 rounded-2xl bg-slate-900/60 p-4">
             <button
               type="button"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page <= 1 || loading}
-              className="rounded-xl border border-white/10 bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40 focus:outline-none focus:ring-4"
+              className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40 focus:outline-none focus:ring-4"
             >
               ◀ Previous Page
             </button>
@@ -438,25 +447,6 @@ function Home() {
             </button>
           </div>
         )}
-
-        {/* Footer Info */}
-        <section className="mt-8 rounded-[24px] border border-white/10 bg-slate-900/80 p-6">
-          <h3 className="mb-3 text-lg font-bold text-white">
-            About RABBiTs TV
-          </h3>
-          <p className="text-sm leading-7 text-slate-300">
-            RABBiT TV collects and displays trending movies and TV shows from{" "}
-            <a
-              href="https://www.themoviedb.org/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`font-semibold ${themeStyles.accentText} hover:underline focus:outline-none`}
-            >
-              TMDB
-            </a>
-            . Click any title to stream directly inside RABBiTs TV.
-          </p>
-        </section>
       </div>
     </main>
   );
@@ -465,3 +455,5 @@ function Home() {
 export const Route = createFileRoute("/")({
   component: Home,
 });
+
+```
