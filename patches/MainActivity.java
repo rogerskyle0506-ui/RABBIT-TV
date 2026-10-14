@@ -28,29 +28,24 @@ public class MainActivity extends BridgeActivity {
             settings.setJavaScriptCanOpenWindowsAutomatically(false);
             settings.setMediaPlaybackRequiresUserGesture(false);
 
-            // Intercept top-level navigation redirects to stop VidSrc ad clicks from launching Chrome
+            // Use a safe client that lets Capacitor handle local files, but blocks external Chrome breakouts
             webView.setWebViewClient(new WebViewClient() {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                     String url = request.getUrl().toString().toLowerCase();
 
-                    // 1. Always allow local app files / bridge traffic so the UI loads normally
-                    if (url.startsWith("http://localhost") || url.startsWith("https://localhost") || url.startsWith("capacitor://") || url.startsWith("file://")) {
-                        return false; 
-                    }
-
-                    // 2. Block explicit external intent schemes and app store popups
+                    // Block explicit external intent schemes and app store popups trying to force Chrome
                     if (url.startsWith("intent://") || url.startsWith("market://") || url.startsWith("vnd.youtube:")) {
                         return true; 
                     }
 
-                    // 3. Allow the video player, embeds, and streaming stream files to load
-                    if (url.contains("vidsrc") || url.contains("embed") || url.contains("player") || url.contains("m3u8") || url.contains("ts") || url.contains("stream")) {
-                        return false; 
+                    // Block common ad-network tracking/redirect domains trying to hijack the view
+                    if (url.contains("ads.") || url.contains("click") || url.contains("pop") || url.contains("track") || url.contains("serve")) {
+                        return true;
                     }
 
-                    // 4. Block any other unexpected external URL jump triggered by an ad click from opening Chrome
-                    return true; 
+                    // Allow everything else (including local Capacitor bridge assets and video streams) to load normally
+                    return false; 
                 }
             });
 
