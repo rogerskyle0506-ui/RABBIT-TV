@@ -117,5 +117,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: final app
+          name: Rabbit1.0.2
           path: output_apk/RABBiT-TV.apk
