@@ -6,9 +6,9 @@ import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebChromeClient;
-import android.webkit.WebViewClient;
 import android.webkit.WebResourceRequest;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebViewClient;
 
 public class MainActivity extends BridgeActivity {
     @Override
@@ -28,8 +28,8 @@ public class MainActivity extends BridgeActivity {
             settings.setJavaScriptCanOpenWindowsAutomatically(false);
             settings.setMediaPlaybackRequiresUserGesture(false);
 
-            // Use a safe client that lets Capacitor handle local files, but blocks external Chrome breakouts
-            webView.setWebViewClient(new WebViewClient() {
+            // Extend Capacitor's native BridgeWebViewClient to preserve local app routing while blocking ad redirects
+            webView.setWebViewClient(new BridgeWebViewClient(this.bridge) {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                     String url = request.getUrl().toString().toLowerCase();
@@ -44,8 +44,8 @@ public class MainActivity extends BridgeActivity {
                         return true;
                     }
 
-                    // Allow everything else (including local Capacitor bridge assets and video streams) to load normally
-                    return false; 
+                    // Delegate everything else back to Capacitor's bridge so local UI assets load correctly
+                    return super.shouldOverrideUrlLoading(view, request);
                 }
             });
 
