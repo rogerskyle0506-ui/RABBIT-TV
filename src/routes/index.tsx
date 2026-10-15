@@ -275,11 +275,12 @@ function Home() {
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
             <>
-              <div className="absolute inset-0 h-[65%] w-full overflow-hidden bg-slate-950">
+              {/* Constrained cover art image fitting fully inside */}
+              <div className="absolute inset-0 h-[65%] w-full overflow-hidden bg-slate-950 flex items-center justify-center">
                 <img
                   src={featured.image}
                   alt={featured.title}
-                  className="h-full w-full object-cover opacity-90"
+                  className="h-full w-full object-contain opacity-90"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/30 to-transparent"></div>
               </div>
