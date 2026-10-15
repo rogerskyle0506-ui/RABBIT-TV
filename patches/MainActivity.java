@@ -10,11 +10,13 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.widget.FrameLayout;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.BridgeWebViewClient;
 
 public class MainActivity extends BridgeActivity {
     private View customView;
+    private FrameLayout fullscreenContainer;
     private WebChromeClient.CustomViewCallback customViewCallback;
 
     @Override
@@ -27,12 +29,18 @@ public class MainActivity extends BridgeActivity {
         if (this.bridge != null && this.bridge.getWebView() != null) {
             WebView webView = this.bridge.getWebView();
 
-            // Configure standard WebView settings for smooth streaming and app behavior
+            // Configure WebView settings for smooth streaming, scaling, and iframe handling on Fire OS
             WebSettings settings = webView.getSettings();
             settings.setJavaScriptEnabled(true);
             settings.setDomStorageEnabled(true);
             settings.setJavaScriptCanOpenWindowsAutomatically(false);
             settings.setMediaPlaybackRequiresUserGesture(false);
+            settings.setLoadWithOverviewMode(true);
+            settings.setUseWideViewPort(true);
+            settings.setSupportZoom(false);
+            
+            // Enable hardware acceleration specifically for video decoding and iframe positioning
+            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
             // Extend Capacitor's native BridgeWebViewClient to preserve local app routing while blocking ad redirects
             webView.setWebViewClient(new BridgeWebViewClient(this.bridge) {
@@ -80,10 +88,6 @@ public class MainActivity extends BridgeActivity {
                     customView = view;
                     customViewCallback = callback;
 
-                    // Force solid black background on the window and custom view to completely suppress the TV banner
-                    customView.setBackgroundColor(Color.BLACK);
-                    getWindow().setBackgroundDrawableResource(android.R.color.black);
-
                     // Hide system UI and make video container immersive
                     getWindow().getDecorView().setSystemUiVisibility(
                         View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
@@ -94,34 +98,28 @@ public class MainActivity extends BridgeActivity {
                         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     );
 
-                    // Force exact WindowManager MATCH_PARENT constraints so Fire OS centers and scales the video full screen
-                    WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                        WindowManager.LayoutParams.MATCH_PARENT,
-                        WindowManager.LayoutParams.MATCH_PARENT,
-                        WindowManager.LayoutParams.TYPE_APPLICATION,
-                        WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
-                        android.graphics.PixelFormat.TRANSLUCENT
+                    // Create a dedicated full-screen FrameLayout container to force correct Fire OS scaling
+                    fullscreenContainer = new FrameLayout(MainActivity.this);
+                    fullscreenContainer.setBackgroundColor(Color.BLACK);
+                    
+                    FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
                     );
+                    fullscreenContainer.addView(customView, params);
 
-                    addContentView(customView, params);
+                    // Add the container to the activity root
+                    addContentView(fullscreenContainer, new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    ));
+                    
                     webView.setVisibility(View.GONE);
                 }
 
                 @Override
                 public void onHideCustomView() {
-                    if (customView == null) {
-                        return;
-                    }
-                    // Restore original UI visibility and remove custom view
-                    getWindow().getDecorView().setSystemUiVisibility(0);
-                    if (customView.getParent() instanceof ViewGroup) {
-                        ((ViewGroup) customView.getParent()).removeView(customView);
-                    }
-                    customView = null;
-                    webView.setVisibility(View.VISIBLE);
-                    if (customViewCallback != null) {
-                        customViewCallback.onCustomViewHidden();
-                    }
+                    cleanupCustomView();
                 }
             });
         }
@@ -131,7 +129,7 @@ public class MainActivity extends BridgeActivity {
     public void onBackPressed() {
         // Handle exiting fullscreen via hardware back button if a video is expanded
         if (customView != null) {
-            onHideCustomView();
+            cleanupCustomView();
         } else if (this.bridge != null && this.bridge.getWebView() != null) {
             WebView webView = this.bridge.getWebView();
             
@@ -150,21 +148,27 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // Helper method to trigger custom view cleanup from onBackPressed
-    public void onHideCustomView() {
+    // Helper method to clean up custom view and restore UI state cleanly
+    private void cleanupCustomView() {
         if (customView == null) {
             return;
         }
         getWindow().getDecorView().setSystemUiVisibility(0);
-        if (customView.getParent() instanceof ViewGroup) {
-            ((ViewGroup) customView.getParent()).removeView(customView);
+        
+        if (fullscreenContainer != null && fullscreenContainer.getParent() instanceof ViewGroup) {
+            ((ViewGroup) fullscreenContainer.getParent()).removeView(fullscreenContainer);
         }
+        
         customView = null;
+        fullscreenContainer = null;
+
         if (this.bridge != null && this.bridge.getWebView() != null) {
             this.bridge.getWebView().setVisibility(View.VISIBLE);
         }
+        
         if (customViewCallback != null) {
             customViewCallback.onCustomViewHidden();
+            customViewCallback = null;
         }
     }
 }
