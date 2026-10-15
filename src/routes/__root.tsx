@@ -125,7 +125,7 @@ function RootComponent() {
   };
 
   const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?(.0);
     if (!file) return;
 
     const reader = new FileReader();
@@ -167,6 +167,19 @@ function RootComponent() {
       case "violet":
       default:
         return "bg-[#050b16]";
+    }
+  };
+
+  // Theme-aware card/container background to completely eliminate unwanted blue tint in Red/Midnight modes
+  const getCardBackground = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-[#160404] border-red-500/20";
+      case "midnight":
+        return "bg-[#03091e] border-blue-500/20";
+      case "violet":
+      default:
+        return "bg-[#090e1f] border-violet-500/20";
     }
   };
 
@@ -284,7 +297,7 @@ function RootComponent() {
 
             {/* Dropdown Options */}
             {showSettings && !showFirstStartModal && (
-              <div className="border-t border-white/10 bg-slate-900/95 px-4 py-3 backdrop-blur-md">
+              <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-3 backdrop-blur-md`}>
                 <div className="mx-auto flex max-w-7xl items-center justify-center">
                   {activeSettingsTab === "theme" && (
                     <div className="flex flex-wrap items-center gap-2">
@@ -393,9 +406,10 @@ function RootComponent() {
 
           {showFirstStartModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
+              {/* Splash Modal Form using dynamic theme background */}
               <form
                 onSubmit={handleFirstTimeAuthorize}
-                className="my-auto w-full max-w-xl space-y-6 rounded-2xl border border-white/10 bg-slate-900 p-6 text-white shadow-2xl md:p-8"
+                className={`my-auto w-full max-w-xl space-y-6 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
               >
                 <div className="text-center space-y-2">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-slate-900">
