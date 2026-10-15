@@ -21,7 +21,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Keep the screen awake so phones and projectors don't go idle or trigger screensavers during playback
+        // Keep the screen awake during playback across all devices
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         if (this.bridge != null && this.bridge.getWebView() != null) {
@@ -80,10 +80,11 @@ public class MainActivity extends BridgeActivity {
                     customView = view;
                     customViewCallback = callback;
 
-                    // Ensure solid black background so the TV banner splash never peeks through
+                    // Force solid black background on the window and custom view to completely suppress the TV banner
                     customView.setBackgroundColor(Color.BLACK);
+                    getWindow().setBackgroundDrawableResource(android.R.color.black);
 
-                    // Hide system UI or make video container visible fullscreen
+                    // Hide system UI and make video container immersive
                     getWindow().getDecorView().setSystemUiVisibility(
                         View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
                         View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
@@ -93,11 +94,15 @@ public class MainActivity extends BridgeActivity {
                         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     );
 
-                    // Add the custom video view to the activity root with exact MATCH_PARENT constraints for Fire OS scaling
-                    ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
+                    // Force exact WindowManager MATCH_PARENT constraints so Fire OS centers and scales the video full screen
+                    WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                        WindowManager.LayoutParams.MATCH_PARENT,
+                        WindowManager.LayoutParams.MATCH_PARENT,
+                        WindowManager.LayoutParams.TYPE_APPLICATION,
+                        WindowManager.LayoutParams.FLAG_FULLSCREEN | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+                        android.graphics.PixelFormat.TRANSLUCENT
                     );
+
                     addContentView(customView, params);
                     webView.setVisibility(View.GONE);
                 }
