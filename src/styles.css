@@ -3,17 +3,38 @@
 :root {
   color-scheme: dark;
   font-family: "Inter", "Segoe UI", sans-serif;
+  --app-bg: #050b16;
+  --selection-bg: rgba(168, 85, 247, 0.45);
+}
+
+/* Theme: Violet (Default) */
+html[data-theme="violet"] {
+  --app-bg: #050b16;
+  --selection-bg: rgba(168, 85, 247, 0.45);
+}
+
+/* Theme: Red & Black */
+html[data-theme="red"] {
+  --app-bg: #120202;
+  --selection-bg: rgba(239, 68, 68, 0.45);
+}
+
+/* Theme: Midnight & Black */
+html[data-theme="midnight"] {
+  --app-bg: #020617;
+  --selection-bg: rgba(59, 130, 246, 0.45);
 }
 
 html,
 body {
   margin: 0;
   min-height: 100%;
-  background: #050b16;
+  background-color: var(--app-bg);
 }
 
 body {
   min-height: 100vh;
+  background-color: var(--app-bg);
 }
 
 button,
@@ -21,7 +42,9 @@ button,
   cursor: pointer;
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
@@ -31,7 +54,7 @@ img {
 }
 
 ::selection {
-  background: rgba(168, 85, 247, 0.45);
+  background: var(--selection-bg);
 }
 
 .line-clamp-2 {
