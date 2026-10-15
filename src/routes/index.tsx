@@ -54,8 +54,8 @@ export function MediaCard({ item }: { item: MediaItem }) {
           className="h-full w-full object-cover"
           loading="lazy"
         />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-1 text-center opacity-0 group-hover:opacity-100 transition">
-          <p className="text-[9px] font-bold text-white truncate">{item.title}</p>
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5 text-center">
+          <p className="text-[10px] font-bold text-white truncate px-1 rounded bg-black/40 backdrop-blur-sm">{item.title}</p>
         </div>
       </Link>
     );
@@ -63,43 +63,40 @@ export function MediaCard({ item }: { item: MediaItem }) {
 
   return (
     <div
-      className={`group relative flex flex-col overflow-hidden rounded-2xl bg-slate-900/80 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 ${dimensions.card}`}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl bg-slate-900/90 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 w-[calc(50%-8px)] sm:w-auto ${dimensions.card}`}
     >
-      <Link to={item.href} className="block overflow-hidden focus:outline-none">
+      <Link to={item.href} className="block relative overflow-hidden flex-1 focus:outline-none">
         <img
           src={item.image}
           alt={item.title}
-          className={`${dimensions.image} transition group-hover:scale-105`}
+          className={`h-full w-full object-cover transition group-hover:scale-105`}
           loading="lazy"
         />
-      </Link>
-
-      <div className="flex flex-1 flex-col justify-between p-3">
-        <div>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="rounded-full bg-white/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-slate-200 truncate max-w-[70%]">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="rounded-full bg-black/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-slate-200 truncate max-w-[70%] backdrop-blur-sm">
               {item.genre ?? "TV"}
             </span>
             {item.year ? (
-              <span className="text-[10px] text-slate-400">{item.year}</span>
+              <span className="text-[10px] text-slate-300 font-medium">{item.year}</span>
             ) : null}
           </div>
-          <h4 className={`font-semibold text-white truncate ${dimensions.text}`}>
+          <h4 className={`font-bold text-white drop-shadow truncate ${dimensions.text}`}>
             {item.title}
           </h4>
           {item.rating && (
-            <p className="mt-0.5 text-xs text-yellow-200">⭐ {item.rating}</p>
+            <p className="mt-0.5 text-xs text-yellow-300 font-semibold drop-shadow">⭐ {item.rating}</p>
           )}
         </div>
+      </Link>
 
-        <div className="mt-2 flex items-center justify-between gap-1 border-t border-white/10 pt-2">
-          <Link
-            to={item.href}
-            className="rounded-full bg-black/60 px-3 py-1 text-[10px] font-bold text-white shadow-inner hover:underline focus:outline-none focus:ring-2 focus:ring-violet-400"
-          >
-            WATCH →
-          </Link>
-        </div>
+      <div className="p-2 bg-black/80 border-t border-white/10 flex items-center justify-between">
+        <Link
+          to={item.href}
+          className="w-full text-center rounded-full bg-black/70 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-violet-400"
+        >
+          WATCH →
+        </Link>
       </div>
     </div>
   );
@@ -234,19 +231,19 @@ function Home() {
   }[appTheme];
 
   return (
-    <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300`}>
-      {/* Navigation Bar Tabs (Centered & Scaling) */}
-      <div className="border-b border-white/10 bg-slate-950/40 backdrop-blur-md px-4 py-2.5 sm:px-6 mb-6">
-        <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 overflow-x-auto w-full">
+    <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
+      {/* Navigation Bar Tabs (Centered & Fully Visible) */}
+      <div className="border-b border-white/10 bg-slate-950/60 backdrop-blur-md px-2 py-3 mb-4 sticky top-0 z-30">
+        <div className="mx-auto flex max-w-full items-center justify-center gap-1.5 overflow-x-auto px-2">
           {navTabs.map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition whitespace-nowrap focus:outline-none ${
+              className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition whitespace-nowrap focus:outline-none shrink-0 ${
                 activeTab === tab
                   ? `${themeStyles.btnActive} shadow-md`
-                  : "bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  : "bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white"
               }`}
             >
               {tab}
@@ -255,54 +252,54 @@ function Home() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-2 sm:px-6 lg:px-8 overflow-x-hidden">
-        {/* Featured Hero Banner (approx 50vh height restriction and scrollable) */}
-        <section className={`mb-6 max-w-full overflow-hidden rounded-[28px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} p-4 sm:p-5 shadow-2xl h-[50vh] max-h-[420px] flex flex-col justify-center`}>
+      <div className="mx-auto max-w-full px-2 sm:px-4 overflow-x-hidden">
+        {/* Featured Hero Banner (Edge-to-edge width, unclipped title, squashed height) */}
+        <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} p-3.5 sm:p-5 shadow-2xl h-[46vh] max-h-[380px] flex flex-col justify-center`}>
           {featured ? (
-            <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr] items-center h-full">
-              <div className="space-y-2 min-w-0 flex flex-col justify-center">
-                <div className={`flex items-center gap-3 text-xs uppercase tracking-[0.28em] ${themeStyles.accentText}`}>
+            <div className="grid gap-3 lg:grid-cols-[1.3fr_0.7fr] items-center h-full">
+              <div className="space-y-1.5 min-w-0 flex flex-col justify-center">
+                <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] ${themeStyles.accentText}`}>
                   <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5">
                     Featured
                   </span>
-                  <span className="truncate max-w-[180px]">
+                  <span className="truncate max-w-[160px]">
                     {featured.genre ?? "Entertainment"}
                   </span>
                 </div>
 
                 <div className="min-w-0">
-                  <h2 className="text-2xl font-black text-white md:text-4xl break-words leading-tight line-clamp-1">
+                  <h2 className="text-xl font-black text-white md:text-3xl leading-snug break-words">
                     {featured.title}
                   </h2>
-                  <p className="mt-1 max-w-xl text-xs sm:text-xs leading-relaxed text-slate-300 line-clamp-2">
+                  <p className="mt-0.5 max-w-xl text-xs leading-relaxed text-slate-300 line-clamp-2">
                     {featured.description}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 text-xs text-slate-200">
                   {featured.rating && (
-                    <span className="rounded-full border border-yellow-400/40 bg-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200">
+                    <span className="rounded-full border border-yellow-400/40 bg-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px]">
                       ⭐ {featured.rating}
                     </span>
                   )}
                   {featured.year && (
-                    <span className="text-xs text-slate-400">
+                    <span className="text-[11px] text-slate-400">
                       {featured.year}
                     </span>
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 pt-1">
+                <div className="flex flex-wrap items-center gap-2 pt-1">
                   <Link
                     to={featured.href}
-                    className={`rounded-full bg-black/70 border border-white/10 ${themeStyles.btnActive} px-5 py-2 text-xs font-semibold shadow-lg transition`}
+                    className={`rounded-full bg-black/70 border border-white/10 ${themeStyles.btnActive} px-4 py-1.5 text-xs font-semibold shadow-lg transition`}
                   >
                     WATCH NOW
                   </Link>
                 </div>
               </div>
 
-              <div className="overflow-hidden rounded-[16px] border border-white/10 bg-slate-950/70 h-full max-h-[180px] lg:max-h-[280px]">
+              <div className="overflow-hidden rounded-[14px] border border-white/10 bg-slate-950/70 h-full max-h-[160px] lg:max-h-[260px]">
                 <img
                   src={featured.image}
                   alt={featured.title}
@@ -311,7 +308,7 @@ function Home() {
               </div>
             </div>
           ) : (
-            <div className="flex min-h-[150px] items-center justify-center text-slate-300">
+            <div className="flex min-h-[140px] items-center justify-center text-slate-300">
               {loading
                 ? `Loading ${activeTab}...`
                 : error ?? "No media found in this section."}
@@ -321,16 +318,16 @@ function Home() {
 
         {/* Genre Filters (Centered inside a decorative pillbox with theme gradient) */}
         {activeTab !== "My List" && (
-          <section className="mb-6 flex justify-center">
-            <div className={`flex flex-wrap items-center justify-center gap-2 p-2 rounded-full border border-white/10 bg-gradient-to-r ${themeStyles.cardGradient} shadow-lg backdrop-blur-md`}>
+          <section className="mb-4 flex justify-center">
+            <div className={`flex flex-wrap items-center justify-center gap-1.5 p-2 rounded-full border border-white/10 bg-gradient-to-r ${themeStyles.cardGradient} shadow-lg backdrop-blur-md max-w-full`}>
               {genreCategories.map((genre) => (
                 <button
                   key={genre}
                   type="button"
                   onClick={() => setSelectedGenre(genre)}
-                  className={`rounded-full px-4 py-1.5 text-xs font-semibold transition focus:outline-none focus:ring-4 ${
+                  className={`rounded-full px-3.5 py-1 text-xs font-semibold transition focus:outline-none focus:ring-4 ${
                     selectedGenre === genre
-                      ? "bg-white/20 text-white shadow"
+                      ? "bg-white/25 text-white shadow"
                       : "text-slate-300 hover:text-white hover:bg-white/10"
                   }`}
                 >
@@ -343,7 +340,7 @@ function Home() {
 
         {/* My List & Favorites Sub-category Selector */}
         {activeTab === "My List" && (
-          <section className="mb-6 flex flex-wrap items-center gap-2 border-b border-white/10 pb-4">
+          <section className="mb-4 flex flex-wrap items-center gap-2 border-b border-white/10 pb-3 px-2">
             <button
               type="button"
               onClick={() => setMyListSubTab("all")}
@@ -383,25 +380,25 @@ function Home() {
         )}
 
         {/* Content Grid */}
-        <section className="mb-8">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-xl font-bold text-white">
+        <section className="mb-6 px-1">
+          <div className="mb-3 flex items-center justify-between px-1">
+            <h3 className="text-lg font-bold text-white">
               {activeTab === "My List" ? "Saved Catalog" : `${activeTab} Catalog`}
             </h3>
-            <span className={`text-sm ${themeStyles.accentText}`}>
+            <span className={`text-xs font-medium ${themeStyles.accentText}`}>
               {filteredItems.length} titles available
             </span>
           </div>
 
           {filteredItems.length > 0 ? (
-            <div className="flex flex-wrap gap-4 justify-center sm:justify-start">
+            <div className="flex flex-wrap gap-3 justify-center">
               {filteredItems.slice(activeTab === "My List" ? 0 : 1).map((item) => (
                 <MediaCard key={item.id} item={item} />
               ))}
             </div>
           ) : (
-            <div className="rounded-[24px] bg-slate-900/80 p-8 text-center">
-              <p className="text-slate-300">
+            <div className="rounded-[20px] bg-slate-900/80 p-6 text-center mx-2">
+              <p className="text-sm text-slate-300">
                 {activeTab === "My List"
                   ? "No saved titles in this section yet. Open any movie or show to save it!"
                   : loading
@@ -414,17 +411,17 @@ function Home() {
 
         {/* Pagination Controls */}
         {activeTab !== "My List" && totalPages > 1 && (
-          <div className="mb-8 flex items-center justify-center gap-4 rounded-2xl bg-slate-900/60 p-4">
+          <div className="mb-6 flex items-center justify-center gap-3 rounded-2xl bg-slate-900/60 p-3 mx-2">
             <button
               type="button"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page <= 1 || loading}
-              className="rounded-xl bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40 focus:outline-none focus:ring-4"
+              className="rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40 focus:outline-none focus:ring-4"
             >
-              ◀ Previous Page
+              ◀ Previous
             </button>
 
-            <span className={`text-sm font-bold ${themeStyles.accentText}`}>
+            <span className={`text-xs font-bold ${themeStyles.accentText}`}>
               Page {page} of {totalPages}
             </span>
 
@@ -432,9 +429,9 @@ function Home() {
               type="button"
               onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={page >= totalPages || loading}
-              className={`rounded-xl ${themeStyles.btnActive} px-4 py-2 text-sm font-semibold shadow transition disabled:opacity-40 focus:outline-none focus:ring-4`}
+              className={`rounded-xl ${themeStyles.btnActive} px-3 py-2 text-xs font-semibold shadow transition disabled:opacity-40 focus:outline-none focus:ring-4`}
             >
-              Next Page ▶
+              Next ▶
             </button>
           </div>
         )}
