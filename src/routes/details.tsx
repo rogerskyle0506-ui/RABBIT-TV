@@ -19,9 +19,8 @@ export function DetailsPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Theme & Settings Dropdown State
+  // Theme State for styling
   const [accentColor, setAccentColor] = useState("violet");
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // List Status State
   const [inMyList, setInMyList] = useState(false);
@@ -33,7 +32,7 @@ export function DetailsPage() {
   const [episode, setEpisode] = useState(1);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 
-  // Load Theme & Saved States on Mount / Storage Change
+  // Load Theme on Mount / Storage Change
   useEffect(() => {
     const loadTheme = () => {
       try {
@@ -47,18 +46,14 @@ export function DetailsPage() {
     loadTheme();
     window.addEventListener("storage", loadTheme);
     window.addEventListener("rabtv_theme_updated" as any, loadTheme);
+    window.addEventListener("rabtv_settings_updated" as any, loadTheme);
 
     return () => {
       window.removeEventListener("storage", loadTheme);
       window.removeEventListener("rabtv_theme_updated" as any, loadTheme);
+      window.removeEventListener("rabtv_settings_updated" as any, loadTheme);
     };
   }, []);
-
-  const handleThemeChange = (themeName: string) => {
-    setAccentColor(themeName);
-    localStorage.setItem(THEME_STORAGE_KEY, themeName);
-    window.dispatchEvent(new Event("rabtv_theme_updated"));
-  };
 
   // Smart Theme Normalizer
   const getThemeClasses = (rawTheme: string) => {
@@ -71,6 +66,8 @@ export function DetailsPage() {
         border: "border-red-500",
         ring: "focus:ring-red-400",
         shadow: "shadow-red-600/30",
+        pageBg: "bg-[#120202]",
+        cardBg: "bg-[#160404]",
       };
     }
     if (val.includes("midnight") || val.includes("blue")) {
@@ -81,6 +78,8 @@ export function DetailsPage() {
         border: "border-blue-500",
         ring: "focus:ring-blue-400",
         shadow: "shadow-blue-600/30",
+        pageBg: "bg-[#020617]",
+        cardBg: "bg-[#03091e]",
       };
     }
     return {
@@ -90,6 +89,8 @@ export function DetailsPage() {
       border: "border-violet-500",
       ring: "focus:ring-violet-400",
       shadow: "shadow-violet-600/30",
+      pageBg: "bg-[#050b16]",
+      cardBg: "bg-[#090e1f]",
     };
   };
 
@@ -246,7 +247,7 @@ export function DetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050b16] text-white">
+      <div className={`flex min-h-screen items-center justify-center ${activeTheme.pageBg} text-white`}>
         <p className={`text-xl font-medium animate-pulse ${activeTheme.text}`}>
           Loading title details...
         </p>
@@ -269,69 +270,7 @@ export function DetailsPage() {
       : `https://vidsrc.to/embed/movie/${mediaId}`;
 
   return (
-    <div className="min-h-screen w-full bg-[#050b16] p-6 text-white md:p-12 overflow-y-auto scroll-smooth">
-      {/* Top Header matching Home layout with Settings Dropdown */}
-      <div className="mb-8 flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600 text-lg font-bold shadow">
-              🐰
-            </span>
-            <h1 className="text-xl font-black tracking-wider text-white">RABiT TV</h1>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setSettingsOpen((prev) => !prev)}
-            className={`flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-4 ${activeTheme.ring}`}
-          >
-            ⚙️ Display & Stream Settings
-          </button>
-        </div>
-
-        {/* Collapsible Settings Dropdown Bar */}
-        {settingsOpen && (
-          <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-slate-950/80 p-4 animate-fade-in">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs font-semibold text-slate-400">Choose Theme:</span>
-              <button
-                type="button"
-                onClick={() => handleThemeChange("violet")}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition border ${
-                  accentColor.includes("violet")
-                    ? "border-violet-500 bg-violet-950 text-violet-300"
-                    : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                🟣 Violet / Neon
-              </button>
-              <button
-                type="button"
-                onClick={() => handleThemeChange("red")}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition border ${
-                  accentColor.includes("red")
-                    ? "border-red-500 bg-red-950 text-red-300"
-                    : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                🔴 Red & Black
-              </button>
-              <button
-                type="button"
-                onClick={() => handleThemeChange("midnight")}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition border ${
-                  accentColor.includes("midnight") || accentColor.includes("blue")
-                    ? "border-blue-500 bg-blue-950 text-blue-300"
-                    : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                }`}
-              >
-                🔵 Midnight & Black
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
+    <div className={`min-h-screen w-full ${activeTheme.pageBg} p-6 text-white md:p-12 overflow-y-auto scroll-smooth transition-colors duration-300`}>
       <Link
         className={`mb-6 inline-flex items-center gap-2 text-sm font-semibold ${activeTheme.text} transition hover:opacity-80 hover:underline focus:outline-none focus:ring-4 ${activeTheme.ring} focus:rounded-lg px-2 py-1`}
         to="/"
@@ -342,7 +281,7 @@ export function DetailsPage() {
       {isPlaying ? (
         <div className="mx-auto flex max-w-5xl flex-col gap-6">
           {mediaType === "tv" && (
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 bg-slate-900/80 p-4 backdrop-blur">
+            <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 ${activeTheme.cardBg} p-4 backdrop-blur`}>
               <div className="flex items-center gap-4 text-sm font-semibold">
                 <label className="flex items-center gap-2">
                   <span>Season:</span>
@@ -430,7 +369,7 @@ export function DetailsPage() {
             ></iframe>
           </div>
 
-          <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-6 backdrop-blur">
+          <div className={`flex flex-col gap-4 rounded-2xl border border-white/10 ${activeTheme.cardBg} p-6 backdrop-blur`}>
             <h1 className="text-2xl font-bold text-white">{title}</h1>
             <p className="text-sm leading-relaxed text-slate-300">{overview}</p>
           </div>
