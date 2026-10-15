@@ -29,33 +29,13 @@ public class MainActivity extends BridgeActivity {
         if (this.bridge != null && this.bridge.getWebView() != null) {
             WebView webView = this.bridge.getWebView();
 
-            // Configure WebView settings for smooth streaming, scaling, and iframe handling on Fire OS
+            // Configure standard WebView settings without disruptive global layout scaling or layer overrides
             WebSettings settings = webView.getSettings();
             settings.setJavaScriptEnabled(true);
             settings.setDomStorageEnabled(true);
             settings.setJavaScriptCanOpenWindowsAutomatically(false);
             settings.setMediaPlaybackRequiresUserGesture(false);
-            settings.setLoadWithOverviewMode(true);
-            settings.setUseWideViewPort(true);
             settings.setSupportZoom(false);
-            
-            // Force hardware acceleration layer type to resolve Fire OS iframe positioning bugs
-            webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-
-            // Force layout pass recalculation on load so iframes don't collapse to top-left (0,0)
-            webView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-                @Override
-                public void onLayoutChange(View v, int left, int top, int right, int bottom,
-                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                    webView.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            webView.requestLayout();
-                            webView.invalidate();
-                        }
-                    });
-                }
-            });
 
             // Extend Capacitor's native BridgeWebViewClient to preserve local app routing while blocking ad redirects
             webView.setWebViewClient(new BridgeWebViewClient(this.bridge) {
@@ -113,7 +93,7 @@ public class MainActivity extends BridgeActivity {
                         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     );
 
-                    // Create a dedicated full-screen FrameLayout container to force correct Fire OS scaling
+                    // Create a dedicated full-screen FrameLayout container
                     fullscreenContainer = new FrameLayout(MainActivity.this);
                     fullscreenContainer.setBackgroundColor(Color.BLACK);
                     
