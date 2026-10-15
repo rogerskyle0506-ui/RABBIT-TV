@@ -149,15 +149,6 @@ function RootComponent() {
     reader.readAsText(file);
   };
 
-  const toggleSettingsSection = (section: "theme" | "scale" | "quality" | "backup") => {
-    if (showSettings && activeSettingsTab === section) {
-      setShowSettings(false);
-    } else {
-      setActiveSettingsTab(section);
-      setShowSettings(true);
-    }
-  };
-
   const getBodyBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
@@ -179,19 +170,6 @@ function RootComponent() {
       case "violet":
       default:
         return "bg-[#090e1f] border-violet-500/20";
-    }
-  };
-
-  const getActiveThemeBtnClass = (theme: AppTheme, active: boolean) => {
-    if (!active) return "border-white/10 bg-slate-800 text-slate-200 hover:bg-slate-700";
-    switch (theme) {
-      case "red":
-        return "border-red-500 bg-red-600 text-white shadow-md shadow-red-600/30";
-      case "midnight":
-        return "border-blue-500 bg-blue-600 text-white shadow-md shadow-blue-600/30";
-      case "violet":
-      default:
-        return "border-violet-500 bg-violet-600 text-white shadow-md shadow-violet-600/30";
     }
   };
 
@@ -228,7 +206,7 @@ function RootComponent() {
         <PreviewHostBridge />
         <AuthProvider>
           <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
-            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-3 py-2.5 sm:px-6">
+            <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
               {/* Brand Logo */}
               <Link
                 to="/"
@@ -244,148 +222,290 @@ function RootComponent() {
                 <span className="whitespace-nowrap">RABBiT TV</span>
               </Link>
 
-              {/* Header Option Pills */}
+              {/* Single Gear Settings Icon Button */}
               {!showFirstStartModal && (
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                  <button
-                    type="button"
-                    onClick={() => toggleSettingsSection("theme")}
-                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
-                      appTheme,
-                      showSettings && activeSettingsTab === "theme"
-                    )}`}
-                  >
-                    🎨 Color Theme
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => toggleSettingsSection("scale")}
-                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
-                      appTheme,
-                      showSettings && activeSettingsTab === "scale"
-                    )}`}
-                  >
-                    📐 Poster Scale
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => toggleSettingsSection("quality")}
-                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
-                      appTheme,
-                      showSettings && activeSettingsTab === "quality"
-                    )}`}
-                  >
-                    ⚙️ Stream Quality
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => toggleSettingsSection("backup")}
-                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
-                      appTheme,
-                      showSettings && activeSettingsTab === "backup"
-                    )}`}
-                  >
-                    💾 Backup Profile
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSettings((prev) => !prev)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-800 text-white text-lg transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  aria-label="Settings"
+                >
+                  ⚙️
+                </button>
               )}
             </div>
 
-            {/* Dropdown Options */}
+            {/* Popout Settings Menu */}
             {showSettings && !showFirstStartModal && (
-              <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-3 backdrop-blur-md`}>
-                <div className="mx-auto flex max-w-7xl items-center justify-center">
-                  {activeSettingsTab === "theme" && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-300">Choose Theme:</span>
-                      {[
-                        { id: "violet", label: "🟣 Violet / Neon" },
-                        { id: "red", label: "🔴 Red & Black" },
-                        { id: "midnight", label: "🔵 Midnight & Black" },
-                      ].map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => handleThemeChange(t.id as AppTheme)}
-                          className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
-                            appTheme === t.id
-                              ? `${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-md`
-                              : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                          }`}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+              <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-md shadow-2xl`}>
+                <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
+                  {/* Settings Sub-tabs */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-white/10 w-full justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setActiveSettingsTab("theme")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "theme"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Theme
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSettingsTab("scale")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "scale"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Scale
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSettingsTab("quality")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "quality"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Quality
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSettingsTab("backup")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "backup"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Backup
+                    </button>
+                  </div>
 
-                  {activeSettingsTab === "scale" && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-300">Choose Scale:</span>
-                      {(["small", "medium", "large"] as CardSize[]).map((size) => (
-                        <button
-                          key={size}
-                          type="button"
-                          onClick={() => handleSizeChange(size)}
-                          className={`rounded-lg px-3 py-1 text-xs font-bold capitalize transition ${
-                            cardSize === size
-                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                              : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                          }`}
-                        >
-                          {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {/* Active Tab Content Panel */}
+                  <div className="w-full flex justify-center py-1">
+                    {activeSettingsTab === "theme" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Theme:</span>
+                        {[
+                          { id: "violet", label: "🟣 Violet / Neon" },
+                          { id: "red", label: "🔴 Red & Black" },
+                          { id: "midnight", label: "🔵 Midnight & Black" },
+                        ].map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => handleThemeChange(t.id as AppTheme)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                              appTheme === t.id
+                                ? `${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-md`
+                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                  {activeSettingsTab === "quality" && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-300">Choose Cap:</span>
-                      {[
-                        { key: "1080p", label: "FHD (1080p)" },
-                        { key: "720p", label: "HD (720p)" },
-                        { key: "480p", label: "SD (480p)" },
-                        { key: "auto", label: "Auto Bandwidth" },
-                      ].map((item) => (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={() => handleQualityChange(item.key as StreamQuality)}
-                          className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
-                            streamQuality === item.key
-                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                              : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    {activeSettingsTab === "scale" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Scale:</span>
+                        {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => handleSizeChange(size)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
+                              cardSize === size
+                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                            }`}
+                          >
+                            {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
 
-                  {activeSettingsTab === "backup" && (
-                    <div className="flex flex-wrap items-center gap-2">
+                    {activeSettingsTab === "quality" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Cap:</span>
+                        {[
+                          { key: "1080p", label: "FHD (1080p)" },
+                          { key: "720p", label: "HD (720p)" },
+                          { key: "480p", label: "SD (480p)" },
+                          { key: "auto", label: "Auto Bandwidth" },
+                        ].map((item) => (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => handleQualityChange(item.key as StreamQuality)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                              streamQuality === item.key
+                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSettingsTab === "backup" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveBackup}
+                          className="rounded-lg bg-slate-800 border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                        >
+                          💾 Export Backup File
+                        </button>
+
+                        <label className="cursor-pointer rounded-lg bg-slate-800 border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">
+                          🔄 Restore Profile File
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleRestoreBackup}
+                            className="hidden"
+                          />
+                        </label>
+
+                        {backupStatus && (
+                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold ml-2`}>
+                            {backupStatus}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </header>
+
+          <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden">
+            <Outlet />
+          </main>
+
+          {showFirstStartModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
+              <form
+                onSubmit={handleFirstTimeAuthorize}
+                className={`my-auto w-full max-w-xl space-y-6 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
+              >
+                <div className="text-center space-y-2">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-slate-900">
+                    <img
+                      src={RABBIT_LOGO_DATA_URL}
+                      alt="RABBiT TV"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <h2 className={`text-2xl font-bold ${getPrimaryAccentColor(appTheme)}`}>
+                    Welcome to RABBiT TV
+                  </h2>
+                </div>
+
+                <div className="space-y-4 text-sm leading-relaxed text-slate-300">
+                  <p>
+                    This app has been shared by <strong>Rabbit</strong> as a friendly gesture. By entering the personal agreement code below, you confirm strict authorization and agree not to share or distribute this app without consent.
+                  </p>
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-300">
+                    <strong>⚠️ Device Monitoring Notice:</strong> Unique device IDs running this application are logged for authorization tracking. Unauthorized installations or unapproved sharing can be detected immediately.
+                  </div>
+                </div>
+
+                {/* Theme Selector on Splash Screen */}
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Select Startup Theme:
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { id: "violet", label: "🟣 Violet" },
+                      { id: "red", label: "🔴 Red" },
+                      { id: "midnight", label: "🔵 Midnight" },
+                    ].map((t) => (
                       <button
+                        key={t.id}
                         type="button"
-                        onClick={handleSaveBackup}
-                        className="rounded-lg bg-slate-800 border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                        onClick={() => setAppTheme(t.id as AppTheme)}
+                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                          appTheme === t.id
+                            ? `border-white/30 ${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-lg`
+                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        }`}
                       >
-                        💾 Export Backup File
+                        {t.label}
                       </button>
+                    ))}
+                  </div>
+                </div>
 
-                      <label className="cursor-pointer rounded-lg bg-slate-800 border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-700">
-                        🔄 Restore Profile File
-                        <input
-                          type="file"
-                          accept=".json"
-                          onChange={handleRestoreBackup}
-                          className="hidden"
-                        />
-                      </label>
+                {/* Display Size Selector on Splash Screen */}
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Select Display Size (Adjustable anytime in settings):
+                  </label>
 
-                      {backupStatus && (
-                        <span className
+                  <div className="grid grid-cols-3 gap-3">
+                    {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => setCardSize(size)}
+                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                          cardSize === size
+                            ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
+                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        }`}
+                      >
+                        {size === "small" ? "Small (25%)" : size === "medium" ? "Medium (60%)" : "Large (100%)"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Enter Personal Agreement Code:
+                  </label>
+                  <input
+                    type="password"
+                    maxLength={10}
+                    value={passcodeInput}
+                    onChange={(e) => setPasscodeInput(e.target.value)}
+                    placeholder="Enter Code"
+                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
+                  />
+
+                  {passcodeError && (
+                    <p className="text-xs font-semibold text-red-400 text-center">
+                      ⚠️ Invalid Authorization Code. Agreement Not Accepted.
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-4 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
+                >
+                  Accept Agreement & Launch App
+                </button>
+              </form>
+            </div>
+          )}
+        </AuthProvider>
+        <Scripts />
+      </body>
+    </html>
+  );
+}
