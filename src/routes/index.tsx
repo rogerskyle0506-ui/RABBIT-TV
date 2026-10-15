@@ -35,6 +35,46 @@ export function MediaCard({ item }: { item: MediaItem }) {
       setCardSize(getSavedCardSize());
     };
 
+    window.addEventListener("rabHere is the complete, fully updated `src/routes/index.tsx` file with the fixed navigation bar, proper spacing buffers to prevent edge clipping, and clean JSX syntax:
+
+```tsx
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import type { MediaItem } from "@/lib/tmdb-scraper";
+import { scrapeCategoryContent } from "@/lib/tmdb-scraper";
+import {
+  CardSize,
+  AppTheme,
+  getSavedCardSize,
+  getSavedTheme,
+  getPosterDimensions,
+} from "@/lib/settings";
+
+const navTabs = ["Home", "Series", "Movies", "Live", "My List"] as const;
+type NavTab = (typeof navTabs)[number];
+
+const genreCategories = [
+  "Trending",
+  "Action",
+  "Drama",
+  "Comedy",
+  "Sci-Fi",
+  "Horror",
+];
+
+const MY_LIST_STORAGE_KEY = "rabtv_my_list";
+const FAVORITES_STORAGE_KEY = "rabtv_favorites";
+
+export function MediaCard({ item }: { item: MediaItem }) {
+  const [cardSize, setCardSize] = useState<CardSize>("large");
+
+  useEffect(() => {
+    setCardSize(getSavedCardSize());
+
+    const handleSettingsUpdate = () => {
+      setCardSize(getSavedCardSize());
+    };
+
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
     return () =>
       window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
@@ -44,10 +84,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
 
   if (cardSize === "small") {
     return (
-      <Link
-        to={item.href}
-        className={`group relative flex w-full overflow-hidden rounded-xl bg-slate-900 transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-violet-400 ${dimensions.card}`}
-      >
+      <Link ${dimensions.card}`} bg-slate-900 className="{`group" flex focus:outline-none focus:ring-4 focus:ring-violet-400 hover:scale-105 overflow-hidden relative rounded-xl to="{item.href}" transition w-full>
         <img
           src={item.image}
           alt={item.title}
@@ -65,7 +102,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
     <div
       className={`group relative flex w-full flex-col overflow-hidden rounded-2xl bg-slate-900/90 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 ${dimensions.card}`}
     >
-      <Link to={item.href} className="block relative overflow-hidden flex-1 focus:outline-none">
+      <Link className="block relative overflow-hidden flex-1 focus:outline-none" to="{item.href}">
         <img
           src={item.image}
           alt={item.title}
@@ -91,10 +128,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
       </Link>
 
       <div className="p-2 bg-black/80 border-t border-white/10 flex items-center justify-between">
-        <Link
-          to={item.href}
-          className="w-full text-center rounded-full bg-black/70 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-violet-400"
-        >
+        <Link className="w-full text-center rounded-full bg-black/70 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-violet-400" to="{item.href}">
           WATCH →
         </Link>
       </div>
@@ -248,18 +282,18 @@ function Home() {
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
       {/* Navigation Bar Tabs */}
-      <div className="border-b border-white/10 bg-slate-950/80 backdrop-blur-md px-2 py-3 mt-2 mb-4 sticky top-0 z-30 shadow-md">
-        <div className="mx-auto flex max-w-full items-center justify-center gap-1.5 overflow-x-auto px-2">
-          <div className={`flex items-center justify-center gap-1 p-1.5 rounded-full border border-white/10 bg-gradient-to-r ${themeStyles.cardGradient} shadow-lg backdrop-blur-md`}>
+      <div className="sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 bg-slate-950/80 px-3 py-2.5 backdrop-blur-md shadow-md">
+        <div className="mx-auto flex max-w-full items-center justify-center px-1">
+          <div className={`flex w-full max-w-full items-center justify-between gap-1 overflow-x-auto rounded-2xl border border-white/10 bg-gradient-to-r ${themeStyles.cardGradient} p-1.5 shadow-lg backdrop-blur-md scrollbar-none`}>
             {navTabs.map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`rounded-full px-3.5 py-1 text-xs font-semibold transition whitespace-nowrap focus:outline-none shrink-0 ${
+                className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition focus:outline-none ${
                   activeTab === tab
                     ? "bg-white/25 text-white shadow"
-                    : "text-slate-300 hover:text-white hover:bg-white/10"
+                    : "text-slate-300 hover:bg-white/10 hover:text-white"
                 }`}
               >
                 {tab}
@@ -317,10 +351,7 @@ function Home() {
                   </div>
 
                   <div className="shrink-0 w-full sm:w-auto">
-                    <Link
-                      to={featured.href}
-                      className={`w-full sm:w-auto text-xs font-bold inline-flex items-center justify-center px-5 py-2.5 rounded-full shadow-lg ${themeStyles.btnActive} border border-white/10 transition whitespace-nowrap`}
-                    >
+                    <Link ${themeStyles.btnActive} border border-white/10 className="{`w-full" font-bold inline-flex items-center justify-center px-5 py-2.5 rounded-full shadow-lg sm:w-auto text-xs to="{featured.href}" transition whitespace-nowrap`}>
                       WATCH NOW
                     </Link>
                   </div>
@@ -413,7 +444,7 @@ function Home() {
           {filteredItems.length > 0 ? (
             <div className={gridColsClass}>
               {filteredItems.slice(activeTab === "My List" ? 0 : 1).map((item) => (
-                <MediaCard item={item} key={item.id} />
+                <MediaCard item="{item}" key="{item.id}"/>
               ))}
             </div>
           ) : (
