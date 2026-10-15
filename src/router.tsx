@@ -48,11 +48,11 @@ export function getRouter() {
   if (!isServer) {
     import("@capacitor/app").then(({ App }) => {
       App.addListener("backButton", () => {
-        if (window.history.length > 1) {
-          window.history.back();
-        } else {
-          App.exitApp();
+        const currentPath = router.state.location.pathname;
+        if (currentPath !== "/") {
+          router.history.back();
         }
+        // Once home ('/'), do nothing (remain null / noop)
       });
     }).catch(() => {});
   }
