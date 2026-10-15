@@ -119,6 +119,7 @@ function Home() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [cardSize, setCardSize] = useState<CardSize>("large");
+  const [activeDropdown, setActiveDropdown] = useState<"theme" | "poster" | "stream" | null>(null);
 
   const loadSavedListsAndTheme = () => {
     try {
@@ -249,6 +250,118 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
+      {/* Top Header & Settings Toolbar */}
+      <header className="px-3 pt-3 pb-2">
+        <div className="mx-auto flex max-w-full items-center justify-between mb-3 px-1">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-600 text-white shadow-lg text-sm">
+              🐰
+            </span>
+            <h1 className="text-lg font-black tracking-wider text-white">RABBIT TV</h1>
+          </div>
+        </div>
+
+        <div className="mx-auto flex max-w-full items-center justify-center px-1">
+          <div className="flex w-full max-w-full items-center gap-2 overflow-x-auto py-1 scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === "theme" ? null : "theme")}
+              className={`shrink-0 flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition shadow-lg ${
+                activeDropdown === "theme" ? themeStyles.btnActive : "bg-slate-900 border border-white/10 text-white hover:bg-slate-800"
+              }`}
+            >
+              <span>🎨 Color Theme</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === "poster" ? null : "poster")}
+              className={`shrink-0 flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition shadow-lg ${
+                activeDropdown === "poster" ? themeStyles.btnActive : "bg-slate-900 border border-white/10 text-white hover:bg-slate-800"
+              }`}
+            >
+              <span>📐 Poster Scale</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === "stream" ? null : "stream")}
+              className={`shrink-0 flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition shadow-lg ${
+                activeDropdown === "stream" ? themeStyles.btnActive : "bg-slate-900 border border-white/10 text-white hover:bg-slate-800"
+              }`}
+            >
+              <span>⚙️ Display & Stream Settings</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Dropdown Content Panels */}
+        {activeDropdown === "theme" && (
+          <div className="mx-auto max-w-full mt-2 p-3 rounded-2xl bg-slate-900/95 border border-white/10 shadow-2xl flex flex-wrap gap-2 items-center">
+            <span className="text-xs font-semibold text-slate-300 mr-2">Choose Theme:</span>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem("rabtv_theme", "violet");
+                window.dispatchEvent(new Event("rabtv_settings_updated"));
+                setAppTheme("violet");
+              }}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${appTheme === "violet" ? "bg-violet-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}
+            >
+              💜 Violet / Neon
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem("rabtv_theme", "red");
+                window.dispatchEvent(new Event("rabtv_settings_updated"));
+                setAppTheme("red");
+              }}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${appTheme === "red" ? "bg-red-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}
+            >
+              🔴 Red & Black
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem("rabtv_theme", "midnight");
+                window.dispatchEvent(new Event("rabtv_settings_updated"));
+                setAppTheme("midnight");
+              }}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${appTheme === "midnight" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}
+            >
+              🔵 Midnight & Black
+            </button>
+          </div>
+        )}
+
+        {activeDropdown === "poster" && (
+          <div className="mx-auto max-w-full mt-2 p-3 rounded-2xl bg-slate-900/95 border border-white/10 shadow-2xl flex flex-wrap gap-2 items-center">
+            <span className="text-xs font-semibold text-slate-300 mr-2">Poster Scale:</span>
+            {(["small", "medium", "large"] as CardSize[]).map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => {
+                  localStorage.setItem("rabtv_card_size", size);
+                  window.dispatchEvent(new Event("rabtv_settings_updated"));
+                  setCardSize(size);
+                }}
+                className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase transition ${cardSize === size ? themeStyles.btnActive : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {activeDropdown === "stream" && (
+          <div className="mx-auto max-w-full mt-2 p-3 rounded-2xl bg-slate-900/95 border border-white/10 shadow-2xl">
+            <p className="text-xs text-slate-300">Display and stream quality preferences.</p>
+          </div>
+        )}
+      </header>
+
       {/* Navigation Bar Tabs */}
       <div className="sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 bg-slate-950/80 px-3 py-2.5 backdrop-blur-md shadow-md">
         <div className="mx-auto flex max-w-full items-center justify-center px-1">
