@@ -30,7 +30,7 @@ jobs:
         run: npm install
 
       - name: Install Capacitor CLI, Android & Assets Packages
-        run: npm install @capacitor/cli @capacitor/android @capacitor/assets --save-dev
+        run: npm install @capacitor/cli@^6 @capacitor/android@^6 @capacitor/assets --save-dev
 
       - name: Verify Capacitor Config & Icon Exists
         run: |
