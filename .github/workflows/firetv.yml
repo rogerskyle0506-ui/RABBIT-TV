@@ -1,0 +1,162 @@
+name: Build Fire TV Edition APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab anytime
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (Node 22 Required for TanStack Start)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Java 21 (Required for Gradle/Android Compilation)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Extract App Name & Version
+        id: version-extractor
+        run: |
+          APP_NAME=$(node -p "require('./package.json').name || 'RABBiT-TV'")
+          VERSION=$(node -p "require('./package.json').version || '1.0.0'")
+          
+          # Format clean filename slug (e.g. rabbit-tv-firetv-v1.2.4)
+          SLUG=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr ' ' '-')
+          
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "artifact_name=${SLUG}-firetv-v${VERSION}" >> $GITHUB_OUTPUT
+          echo "apk_filename=${SLUG}-firetv-v${VERSION}.apk" >> $GITHUB_OUTPUT
+          
+          echo "Building Fire TV Edition: $APP_NAME version$VERSION"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Capacitor CLI, Android & Assets Packages
+        run: npm install @capacitor/cli@^6 @capacitor/android@^6 @capacitor/assets --save-dev
+
+      - name: Verify Capacitor Config & Icon Exists
+        run: |
+          if [ ! -f capacitor.config.json ]; then
+            echo "Error: capacitor.config.json is missing!"
+            exit 1
+          fi
+          if [ ! -f assets/icon.png ]; then
+            echo "Error: assets/icon.png is missing!"
+            exit 1
+          fi
+
+      - name: Create Temporary index.html for Capacitor Build
+        run: |
+          cat << 'EOF' > index.html
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="UTF-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+              <title>RABBiT TV (Fire TV Edition)</title>
+            </head>
+            <body>
+              <div id="root"></div>
+              <script type="module" src="/src/entry-client.tsx"></script>
+            </body>
+          </html>
+          EOF
+
+      - name: Build Web Assets for Capacitor
+        env:
+          CAPACITOR_BUILD: "true"
+          VITE_TMDB_API_KEY: ${{ secrets.VITE_TMDB_API_KEY }}
+          VITE_TMDB_READ_TOKEN: ${{ secrets.VITE_TMDB_READ_TOKEN }}
+        run: npx vite build
+
+      - name: Map TanStack Shell to Capacitor index.html
+        run: |
+          if [ -f dist/client/_shell.html ]; then
+            cp dist/client/_shell.html dist/client/index.html
+            echo "Successfully copied _shell.html to index.html"
+          elif [ ! -f dist/client/index.html ]; then
+            echo "Error: Could not find _shell.html or index.html in dist/client"
+            ls -R dist/ || true
+            exit 1
+          fi
+
+      - name: Create Dummy www Folder for Capacitor Init
+        run: |
+          mkdir -p www
+          cp dist/client/index.html www/index.html
+
+      - name: Add Android Platform
+        run: npx @capacitor/cli add android
+
+      - name: Generate App Icons and Splash Screens from Standard Assets
+        run: npx @capacitor/assets generate --android
+
+      - name: Sync Capacitor
+        run: npx @capacitor/cli sync android
+
+      - name: Inject Custom MainActivity for Fire TV, TV Banner, Manifest & Clean Dark Splash Styles
+        run: |
+          # 1. Inject specialized Fire TV MainActivity patch (falls back to standard if firetv patch isn't found)
+          mkdir -p android/app/src/main/java/com/rabbittv/app
+          if [ -f patches/MainActivity.firetv.java ]; then
+            echo "Applying specialized Fire TV MainActivity patch..."
+            cp patches/MainActivity.firetv.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
+          else
+            echo "Warning: MainActivity.firetv.java not found, using default MainActivity.java"
+            cp patches/MainActivity.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
+          fi
+
+          # 2. Copy TV banner into Android drawable resources (for TV Leanback launcher icon only)
+          mkdir -p android/app/src/main/res/drawable
+          cp assets/tv_banner.png android/app/src/main/res/drawable/tv_banner.png
+
+          # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
+          cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+
+          # 4. Configure clean dark styles.xml to eliminate banner background bleed
+          mkdir -p android/app/src/main/res/values
+          cat << 'EOF' > android/app/src/main/res/values/styles.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
+                  <item name="colorPrimary">@color/colorPrimary</item>
+                  <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+                  <item name="colorAccent">@color/colorAccent</item>
+              </style>
+
+              <style name="AppTheme.NoActionBar" parent="AppTheme">
+                  <item name="windowActionBar">false</item>
+                  <item name="windowNoTitle">true</item>
+              </style>
+
+              <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
+                  <item name="android:windowBackground">#050b16</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/tv_banner</item>
+                  <item name="android:windowSplashScreenBackground">#050b16</item>
+              </style>
+          </resources>
+          EOF
+
+      - name: Verify Android Directory Exists
+        run: |
+          if [ ! -d android ]; then
+            echo "Error: android directory was not created!"
+            exit 1
+          fi
+
+      - name:
