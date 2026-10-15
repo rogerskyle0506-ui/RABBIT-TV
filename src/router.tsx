@@ -1,6 +1,5 @@
 import { createRouter, createMemoryHistory, createHashHistory } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-import { App } from "@capacitor/app";
 
 function AppErrorComponent({
   error,
@@ -33,31 +32,17 @@ export function getRouter() {
   const isServer = typeof window === "undefined";
 
   // Use memory history on the server, and hash history on the client
-  // to guarantee proper routing in mobile/Capacitor webviews regardless of protocol.
   const history = isServer
     ? createMemoryHistory({ initialEntries: ["/"] })
     : createHashHistory();
 
-  const router = createRouter({
+  return createRouter({
     routeTree,
     history,
     defaultErrorComponent: AppErrorComponent,
     defaultPreload: "intent",
     defaultPreloadDelay: 20,
   });
-
-  // Attach the Capacitor back button listener only on the client side
-  if (!isServer) {
-    App.addListener("backButton", ({ canGoBack }) => {
-      if (canGoBack) {
-        router.history.back();
-      } else {
-        App.exitApp();
-      }
-    });
-  }
-
-  return router;
 }
 
 declare module "@tanstack/react-router" {
