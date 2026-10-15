@@ -44,19 +44,18 @@ export function getRouter() {
     defaultPreloadDelay: 20,
   });
 
-  // Attach Capacitor back button listener for Android gestures, hardware, & TV remotes
+  // Attach Capacitor back button listener on the client side
   if (!isServer) {
     import("@capacitor/app").then(({ App }) => {
       App.addListener("backButton", () => {
-        const currentPath = router.state.location.pathname;
+        const hash = window.location.hash;
         
-        // Robust check for home screen across different hash routing states
-        const isHome = !currentPath || currentPath === "/" || currentPath === "/index";
-
-        if (!isHome && window.history.length > 1) {
+        // If we have a hash path that is deeper than just the root (e.g., #/settings or #/details)
+        if (hash && hash !== "#/" && hash !== "#") {
           window.history.back();
+        } else {
+          // At home screen / root: remain strictly null (no-op, won't exit the app)
         }
-        // Once home is reached, the back button remains null (no-op) and does not exit the app
       });
     }).catch(() => {});
   }
