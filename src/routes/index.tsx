@@ -42,19 +42,11 @@ export function MediaCard({ item }: { item: MediaItem }) {
 
   const dimensions = getPosterDimensions(cardSize);
 
-  // Width adjustment for medium size to ensure 2 per row
-  const sizeSpecificWidthClass =
-    cardSize === "medium"
-      ? "w-[calc(50%-6px)] max-w-[calc(50%-6px)]"
-      : cardSize === "small"
-      ? "w-[calc(33.333%-6px)] max-w-[calc(33.333%-6px)]"
-      : "w-full max-w-[280px]";
-
   if (cardSize === "small") {
     return (
       <Link
         to={item.href}
-        className={`group relative flex overflow-hidden rounded-xl bg-slate-900 transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-violet-400 ${dimensions.card} ${sizeSpecificWidthClass}`}
+        className={`group relative flex w-full overflow-hidden rounded-xl bg-slate-900 transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-violet-400 ${dimensions.card}`}
       >
         <img
           src={item.image}
@@ -71,13 +63,13 @@ export function MediaCard({ item }: { item: MediaItem }) {
 
   return (
     <div
-      className={`group relative flex flex-col overflow-hidden rounded-2xl bg-slate-900/90 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 ${sizeSpecificWidthClass} ${dimensions.card}`}
+      className={`group relative flex w-full flex-col overflow-hidden rounded-2xl bg-slate-900/90 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 ${dimensions.card}`}
     >
       <Link to={item.href} className="block relative overflow-hidden flex-1 focus:outline-none">
         <img
           src={item.image}
           alt={item.title}
-          className={`h-full w-full object-cover transition group-hover:scale-105`}
+          className="h-full w-full object-cover transition group-hover:scale-105"
           loading="lazy"
         />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2.5">
@@ -124,6 +116,7 @@ function Home() {
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [cardSize, setCardSize] = useState<CardSize>("large");
 
   const loadSavedListsAndTheme = () => {
     try {
@@ -132,6 +125,7 @@ function Home() {
       setSavedMyList(listData);
       setSavedFavorites(favData);
       setAppTheme(getSavedTheme());
+      setCardSize(getSavedCardSize());
     } catch (err) {
       console.error("Error reading saved lists/theme", err);
     }
@@ -139,11 +133,14 @@ function Home() {
 
   useEffect(() => {
     loadSavedListsAndTheme();
+    const handleSettingsUpdate = () => {
+      loadSavedListsAndTheme();
+    };
     window.addEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
-    window.addEventListener("rabtv_settings_updated", loadSavedListsAndTheme);
+    window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
     return () => {
       window.removeEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
-      window.removeEventListener("rabtv_settings_updated", loadSavedListsAndTheme);
+      window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
     };
   }, []);
 
@@ -200,7 +197,7 @@ function Home() {
     if (myListSubTab === "favorites") return savedFavorites;
 
     const map = new Map();
-    [...savedFavorites, ...savedMyList].forEach((item) => map.set(item.id, item));
+     [...savedFavorites, ...savedMyList].forEach((item) => map.set(item.id, item));
     return Array.from(map.values());
   }, [myListSubTab, savedMyList, savedFavorites]);
 
@@ -213,6 +210,17 @@ function Home() {
   }, [items, selectedGenre, activeTab, savedCatalogItems]);
 
   const featured = useMemo(() => filteredItems[0] ?? null, [filteredItems]);
+
+  // Dynamic Grid Columns based on selected card size to maximize screen space
+  const gridColsClass = useMemo(() => {
+    if (cardSize === "small") {
+      return "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5";
+    }
+    if (cardSize === "medium") {
+      return "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3";
+    }
+    return "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4";
+  }, [cardSize]);
 
   const themeStyles = {
     violet: {
@@ -240,8 +248,8 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs (Centered inside pillbox container) */}
-      <div className="border-b border-white/10 bg-slate-950/60 backdrop-blur-md px-2 py-3 mb-4 sticky top-0 z-30">
+      {/* Navigation Bar Tabs with safe spacing to prevent clipping */}
+      <div className="border-b border-white/10 bg-slate-950/80 backdrop-blur-md px-2 py-3 mt-2 mb-4 sticky top-0 z-30 shadow-md">
         <div className="mx-auto flex max-w-full items-center justify-center gap-1.5 overflow-x-auto px-2">
           <div className={`flex items-center justify-center gap-1 p-1.5 rounded-full border border-white/10 bg-gradient-to-r ${themeStyles.cardGradient} shadow-lg backdrop-blur-md`}>
             {navTabs.map((tab) => (
@@ -263,11 +271,10 @@ function Home() {
       </div>
 
       <div className="mx-auto max-w-full px-2 sm:px-4 overflow-x-hidden">
-        {/* Featured Hero Banner (65% Cover Art height, semi-transparent text box overlay) */}
+        {/* Featured Hero Banner */}
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
             <>
-              {/* Cover Art occupying 65% of the banner height */}
               <div className="absolute inset-0 h-[65%] w-full overflow-hidden bg-slate-950">
                 <img
                   src={featured.image}
@@ -277,7 +284,6 @@ function Home() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/30 to-transparent"></div>
               </div>
 
-              {/* Content overlay occupying bottom 35% with semi-transparent background box */}
               <div className="absolute inset-x-0 bottom-0 top-[35%] p-3.5 sm:p-5 flex flex-col justify-end z-10">
                 <div className="bg-black/70 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-white/10 space-y-2">
                   <div className="flex items-center justify-between">
@@ -332,7 +338,7 @@ function Home() {
           )}
         </section>
 
-        {/* Genre Filters (Centered inside a decorative pillbox with theme gradient) */}
+        {/* Genre Filters */}
         {activeTab !== "My List" && (
           <section className="mb-4 flex justify-center">
             <div className={`flex flex-wrap items-center justify-center gap-1.5 p-2 rounded-full border border-white/10 bg-gradient-to-r ${themeStyles.cardGradient} shadow-lg backdrop-blur-md max-w-full`}>
@@ -395,7 +401,7 @@ function Home() {
           </section>
         )}
 
-        {/* Content Grid */}
+        {/* Content Grid (Optimized with CSS Grid to maximize row space) */}
         <section className="mb-6 px-1">
           <div className="mb-3 flex items-center justify-between px-1">
             <h3 className="text-lg font-bold text-white">
@@ -407,7 +413,7 @@ function Home() {
           </div>
 
           {filteredItems.length > 0 ? (
-            <div className="flex flex-wrap gap-3 justify-center">
+            <div className={gridColsClass}>
               {filteredItems.slice(activeTab === "My List" ? 0 : 1).map((item) => (
                 <MediaCard key={item.id} item={item} />
               ))}
