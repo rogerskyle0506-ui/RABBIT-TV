@@ -44,18 +44,17 @@ export function getRouter() {
     defaultPreloadDelay: 20,
   });
 
-  // Attach Capacitor back button listener on the client side
+  // Attach Capacitor back button listener on the client side only
   if (!isServer) {
     import("@capacitor/app").then(({ App }) => {
       App.addListener("backButton", () => {
         const hash = window.location.hash;
-        
-        // If we have a hash path that is deeper than just the root (e.g., #/settings or #/details)
-        if (hash && hash !== "#/" && hash !== "#") {
+        const isHome = !hash || hash === "#/" || hash === "#" || hash === "#/index";
+
+        if (!isHome) {
           window.history.back();
-        } else {
-          // At home screen / root: remain strictly null (no-op, won't exit the app)
         }
+        // Once home, remain strictly null (no-op, won't exit the app)
       });
     }).catch(() => {});
   }
