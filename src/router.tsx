@@ -36,13 +36,28 @@ export function getRouter() {
     ? createMemoryHistory({ initialEntries: ["/"] })
     : createHashHistory();
 
-  return createRouter({
+  const router = createRouter({
     routeTree,
     history,
     defaultErrorComponent: AppErrorComponent,
     defaultPreload: "intent",
     defaultPreloadDelay: 20,
   });
+
+  // Attach Capacitor back button listener on the client side
+  if (!isServer) {
+    import("@capacitor/app").then(({ App }) => {
+      App.addListener("backButton", () => {
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          App.exitApp();
+        }
+      });
+    }).catch(() => {});
+  }
+
+  return router;
 }
 
 declare module "@tanstack/react-router" {
