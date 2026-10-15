@@ -214,7 +214,7 @@ function RootComponent() {
     <html lang="en" data-theme={appTheme}>
       <head>
         <HeadContent />
-        {/* 3x Scaled High-Visibility Cursor when Helpful Mouse is enabled */}
+        {/* 3x Scaled High-Visibility Cursor when Helpful Mouse / XL Mouse is enabled */}
         {helpfulMouse && (
           <style>{`
             *, button, a, select, input, [role="button"] {
@@ -304,7 +304,7 @@ function RootComponent() {
                           : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                       }`}
                     >
-                      Helpful Mouse
+                      XL Mouse
                     </button>
                     <button
                       type="button"
@@ -393,7 +393,7 @@ function RootComponent() {
                     {activeSettingsTab === "mouse" && (
                       <div className="flex items-center justify-center gap-4 py-1">
                         <div className="text-left">
-                          <p className="text-xs font-bold text-white">Helpful Mouse (3x Scaled Pointer)</p>
+                          <p className="text-xs font-bold text-white">XL Mouse Pointer (3x Scaled)</p>
                           <p className="text-[10px] text-slate-400">Enlarges the cursor for improved visibility on TVs and projectors.</p>
                         </div>
                         <button
@@ -515,7 +515,7 @@ function RootComponent() {
                       <button
                         key={size}
                         type="button"
-                        onClick={() => setCardSize(size)}
+                        onClick={() => handleSizeChange(size)}
                         className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
                           cardSize === size
                             ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
@@ -526,6 +526,29 @@ function RootComponent() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* XL Mouse Toggle on Splash Screen */}
+                <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      XL Mouse Pointer
+                    </label>
+                    <p className="text-[11px] text-slate-400">Enlarges cursor 3x for easy projector/TV navigation.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleMouseToggle(!helpfulMouse)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        helpfulMouse ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
                 </div>
 
                 <div className="space-y-2 border-t border-white/10 pt-4">
