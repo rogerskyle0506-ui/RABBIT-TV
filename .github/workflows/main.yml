@@ -92,7 +92,7 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Inject Custom MainActivity, TV Banner & Manifest
+      - name: Inject Custom MainActivity, TV Banner, Manifest & Splash Style
         run: |
           # 1. Inject popup-blocking MainActivity
           mkdir -p android/app/src/main/java/com/rabbittv/app
@@ -104,6 +104,29 @@ jobs:
 
           # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
           cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+
+          # 4. Overwrite styles.xml to set tv_banner.png as native splash background
+          mkdir -p android/app/src/main/res/values
+          cat << 'EOF' > android/app/src/main/res/values/styles.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+                  <item name="colorPrimary">@color/colorPrimary</item>
+                  <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+                  <item name="colorAccent">@color/colorAccent</item>
+              </style>
+
+              <style name="AppTheme.NoActionBar" parent="AppTheme">
+                  <item name="windowActionBar">false</item>
+                  <item name="windowNoTitle">true</item>
+                  <item name="android:background">@drawable/tv_banner</item>
+              </style>
+
+              <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
+                  <item name="android:background">@drawable/tv_banner</item>
+              </style>
+          </resources>
+          EOF
 
       - name: Verify Android Directory Exists
         run: |
