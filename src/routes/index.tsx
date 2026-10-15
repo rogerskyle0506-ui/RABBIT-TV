@@ -197,7 +197,7 @@ function Home() {
     if (myListSubTab === "favorites") return savedFavorites;
 
     const map = new Map();
-     [...savedFavorites, ...savedMyList].forEach((item) => map.set(item.id, item));
+    [...savedFavorites, ...savedMyList].forEach((item) => map.set(item.id, item));
     return Array.from(map.values());
   }, [myListSubTab, savedMyList, savedFavorites]);
 
@@ -211,13 +211,13 @@ function Home() {
 
   const featured = useMemo(() => filteredItems[0] ?? null, [filteredItems]);
 
-  // Dynamic Grid Columns based on selected card size to maximize screen space
+  // Dynamic Grid Columns with comfortable spacing to prevent poster collision
   const gridColsClass = useMemo(() => {
     if (cardSize === "small") {
-      return "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5";
+      return "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3";
     }
     if (cardSize === "medium") {
-      return "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3";
+      return "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
     }
     return "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4";
   }, [cardSize]);
@@ -248,7 +248,7 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs with safe spacing to prevent clipping */}
+      {/* Navigation Bar Tabs */}
       <div className="border-b border-white/10 bg-slate-950/80 backdrop-blur-md px-2 py-3 mt-2 mb-4 sticky top-0 z-30 shadow-md">
         <div className="mx-auto flex max-w-full items-center justify-center gap-1.5 overflow-x-auto px-2">
           <div className={`flex items-center justify-center gap-1 p-1.5 rounded-full border border-white/10 bg-gradient-to-r ${themeStyles.cardGradient} shadow-lg backdrop-blur-md`}>
@@ -284,9 +284,10 @@ function Home() {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/30 to-transparent"></div>
               </div>
 
-              <div className="absolute inset-x-0 bottom-0 top-[35%] p-3.5 sm:p-5 flex flex-col justify-end z-10">
-                <div className="bg-black/70 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-white/10 space-y-2">
-                  <div className="flex items-center justify-between">
+              {/* Content overlay with title, rating, year, description beside WATCH NOW button */}
+              <div className="absolute inset-x-0 bottom-0 top-[35%] p-3 sm:p-5 flex flex-col justify-end z-10">
+                <div className="bg-black/80 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="space-y-1 flex-1 min-w-0">
                     <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] ${themeStyles.accentText}`}>
                       <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5">
                         Featured
@@ -295,9 +296,13 @@ function Home() {
                         {featured.genre ?? "Entertainment"}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-200">
+
+                    <div className="flex items-center flex-wrap gap-2">
+                      <h2 className="text-lg sm:text-xl font-black text-white leading-snug truncate">
+                        {featured.title}
+                      </h2>
                       {featured.rating && (
-                        <span className="rounded-full border border-yellow-400/40 bg-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px]">
+                        <span className="rounded-full border border-yellow-400/40 bg-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px] font-semibold">
                           ⭐ {featured.rating}
                         </span>
                       )}
@@ -307,21 +312,16 @@ function Home() {
                         </span>
                       )}
                     </div>
-                  </div>
 
-                  <div className="min-w-0">
-                    <h2 className="text-xl font-black text-white md:text-2xl leading-snug break-words">
-                      {featured.title}
-                    </h2>
-                    <p className="mt-0.5 max-w-2xl text-xs leading-relaxed text-slate-200 line-clamp-2">
+                    <p className="text-xs leading-relaxed text-slate-300 line-clamp-2">
                       {featured.description}
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <div className="shrink-0 w-full sm:w-auto">
                     <Link
                       to={featured.href}
-                      className={`rounded-full border border-white/10 ${themeStyles.btnActive} px-4 py-1.5 text-xs font-semibold shadow-lg transition`}
+                      className={`w-full sm:w-auto rounded-full border border-white/10 ${themeStyles.btnActive} px-5 py-2.5 text-xs font-bold shadow-lg transition whitespace-nowrap inline-flex items-center justify-center`}
                     >
                       WATCH NOW
                     </Link>
@@ -401,7 +401,7 @@ function Home() {
           </section>
         )}
 
-        {/* Content Grid (Optimized with CSS Grid to maximize row space) */}
+        {/* Content Grid */}
         <section className="mb-6 px-1">
           <div className="mb-3 flex items-center justify-between px-1">
             <h3 className="text-lg font-bold text-white">
