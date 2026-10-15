@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { AppTheme, getSavedTheme } from "@/lib/settings";
 
 const WATCH_HISTORY_STORAGE_KEY = "rabtv_watch_history";
 const MY_LIST_STORAGE_KEY = "rabtv_my_list";
 const FAVORITES_STORAGE_KEY = "rabtv_favorites";
-const THEME_STORAGE_KEY = "rabtv_theme";
 
 export const Route = createFileRoute("/details")({
   component: DetailsPage,
@@ -19,8 +19,8 @@ export function DetailsPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Theme State for styling
-  const [accentColor, setAccentColor] = useState("violet");
+  // Active App Theme State synced with root.tsx
+  const [appTheme, setAppTheme] = useState<AppTheme>("violet");
 
   // List Status State
   const [inMyList, setInMyList] = useState(false);
@@ -32,69 +32,81 @@ export function DetailsPage() {
   const [episode, setEpisode] = useState(1);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 
-  // Load Theme on Mount / Storage Change
+  // Sync Theme with global settings store
   useEffect(() => {
     const loadTheme = () => {
-      try {
-        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem("theme") || "violet";
-        setAccentColor(savedTheme);
-      } catch (err) {
-        console.error("Error reading theme", err);
-      }
+      setAppTheme(getSavedTheme());
     };
 
     loadTheme();
     window.addEventListener("storage", loadTheme);
-    window.addEventListener("rabtv_theme_updated" as any, loadTheme);
     window.addEventListener("rabtv_settings_updated" as any, loadTheme);
 
     return () => {
       window.removeEventListener("storage", loadTheme);
-      window.removeEventListener("rabtv_theme_updated" as any, loadTheme);
       window.removeEventListener("rabtv_settings_updated" as any, loadTheme);
     };
   }, []);
 
-  // Smart Theme Normalizer
-  const getThemeClasses = (rawTheme: string) => {
-    const val = rawTheme.toLowerCase();
-    if (val.includes("red")) {
-      return {
-        text: "text-red-500",
-        bg: "bg-red-600",
-        hoverBg: "hover:bg-red-500",
-        border: "border-red-500",
-        ring: "focus:ring-red-400",
-        shadow: "shadow-red-600/30",
-        pageBg: "bg-[#120202]",
-        cardBg: "bg-[#160404]",
-      };
+  // Theme-aware helpers matching root.tsx
+  const getPageBackground = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-[#120202]";
+      case "midnight":
+        return "bg-[#020617]";
+      case "violet":
+      default:
+        return "bg-[#050b16]";
     }
-    if (val.includes("midnight") || val.includes("blue")) {
-      return {
-        text: "text-blue-400",
-        bg: "bg-blue-600",
-        hoverBg: "hover:bg-blue-500",
-        border: "border-blue-500",
-        ring: "focus:ring-blue-400",
-        shadow: "shadow-blue-600/30",
-        pageBg: "bg-[#020617]",
-        cardBg: "bg-[#03091e]",
-      };
-    }
-    return {
-      text: "text-violet-400",
-      bg: "bg-violet-600",
-      hoverBg: "hover:bg-violet-500",
-      border: "border-violet-500",
-      ring: "focus:ring-violet-400",
-      shadow: "shadow-violet-600/30",
-      pageBg: "bg-[#050b16]",
-      cardBg: "bg-[#090e1f]",
-    };
   };
 
-  const activeTheme = getThemeClasses(accentColor);
+  const getCardBackground = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-[#160404] border-red-500/20";
+      case "midnight":
+        return "bg-[#03091e] border-blue-500/20";
+      case "violet":
+      default:
+        return "bg-[#090e1f] border-violet-500/20";
+    }
+  };
+
+  const getThemeClasses = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return {
+          text: "text-red-400",
+          bg: "bg-red-600",
+          hoverBg: "hover:bg-red-500",
+          border: "border-red-500",
+          ring: "focus:ring-red-400",
+          shadow: "shadow-red-600/30",
+        };
+      case "midnight":
+        return {
+          text: "text-blue-400",
+          bg: "bg-blue-600",
+          hoverBg: "hover:bg-blue-500",
+          border: "border-blue-500",
+          ring: "focus:ring-blue-400",
+          shadow: "shadow-blue-600/30",
+        };
+      case "violet":
+      default:
+        return {
+          text: "text-violet-400",
+          bg: "bg-violet-600",
+          hoverBg: "hover:bg-violet-500",
+          border: "border-violet-500",
+          ring: "focus:ring-violet-400",
+          shadow: "shadow-violet-600/30",
+        };
+    }
+  };
+
+  const activeTheme = getThemeClasses(appTheme);
 
   // Check saved state for My List & Favorites
   useEffect(() => {
@@ -247,7 +259,7 @@ export function DetailsPage() {
 
   if (loading) {
     return (
-      <div className={`flex min-h-screen items-center justify-center ${activeTheme.pageBg} text-white`}>
+      <div className={`flex min-h-screen items-center justify-center ${getPageBackground(appTheme)} text-white`}>
         <p className={`text-xl font-medium animate-pulse ${activeTheme.text}`}>
           Loading title details...
         </p>
@@ -270,7 +282,7 @@ export function DetailsPage() {
       : `https://vidsrc.to/embed/movie/${mediaId}`;
 
   return (
-    <div className={`min-h-screen w-full ${activeTheme.pageBg} p-6 text-white md:p-12 overflow-y-auto scroll-smooth transition-colors duration-300`}>
+    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-6 text-white md:p-12 overflow-y-auto scroll-smooth transition-colors duration-300`}>
       <Link
         className={`mb-6 inline-flex items-center gap-2 text-sm font-semibold ${activeTheme.text} transition hover:opacity-80 hover:underline focus:outline-none focus:ring-4 ${activeTheme.ring} focus:rounded-lg px-2 py-1`}
         to="/"
@@ -281,7 +293,7 @@ export function DetailsPage() {
       {isPlaying ? (
         <div className="mx-auto flex max-w-5xl flex-col gap-6">
           {mediaType === "tv" && (
-            <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 ${activeTheme.cardBg} p-4 backdrop-blur`}>
+            <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur`}>
               <div className="flex items-center gap-4 text-sm font-semibold">
                 <label className="flex items-center gap-2">
                   <span>Season:</span>
@@ -369,7 +381,7 @@ export function DetailsPage() {
             ></iframe>
           </div>
 
-          <div className={`flex flex-col gap-4 rounded-2xl border border-white/10 ${activeTheme.cardBg} p-6 backdrop-blur`}>
+          <div className={`flex flex-col gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-6 backdrop-blur`}>
             <h1 className="text-2xl font-bold text-white">{title}</h1>
             <p className="text-sm leading-relaxed text-slate-300">{overview}</p>
           </div>
