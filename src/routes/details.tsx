@@ -19,8 +19,9 @@ export function DetailsPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Theme Accent State
+  // Theme & Settings Dropdown State
   const [accentColor, setAccentColor] = useState("violet");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // List Status State
   const [inMyList, setInMyList] = useState(false);
@@ -53,7 +54,13 @@ export function DetailsPage() {
     };
   }, []);
 
-  // Smart Theme Normalizer to match Red, Midnight/Blue, or Violet strings
+  const handleThemeChange = (themeName: string) => {
+    setAccentColor(themeName);
+    localStorage.setItem(THEME_STORAGE_KEY, themeName);
+    window.dispatchEvent(new Event("rabtv_theme_updated"));
+  };
+
+  // Smart Theme Normalizer
   const getThemeClasses = (rawTheme: string) => {
     const val = rawTheme.toLowerCase();
     if (val.includes("red")) {
@@ -76,7 +83,6 @@ export function DetailsPage() {
         shadow: "shadow-blue-600/30",
       };
     }
-    // Default / Violet & Neon
     return {
       text: "text-violet-400",
       bg: "bg-violet-600",
@@ -264,6 +270,68 @@ export function DetailsPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#050b16] p-6 text-white md:p-12 overflow-y-auto scroll-smooth">
+      {/* Top Header matching Home layout with Settings Dropdown */}
+      <div className="mb-8 flex flex-col gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-4 backdrop-blur">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-600 text-lg font-bold shadow">
+              🐰
+            </span>
+            <h1 className="text-xl font-black tracking-wider text-white">RABiT TV</h1>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setSettingsOpen((prev) => !prev)}
+            className={`flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+          >
+            ⚙️ Display & Stream Settings
+          </button>
+        </div>
+
+        {/* Collapsible Settings Dropdown Bar */}
+        {settingsOpen && (
+          <div className="flex flex-col gap-4 rounded-xl border border-white/10 bg-slate-950/80 p-4 animate-fade-in">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs font-semibold text-slate-400">Choose Theme:</span>
+              <button
+                type="button"
+                onClick={() => handleThemeChange("violet")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition border ${
+                  accentColor.includes("violet")
+                    ? "border-violet-500 bg-violet-950 text-violet-300"
+                    : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                🟣 Violet / Neon
+              </button>
+              <button
+                type="button"
+                onClick={() => handleThemeChange("red")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition border ${
+                  accentColor.includes("red")
+                    ? "border-red-500 bg-red-950 text-red-300"
+                    : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                🔴 Red & Black
+              </button>
+              <button
+                type="button"
+                onClick={() => handleThemeChange("midnight")}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition border ${
+                  accentColor.includes("midnight") || accentColor.includes("blue")
+                    ? "border-blue-500 bg-blue-950 text-blue-300"
+                    : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                }`}
+              >
+                🔵 Midnight & Black
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <Link
         className={`mb-6 inline-flex items-center gap-2 text-sm font-semibold ${activeTheme.text} transition hover:opacity-80 hover:underline focus:outline-none focus:ring-4 ${activeTheme.ring} focus:rounded-lg px-2 py-1`}
         to="/"
