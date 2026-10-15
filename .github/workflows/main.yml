@@ -86,6 +86,13 @@ jobs:
       - name: Add Android Platform
         run: npx @capacitor/cli add android
 
+      - name: Map TV Banner to Splash Screen Asset
+        run: |
+          if [ -f assets/tv_banner.png ]; then
+            cp assets/tv_banner.png assets/splash.png
+            echo "Successfully set tv_banner.png as splash.png for native splash generation"
+          fi
+
       - name: Generate App Icons and Splash Screens from Custom Icon
         run: npx @capacitor/assets generate --android
 
@@ -105,7 +112,7 @@ jobs:
           # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
           cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
-          # 4. Overwrite styles.xml to set tv_banner.png as native splash background
+          # 4. Overwrite Android Launch Theme to force TV Banner full-screen
           mkdir -p android/app/src/main/res/values
           cat << 'EOF' > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -124,6 +131,7 @@ jobs:
 
               <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
                   <item name="android:background">@drawable/tv_banner</item>
+                  <item name="android:windowBackground">@drawable/tv_banner</item>
               </style>
           </resources>
           EOF
