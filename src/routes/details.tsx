@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 const WATCH_HISTORY_STORAGE_KEY = "rabtv_watch_history";
 const MY_LIST_STORAGE_KEY = "rabtv_my_list";
 const FAVORITES_STORAGE_KEY = "rabtv_favorites";
+const THEME_STORAGE_KEY = "rabtv_theme"; // Key where your app stores the theme
 
 export const Route = createFileRoute("/details")({
   component: DetailsPage,
@@ -18,6 +19,9 @@ export function DetailsPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Theme Accent State
+  const [accentColor, setAccentColor] = useState("violet");
+
   // List Status State
   const [inMyList, setInMyList] = useState(false);
   const [inFavorites, setInFavorites] = useState(false);
@@ -27,6 +31,75 @@ export function DetailsPage() {
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
+
+  // Load Theme & Saved States on Mount / Storage Change
+  useEffect(() => {
+    const loadTheme = () => {
+      try {
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        if (savedTheme) {
+          setAccentColor(savedTheme);
+        }
+      } catch (err) {
+        console.error("Error reading theme", err);
+      }
+    };
+
+    loadTheme();
+    window.addEventListener("storage", loadTheme);
+    window.addEventListener("rabtv_theme_updated" as any, loadTheme);
+
+    return () => {
+      window.removeEventListener("storage", loadTheme);
+      window.removeEventListener("rabtv_theme_updated" as any, loadTheme);
+    };
+  }, []);
+
+  // Helper mappings for dynamic theme colors so Tailwind compiles them correctly
+  const themeClasses: Record<string, { text: string; bg: string; border: string; ring: string; shadow: string; hoverBg: string }> = {
+    violet: {
+      text: "text-violet-400",
+      bg: "bg-violet-600",
+      hoverBg: "hover:bg-violet-500",
+      border: "border-violet-500",
+      ring: "focus:ring-violet-400",
+      shadow: "shadow-violet-600/30",
+    },
+    indigo: {
+      text: "text-indigo-400",
+      bg: "bg-indigo-600",
+      hoverBg: "hover:bg-indigo-500",
+      border: "border-indigo-500",
+      ring: "focus:ring-indigo-400",
+      shadow: "shadow-indigo-600/30",
+    },
+    emerald: {
+      text: "text-emerald-400",
+      bg: "bg-emerald-600",
+      hoverBg: "hover:bg-emerald-500",
+      border: "border-emerald-500",
+      ring: "focus:ring-emerald-400",
+      shadow: "shadow-emerald-600/30",
+    },
+    rose: {
+      text: "text-rose-400",
+      bg: "bg-rose-600",
+      hoverBg: "hover:bg-rose-500",
+      border: "border-rose-500",
+      ring: "focus:ring-rose-400",
+      shadow: "shadow-rose-600/30",
+    },
+    amber: {
+      text: "text-amber-400",
+      bg: "bg-amber-600",
+      hoverBg: "hover:bg-amber-500",
+      border: "border-amber-500",
+      ring: "focus:ring-amber-400",
+      shadow: "shadow-amber-600/30",
+    },
+  };
+
+  const activeTheme = themeClasses[accentColor] || themeClasses.violet;
 
   // Check saved state for My List & Favorites
   useEffect(() => {
@@ -61,7 +134,6 @@ export function DetailsPage() {
           }
         }
 
-        // Hardcoded API key fallback ensures details load successfully
         const apiKey =
           (import.meta.env.VITE_TMDB_API_KEY as string) || "9619884fc9c0e58b374a661ab2a692cd";
 
@@ -100,7 +172,6 @@ export function DetailsPage() {
     genreIds: mediaDetails?.genres?.map((g: any) => g.id) || [],
   });
 
-  // Save to watch history when Play is clicked
   const handlePlay = () => {
     setIsPlaying(true);
     if (!mediaDetails) return;
@@ -182,7 +253,7 @@ export function DetailsPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#050b16] text-white">
-        <p className="text-xl font-medium animate-pulse text-violet-400">
+        <p className={`text-xl font-medium animate-pulse ${activeTheme.text}`}>
           Loading title details...
         </p>
       </div>
@@ -206,7 +277,7 @@ export function DetailsPage() {
   return (
     <div className="min-h-screen w-full bg-[#050b16] p-6 text-white md:p-12 overflow-y-auto scroll-smooth">
       <Link
-        className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-violet-400 transition hover:text-violet-300 hover:underline focus:outline-none focus:ring-4 focus:ring-violet-400 focus:rounded-lg px-2 py-1"
+        className={`mb-6 inline-flex items-center gap-2 text-sm font-semibold ${activeTheme.text} transition hover:opacity-80 hover:underline focus:outline-none focus:ring-4 ${activeTheme.ring} focus:rounded-lg px-2 py-1`}
         to="/"
       >
         ← Back to Home
@@ -224,7 +295,7 @@ export function DetailsPage() {
                     min="1"
                     value={season}
                     onChange={(e) => setSeason(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-white focus:outline-none focus:ring-4 focus:ring-violet-400"
+                    className={`w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   />
                 </label>
 
@@ -235,7 +306,7 @@ export function DetailsPage() {
                     min="1"
                     value={episode}
                     onChange={(e) => setEpisode(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-white focus:outline-none focus:ring-4 focus:ring-violet-400"
+                    className={`w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   />
                 </label>
               </div>
@@ -245,7 +316,7 @@ export function DetailsPage() {
                   type="button"
                   onClick={() => setEpisode((prev) => Math.max(1, prev - 1))}
                   disabled={episode <= 1}
-                  className="rounded-xl border border-white/10 bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40 focus:outline-none focus:ring-4 focus:ring-violet-400"
+                  className={`rounded-xl border border-white/10 bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40 focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                 >
                   ◀ Previous
                 </button>
@@ -253,7 +324,7 @@ export function DetailsPage() {
                 <button
                   type="button"
                   onClick={() => setEpisode((prev) => prev + 1)}
-                  className="rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white shadow transition hover:bg-violet-500 focus:outline-none focus:ring-4 focus:ring-violet-400"
+                  className={`rounded-xl ${activeTheme.bg} px-4 py-2 text-xs font-semibold text-white shadow transition ${activeTheme.hoverBg} focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                 >
                   Next Episode ▶
                 </button>
@@ -271,7 +342,7 @@ export function DetailsPage() {
             </div>
           )}
 
-          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl shadow-violet-950/50 border border-white/10">
+          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl shadow-black/50 border border-white/10">
             <iframe
               key={`${mediaType}-${mediaId}-${season}-${episode}`}
               srcDoc={`
@@ -314,11 +385,11 @@ export function DetailsPage() {
           <img
             src={poster}
             alt={title}
-            className="h-[450px] w-[300px] rounded-2xl object-cover shadow-2xl shadow-violet-950/40 border border-white/10 self-center md:self-start"
+            className="h-[450px] w-[300px] rounded-2xl object-cover shadow-2xl shadow-black/40 border border-white/10 self-center md:self-start"
           />
 
           <div className="flex flex-col justify-center gap-4">
-            <span className="w-fit rounded-full border border-violet-400/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-violet-300">
+            <span className={`w-fit rounded-full border ${activeTheme.border}/30 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider ${activeTheme.text}`}>
               {genres}
             </span>
 
@@ -347,7 +418,7 @@ export function DetailsPage() {
               <button
                 type="button"
                 onClick={handlePlay}
-                className="flex items-center gap-2 rounded-full bg-violet-600 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-violet-600/30 transition hover:bg-violet-500 active:scale-95 focus:outline-none focus:ring-4 focus:ring-violet-400 focus:scale-105"
+                className={`flex items-center gap-2 rounded-full ${activeTheme.bg} px-8 py-4 text-lg font-bold text-white shadow-lg ${activeTheme.shadow} transition ${activeTheme.hoverBg} active:scale-95 focus:outline-none focus:ring-4 ${activeTheme.ring} focus:scale-105`}
               >
                 ▶ Play {mediaType === "tv" ? `S${season}:E${episode}` : ""}
               </button>
@@ -355,9 +426,9 @@ export function DetailsPage() {
               <button
                 type="button"
                 onClick={toggleMyList}
-                className={`flex items-center gap-2 rounded-full border px-6 py-4 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-violet-400 ${
+                className={`flex items-center gap-2 rounded-full border px-6 py-4 text-sm font-bold transition focus:outline-none focus:ring-4 ${activeTheme.ring} ${
                   inMyList
-                    ? "border-violet-500 bg-violet-950/80 text-violet-300"
+                    ? `${activeTheme.border} bg-white/10${activeTheme.text}`
                     : "border-white/20 bg-slate-800/80 text-slate-200 hover:bg-slate-700"
                 }`}
               >
@@ -378,7 +449,7 @@ export function DetailsPage() {
             </div>
 
             {actionFeedback && (
-              <p className="text-xs font-semibold text-violet-400 transition animate-fade-in">
+              <p className={`text-xs font-semibold ${activeTheme.text} transition animate-fade-in`}>
                 {actionFeedback}
               </p>
             )}
