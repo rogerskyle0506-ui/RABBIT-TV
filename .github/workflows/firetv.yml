@@ -41,7 +41,7 @@ jobs:
           echo "artifact_name=${SLUG}-firetv-v${VERSION}" >> $GITHUB_OUTPUT
           echo "apk_filename=${SLUG}-firetv-v${VERSION}.apk" >> $GITHUB_OUTPUT
           
-          echo "Building Fire TV Edition: $APP_NAME version$VERSION"
+          echo "Building Fire TV Edition: $APP_NAME version $VERSION"
 
       - name: Install dependencies
         run: npm install
@@ -159,4 +159,18 @@ jobs:
             exit 1
           fi
 
-      - name:
+      - name: Build APK with Gradle
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Rename and Prepare APK Artifact
+        run: |
+          mkdir -p output_apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk output_apk/${{ steps.version-extractor.outputs.apk_filename }}
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.version-extractor.outputs.artifact_name }}
+          path: output_apk/${{ steps.version-extractor.outputs.apk_filename }}
