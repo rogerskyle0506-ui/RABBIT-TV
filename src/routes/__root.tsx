@@ -37,9 +37,13 @@ function RootComponent() {
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState(false);
 
+  const [showSettings, setShowSettings] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "quality" | "backup">("theme");
+
   const [cardSize, setCardSize] = useState<CardSize>("large");
   const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
+  const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const authorized = localStorage.getItem(DISCLAIMER_ACCEPTED_KEY);
@@ -80,7 +84,80 @@ function RootComponent() {
     }
   };
 
-  // Dynamic theme background mapping for the entire app body
+  const handleSizeChange = (newSize: CardSize) => {
+    saveCardSize(newSize);
+    setCardSize(newSize);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
+  const handleQualityChange = (newQuality: StreamQuality) => {
+    saveStreamQuality(newQuality);
+    setStreamQuality(newQuality);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
+  const handleThemeChange = (newTheme: AppTheme) => {
+    saveTheme(newTheme);
+    setAppTheme(newTheme);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
+  const handleSaveBackup = () => {
+    const backupData = {
+      cardSize,
+      streamQuality,
+      appTheme,
+      myList: localStorage.getItem("rabtv_my_list"),
+      favorites: localStorage.getItem("rabtv_favorites"),
+      backedUpAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "rabtv_profile_backup.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    setBackupStatus("Profile settings backup saved!");
+    setTimeout(() => setBackupStatus(null), 3000);
+  };
+
+  const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.cardSize) saveCardSize(data.cardSize);
+        if (data.streamQuality) saveStreamQuality(data.streamQuality);
+        if (data.appTheme) saveTheme(data.appTheme);
+        if (data.myList) localStorage.setItem("rabtv_my_list", data.myList);
+        if (data.favorites) localStorage.setItem("rabtv_favorites", data.favorites);
+
+        localStorage.removeItem(DISCLAIMER_ACCEPTED_KEY);
+        setShowFirstStartModal(true);
+        setShowSettings(false);
+        setBackupStatus("Settings restored. Please reinstate your passcode agreement.");
+      } catch {
+        setBackupStatus("Failed to restore backup file.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const toggleSettingsSection = (section: "theme" | "scale" | "quality" | "backup") => {
+    if (showSettings && activeSettingsTab === section) {
+      setShowSettings(false);
+    } else {
+      setActiveSettingsTab(section);
+      setShowSettings(true);
+    }
+  };
+
   const getBodyBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
@@ -90,6 +167,19 @@ function RootComponent() {
       case "violet":
       default:
         return "bg-[#050b16]";
+    }
+  };
+
+  const getActiveThemeBtnClass = (theme: AppTheme, active: boolean) => {
+    if (!active) return "border-white/10 bg-slate-800 text-slate-200 hover:bg-slate-700";
+    switch (theme) {
+      case "red":
+        return "border-red-500 bg-red-600 text-white shadow-md shadow-red-600/30";
+      case "midnight":
+        return "border-blue-500 bg-blue-600 text-white shadow-md shadow-blue-600/30";
+      case "violet":
+      default:
+        return "border-violet-500 bg-violet-600 text-white shadow-md shadow-violet-600/30";
     }
   };
 
@@ -126,7 +216,7 @@ function RootComponent() {
         <PreviewHostBridge />
         <AuthProvider>
           <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
-            <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-3 py-2.5 sm:px-6">
               {/* Brand Logo */}
               <Link
                 to="/"
@@ -141,7 +231,160 @@ function RootComponent() {
                 </div>
                 <span className="whitespace-nowrap">RABBiT TV</span>
               </Link>
+
+              {/* Header Option Pills */}
+              {!showFirstStartModal && (
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                  <button
+                    type="button"
+                    onClick={() => toggleSettingsSection("theme")}
+                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
+                      appTheme,
+                      showSettings && activeSettingsTab === "theme"
+                    )}`}
+                  >
+                    🎨 Color Theme
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleSettingsSection("scale")}
+                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
+                      appTheme,
+                      showSettings && activeSettingsTab === "scale"
+                    )}`}
+                  >
+                    📐 Poster Scale
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleSettingsSection("quality")}
+                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
+                      appTheme,
+                      showSettings && activeSettingsTab === "quality"
+                    )}`}
+                  >
+                    ⚙️ Stream Quality
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleSettingsSection("backup")}
+                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
+                      appTheme,
+                      showSettings && activeSettingsTab === "backup"
+                    )}`}
+                  >
+                    💾 Backup Profile
+                  </button>
+                </div>
+              )}
             </div>
+
+            {/* Dropdown Options */}
+            {showSettings && !showFirstStartModal && (
+              <div className="border-t border-white/10 bg-slate-900/95 px-4 py-3 backdrop-blur-md">
+                <div className="mx-auto flex max-w-7xl items-center justify-center">
+                  {activeSettingsTab === "theme" && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-300">Choose Theme:</span>
+                      {[
+                        { id: "violet", label: "🟣 Violet / Neon" },
+                        { id: "red", label: "🔴 Red & Black" },
+                        { id: "midnight", label: "🔵 Midnight & Black" },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => handleThemeChange(t.id as AppTheme)}
+                          className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
+                            appTheme === t.id
+                              ? `${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-md`
+                              : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeSettingsTab === "scale" && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-300">Choose Scale:</span>
+                      {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => handleSizeChange(size)}
+                          className={`rounded-lg px-3 py-1 text-xs font-bold capitalize transition ${
+                            cardSize === size
+                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                              : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          }`}
+                        >
+                          {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeSettingsTab === "quality" && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-300">Choose Cap:</span>
+                      {[
+                        { key: "1080p", label: "FHD (1080p)" },
+                        { key: "720p", label: "HD (720p)" },
+                        { key: "480p", label: "SD (480p)" },
+                        { key: "auto", label: "Auto Bandwidth" },
+                      ].map((item) => (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => handleQualityChange(item.key as StreamQuality)}
+                          className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
+                            streamQuality === item.key
+                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                              : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeSettingsTab === "backup" && (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveBackup}
+                        className="rounded-lg bg-slate-800 border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                      >
+                        💾 Export Backup File
+                      </button>
+
+                      <label className="cursor-pointer rounded-lg bg-slate-800 border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200 hover:bg-slate-700">
+                        🔄 Restore Profile File
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleRestoreBackup}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {backupStatus && (
+                        <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold`}>
+                          {backupStatus}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </header>
 
           <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden">
@@ -176,6 +419,34 @@ function RootComponent() {
                   </div>
                 </div>
 
+                {/* Theme Selector on Splash Screen */}
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Select Startup Theme:
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { id: "violet", label: "🟣 Violet" },
+                      { id: "red", label: "🔴 Red" },
+                      { id: "midnight", label: "🔵 Midnight" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setAppTheme(t.id as AppTheme)}
+                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                          appTheme === t.id
+                            ? `border-white/30 ${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-lg`
+                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Display Size Selector on Splash Screen */}
                 <div className="space-y-2 border-t border-white/10 pt-4">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Select Display Size (Adjustable anytime in settings):
@@ -193,7 +464,7 @@ function RootComponent() {
                             : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
                       >
-                        {size === "small" ? "Small (25%" : size === "medium" ? "Medium (60%)" : "Large (100%)"}
+                        {size === "small" ? "Small (25%)" : size === "medium" ? "Medium (60%)" : "Large (100%)"}
                       </button>
                     ))}
                   </div>
