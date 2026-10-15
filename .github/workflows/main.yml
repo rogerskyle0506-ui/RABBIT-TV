@@ -26,6 +26,22 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Extract App Name & Version
+        id: version-extractor
+        run: |
+          APP_NAME=$(node -p "require('./package.json').name || 'RABBiT-TV'")
+          VERSION=$(node -p "require('./package.json').version || '1.0.0'")
+          
+          # Format clean filename slug (e.g. rabbit-tv-v1.2.4)
+          SLUG=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr ' ' '-')
+          
+          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "artifact_name=${SLUG}-v${VERSION}" >> $GITHUB_OUTPUT
+          echo "apk_filename=${SLUG}-v${VERSION}.apk" >> $GITHUB_OUTPUT
+          
+          echo "Building: $APP_NAME version $VERSION"
+
       - name: Install dependencies
         run: npm install
 
@@ -153,10 +169,10 @@ jobs:
       - name: Rename and Prepare APK Artifact
         run: |
           mkdir -p output_apk
-          cp android/app/build/outputs/apk/debug/app-debug.apk output_apk/RABBiT-TV.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk output_apk/${{ steps.version-extractor.outputs.apk_filename }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Rabbit1.0.2
-          path: output_apk/RABBiT-TV.apk
+          name: ${{ steps.version-extractor.outputs.artifact_name }}
+          path: output_apk/${{ steps.version-extractor.outputs.apk_filename }}
