@@ -27,9 +27,10 @@ export function DetailsPage() {
   const [inFavorites, setInFavorites] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
-  // TV Series Episode State
+  // TV Series Episode State & Season Episodes List
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
+  const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 
   // Sync Theme with global settings store
@@ -47,6 +48,30 @@ export function DetailsPage() {
       window.removeEventListener("rabtv_settings_updated" as any, loadTheme);
     };
   }, []);
+
+  // Fetch episodes dynamically whenever the selected season changes for a TV show
+  useEffect(() => {
+    async function fetchSeasonEpisodes() {
+      if (mediaType !== "tv" || !mediaId) return;
+      try {
+        const apiKey =
+          (import.meta.env.VITE_TMDB_API_KEY as string) || "9619884fc9c0e58b374a661ab2a692cd";
+        const res = await fetch(
+          `https://api.themoviedb.org/3/tv/${mediaId}/season/${season}?api_key=${apiKey}`
+        );
+        const data = await res.json();
+        if (data.episodes) {
+          setSeasonEpisodes(data.episodes);
+        } else {
+          setSeasonEpisodes([]);
+        }
+      } catch (err) {
+        console.error("Failed to load season episodes", err);
+        setSeasonEpisodes([]);
+      }
+    }
+    fetchSeasonEpisodes();
+  }, [season, mediaId, mediaType]);
 
   // Theme-aware helpers matching root.tsx
   const getPageBackground = (theme: AppTheme) => {
@@ -294,27 +319,46 @@ export function DetailsPage() {
         <div className="mx-auto flex max-w-5xl flex-col gap-6">
           {mediaType === "tv" && (
             <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur`}>
-              <div className="flex items-center gap-4 text-sm font-semibold">
+              <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
+                {/* Active Player Season Dropdown */}
                 <label className="flex items-center gap-2">
                   <span>Season:</span>
-                  <input
-                    type="number"
-                    min="1"
+                  <select
                     value={season}
-                    onChange={(e) => setSeason(Math.max(1, parseInt(e.target.value) || 1))}
-                    className={`w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
-                  />
+                    onChange={(e) => {
+                      setSeason(Number(e.target.value));
+                      setEpisode(1); // reset to ep 1 on season change
+                    }}
+                    className={`rounded-xl border border-white/10 bg-slate-800 px-3 py-1.5 text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+                  >
+                    {mediaDetails?.seasons
+                      ?.filter((s: any) => s.season_number > 0)
+                      .map((s: any) => (
+                        <option key={s.id} value={s.season_number}>
+                          {s.name} ({s.episode_count} Eps)
+                        </option>
+                      ))}
+                  </select>
                 </label>
 
+                {/* Active Player Episode Dropdown */}
                 <label className="flex items-center gap-2">
                   <span>Episode:</span>
-                  <input
-                    type="number"
-                    min="1"
+                  <select
                     value={episode}
-                    onChange={(e) => setEpisode(Math.max(1, parseInt(e.target.value) || 1))}
-                    className={`w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
-                  />
+                    onChange={(e) => setEpisode(Number(e.target.value))}
+                    className={`rounded-xl border border-white/10 bg-slate-800 px-3 py-1.5 text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+                  >
+                    {seasonEpisodes.length > 0 ? (
+                      seasonEpisodes.map((ep: any) => (
+                        <option key={ep.id} value={ep.episode_number}>
+                          Ep {ep.episode_number}: {ep.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value={episode}>Episode {episode}</option>
+                    )}
+                  </select>
                 </label>
               </div>
 
@@ -387,7 +431,7 @@ export function DetailsPage() {
           </div>
         </div>
       ) : (
-        /* Overview Card */
+        /* Overview Card with Interactive Season & Episode Pickers */
         <div className="mx-auto flex max-w-5xl flex-col gap-8 md:flex-row md:items-start">
           <img
             src={poster}
@@ -420,6 +464,50 @@ export function DetailsPage() {
               {overview}
             </p>
 
+            {/* Interactive Season & Episode Selectors for TV Series */}
+            {mediaType === "tv" && mediaDetails?.seasons && (
+              <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2`}>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-400">Select Season</label>
+                  <select
+                    value={season}
+                    onChange={(e) => {
+                      setSeason(Number(e.target.value));
+                      setEpisode(1);
+                    }}
+                    className="rounded-xl bg-slate-800 border border-white/10 px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:ring-4 focus:ring-violet-500"
+                  >
+                    {mediaDetails.seasons
+                      .filter((s: any) => s.season_number > 0)
+                      .map((s: any) => (
+                        <option key={s.id} value={s.season_number}>
+                          {s.name} ({s.episode_count} Episodes)
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-400">Select Episode</label>
+                  <select
+                    value={episode}
+                    onChange={(e) => setEpisode(Number(e.target.value))}
+                    className="rounded-xl bg-slate-800 border border-white/10 px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:ring-4 focus:ring-violet-500"
+                  >
+                    {seasonEpisodes.length > 0 ? (
+                      seasonEpisodes.map((ep: any) => (
+                        <option key={ep.id} value={ep.episode_number}>
+                          Ep {ep.episode_number}: {ep.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value={episode}>Episode {episode}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+            )}
+
             {/* Action Bar */}
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <button
@@ -427,7 +515,7 @@ export function DetailsPage() {
                 onClick={handlePlay}
                 className={`flex items-center gap-2 rounded-full ${activeTheme.bg} px-8 py-4 text-lg font-bold text-white shadow-lg ${activeTheme.shadow} transition ${activeTheme.hoverBg} active:scale-95 focus:outline-none focus:ring-4 ${activeTheme.ring} focus:scale-105`}
               >
-                ▶ Play {mediaType === "tv" ? `S${season}:E${episode}` : ""}
+                ▶ Play {mediaType === "tv" ? `S${season}:E${episode}` : "Movie"}
               </button>
 
               <button
