@@ -115,7 +115,7 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Inject Custom MainActivity, TV Banner, Manifest & Fullscreen Banner Splash
+      - name: Inject Custom MainActivity, TV Banner, Manifest & Clean Dark Splash Styles
         run: |
           # 1. Inject popup-blocking MainActivity
           mkdir -p android/app/src/main/java/com/rabbittv/app
@@ -128,7 +128,7 @@ jobs:
           # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
           cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
-          # 4. Completely override styles.xml to bypass Android 12 circular icon splash & show full banner
+          # 4. Configure clean dark styles.xml to fix Fire Stick banner bleed & top-left video scaling bug
           mkdir -p android/app/src/main/res/values
           cat << 'EOF' > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -142,12 +142,10 @@ jobs:
               <style name="AppTheme.NoActionBar" parent="AppTheme">
                   <item name="windowActionBar">false</item>
                   <item name="windowNoTitle">true</item>
-                  <item name="android:background">@drawable/tv_banner</item>
               </style>
 
               <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
-                  <item name="android:background">@drawable/tv_banner</item>
-                  <item name="android:windowBackground">@drawable/tv_banner</item>
+                  <item name="android:windowBackground">#050b16</item>
                   <item name="android:windowSplashScreenAnimatedIcon">@drawable/tv_banner</item>
                   <item name="android:windowSplashScreenBackground">#050b16</item>
               </style>
