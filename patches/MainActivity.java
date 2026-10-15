@@ -48,8 +48,16 @@ public class MainActivity extends BridgeActivity {
                         return true;
                     }
 
-                    // Delegate everything else back to Capacitor's bridge so local UI assets load correctly
-                    return super.shouldOverrideUrlLoading(view, request);
+                    // Whitelist localhost app routes and trusted streaming/metadata providers before delegating to bridge
+                    if (url.startsWith("http://localhost") || 
+                        url.startsWith("https://localhost") || 
+                        url.contains("vidsrc") || 
+                        url.contains("tmdb.org")) {
+                        return super.shouldOverrideUrlLoading(view, request);
+                    }
+
+                    // Block any other unknown external redirects attempting to break out on projectors or TV boxes
+                    return true;
                 }
             });
 
