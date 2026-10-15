@@ -1,8 +1,10 @@
 package com.rabbittv.app;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Message;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -77,6 +79,10 @@ public class MainActivity extends BridgeActivity {
                     }
                     customView = view;
                     customViewCallback = callback;
+
+                    // Ensure solid black background so the TV banner splash never peeks through
+                    customView.setBackgroundColor(Color.BLACK);
+
                     // Hide system UI or make video container visible fullscreen
                     getWindow().getDecorView().setSystemUiVisibility(
                         View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
@@ -86,11 +92,13 @@ public class MainActivity extends BridgeActivity {
                         View.SYSTEM_UI_FLAG_FULLSCREEN |
                         View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     );
-                    // Add the custom video view to the activity root
-                    addContentView(customView, new WindowManager.LayoutParams(
-                        WindowManager.LayoutParams.MATCH_PARENT,
-                        WindowManager.LayoutParams.MATCH_PARENT
-                    ));
+
+                    // Add the custom video view to the activity root with exact MATCH_PARENT constraints for Fire OS scaling
+                    ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    );
+                    addContentView(customView, params);
                     webView.setVisibility(View.GONE);
                 }
 
@@ -101,7 +109,9 @@ public class MainActivity extends BridgeActivity {
                     }
                     // Restore original UI visibility and remove custom view
                     getWindow().getDecorView().setSystemUiVisibility(0);
-                    ((android.view.ViewGroup) customView.getParent()).removeView(customView);
+                    if (customView.getParent() instanceof ViewGroup) {
+                        ((ViewGroup) customView.getParent()).removeView(customView);
+                    }
                     customView = null;
                     webView.setVisibility(View.VISIBLE);
                     if (customViewCallback != null) {
@@ -141,7 +151,9 @@ public class MainActivity extends BridgeActivity {
             return;
         }
         getWindow().getDecorView().setSystemUiVisibility(0);
-        ((android.view.ViewGroup) customView.getParent()).removeView(customView);
+        if (customView.getParent() instanceof ViewGroup) {
+            ((ViewGroup) customView.getParent()).removeView(customView);
+        }
         customView = null;
         if (this.bridge != null && this.bridge.getWebView() != null) {
             this.bridge.getWebView().setVisibility(View.VISIBLE);
