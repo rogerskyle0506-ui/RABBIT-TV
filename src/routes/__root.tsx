@@ -14,6 +14,8 @@ import {
   saveStreamQuality,
   getSavedTheme,
   saveTheme,
+  getHelpfulMouse,
+  setHelpfulMouse,
 } from "@/lib/settings";
 
 const AUTHORIZATION_CODE = "34688643";
@@ -38,11 +40,12 @@ function RootComponent() {
   const [passcodeError, setPasscodeError] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "quality" | "backup">("theme");
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "quality" | "mouse" | "backup">("theme");
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
   const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
+  const [helpfulMouse, setHelpfulMouseState] = useState(false);
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,11 +57,13 @@ function RootComponent() {
     setCardSize(getSavedCardSize());
     setStreamQuality(getSavedStreamQuality());
     setAppTheme(getSavedTheme());
+    setHelpfulMouseState(getHelpfulMouse());
 
     const handleSettingsUpdate = () => {
       setCardSize(getSavedCardSize());
       setStreamQuality(getSavedStreamQuality());
       setAppTheme(getSavedTheme());
+      setHelpfulMouseState(getHelpfulMouse());
     };
 
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
@@ -75,6 +80,7 @@ function RootComponent() {
       saveCardSize(cardSize);
       saveStreamQuality(streamQuality);
       saveTheme(appTheme);
+      setHelpfulMouse(helpfulMouse);
       setShowFirstStartModal(false);
       setPasscodeError(false);
       window.dispatchEvent(new Event("rabtv_settings_updated"));
@@ -102,11 +108,17 @@ function RootComponent() {
     window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
+  const handleMouseToggle = (enabled: boolean) => {
+    setHelpfulMouse(enabled);
+    setHelpfulMouseState(enabled);
+  };
+
   const handleSaveBackup = () => {
     const backupData = {
       cardSize,
       streamQuality,
       appTheme,
+      helpfulMouse,
       myList: localStorage.getItem("rabtv_my_list"),
       favorites: localStorage.getItem("rabtv_favorites"),
       backedUpAt: new Date().toISOString(),
@@ -135,6 +147,7 @@ function RootComponent() {
         if (data.cardSize) saveCardSize(data.cardSize);
         if (data.streamQuality) saveStreamQuality(data.streamQuality);
         if (data.appTheme) saveTheme(data.appTheme);
+        if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
         if (data.myList) localStorage.setItem("rabtv_my_list", data.myList);
         if (data.favorites) localStorage.setItem("rabtv_favorites", data.favorites);
 
@@ -201,6 +214,14 @@ function RootComponent() {
     <html lang="en" data-theme={appTheme}>
       <head>
         <HeadContent />
+        {/* 3x Scaled High-Visibility Cursor when Helpful Mouse is enabled */}
+        {helpfulMouse && (
+          <style>{`
+            *, button, a, select, input, [role="button"] {
+              cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 24 24' fill='%23ffffff' stroke='%23000000' stroke-width='2'%3E%3Cpath d='M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z'/%3E%3C/svg%3E"), auto !important;
+            }
+          `}</style>
+        )}
       </head>
       <body className={`min-h-screen max-w-full overflow-x-hidden ${getBodyBackground(appTheme)} text-slate-100 antialiased transition-colors duration-300`}>
         <PreviewHostBridge />
@@ -273,6 +294,17 @@ function RootComponent() {
                       }`}
                     >
                       Quality
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSettingsTab("mouse")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "mouse"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Helpful Mouse
                     </button>
                     <button
                       type="button"
@@ -355,6 +387,28 @@ function RootComponent() {
                             {item.label}
                           </button>
                         ))}
+                      </div>
+                    )}
+
+                    {activeSettingsTab === "mouse" && (
+                      <div className="flex items-center justify-center gap-4 py-1">
+                        <div className="text-left">
+                          <p className="text-xs font-bold text-white">Helpful Mouse (3x Scaled Pointer)</p>
+                          <p className="text-[10px] text-slate-400">Enlarges the cursor for improved visibility on TVs and projectors.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleMouseToggle(!helpfulMouse)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              helpfulMouse ? "translate-x-6" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
                       </div>
                     )}
 
