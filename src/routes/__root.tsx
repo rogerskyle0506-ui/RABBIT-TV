@@ -45,6 +45,35 @@ function RootComponent() {
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
+  // Attach Android hardware & TV remote back button listener on client mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let removeListener: (() => void) | undefined;
+
+    import("@capacitor/app")
+      .then(({ App }) => {
+        App.addListener("backButton", () => {
+          const hash = window.location.hash;
+          const isHome = !hash || hash === "#/" || hash === "#" || hash === "#/index";
+
+          if (!isHome) {
+            window.history.back();
+          }
+          // Once home ('/'), remain strictly null / no-op (does not exit app)
+        }).then((listener) => {
+          removeListener = () => listener.remove();
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      if (removeListener) {
+        removeListener();
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const authorized = localStorage.getItem(DISCLAIMER_ACCEPTED_KEY);
     if (!authorized) {
@@ -77,6 +106,7 @@ function RootComponent() {
       saveTheme(appTheme);
       setShowFirstStartModal(false);
       setPasscodeError(false);
+      setPasscodeInput("");
       window.dispatchEvent(new Event("rabtv_settings_updated"));
     } else {
       setPasscodeError(true);
