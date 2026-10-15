@@ -6,6 +6,7 @@ export const DISCLAIMER_ACCEPTED_KEY = "rabtv_disclaimer_accepted";
 export const CARD_SIZE_KEY = "rabtv_card_size";
 export const STREAM_QUALITY_KEY = "rabtv_stream_quality";
 export const THEME_KEY = "rabtv_app_theme";
+export const HELPFUL_MOUSE_KEY = "rabtv_helpful_mouse";
 
 export function getSavedCardSize(): CardSize {
   if (typeof window === "undefined") return "large";
@@ -38,6 +39,18 @@ export function getSavedTheme(): AppTheme {
 export function saveTheme(theme: AppTheme) {
   if (typeof window !== "undefined") {
     localStorage.setItem(THEME_KEY, theme);
+  }
+}
+
+export function getHelpfulMouse(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(HELPFUL_MOUSE_KEY) === "true";
+}
+
+export function setHelpfulMouse(enabled: boolean) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(HELPFUL_MOUSE_KEY, String(enabled));
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
   }
 }
 
