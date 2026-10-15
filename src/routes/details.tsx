@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppTheme, getSavedTheme } from "@/lib/settings";
 
 const WATCH_HISTORY_STORAGE_KEY = "rabtv_watch_history";
@@ -32,6 +32,27 @@ export function DetailsPage() {
   const [episode, setEpisode] = useState(1);
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
+
+  // Custom Dropdown Open States
+  const [isSeasonOpen, setIsSeasonOpen] = useState(false);
+  const [isEpisodeOpen, setIsEpisodeOpen] = useState(false);
+
+  const seasonRef = useRef<HTMLDivElement>(null);
+  const episodeRef = useRef<HTMLDivElement>(null);
+
+  // Close custom dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (seasonRef.current && !seasonRef.current.contains(event.target as Node)) {
+        setIsSeasonOpen(false);
+      }
+      if (episodeRef.current && !episodeRef.current.contains(event.target as Node)) {
+        setIsEpisodeOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Sync Theme with global settings store
   useEffect(() => {
@@ -306,6 +327,9 @@ export function DetailsPage() {
       ? `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`
       : `https://vidsrc.to/embed/movie/${mediaId}`;
 
+  const currentSeasonObj = mediaDetails?.seasons?.find((s: any) => s.season_number === season);
+  const currentEpisodeObj = seasonEpisodes?.find((e: any) => e.episode_number === episode);
+
   return (
     <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-6 text-white md:p-12 overflow-y-auto scroll-smooth transition-colors duration-300`}>
       <Link
@@ -319,47 +343,81 @@ export function DetailsPage() {
         <div className="mx-auto flex max-w-5xl flex-col gap-6">
           {mediaType === "tv" && (
             <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur`}>
-              <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
-                {/* Active Player Season Dropdown */}
-                <label className="flex items-center gap-2">
-                  <span>Season:</span>
-                  <select
-                    value={season}
-                    onChange={(e) => {
-                      setSeason(Number(e.target.value));
-                      setEpisode(1);
-                    }}
-                    className={`rounded-xl border border-white/10 ${getCardBackground(appTheme)} px-3 py-1.5 text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+              <div className="flex flex-wrap items-center gap-4 text-sm font-semibold relative">
+                
+                {/* Custom Active Player Season Dropdown */}
+                <div className="relative" ref={seasonRef}>
+                  <span className="block text-xs text-slate-400 mb-1">Season</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsSeasonOpen(!isSeasonOpen)}
+                    className={`flex items-center justify-between gap-3 rounded-xl border border-white/10 ${getCardBackground(appTheme)} px-4 py-2 text-white font-medium focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   >
-                    {mediaDetails?.seasons
-                      ?.filter((s: any) => s.season_number > 0)
-                      .map((s: any) => (
-                        <option key={s.id} value={s.season_number} className={`${getCardBackground(appTheme)} text-white py-2`}>
-                          {s.name} ({s.episode_count} Eps)
-                        </option>
-                      ))}
-                  </select>
-                </label>
+                    <span>{currentSeasonObj ? currentSeasonObj.name : `Season ${season}`}</span>
+                    <span>▾</span>
+                  </button>
 
-                {/* Active Player Episode Dropdown */}
-                <label className="flex items-center gap-2">
-                  <span>Episode:</span>
-                  <select
-                    value={episode}
-                    onChange={(e) => setEpisode(Number(e.target.value))}
-                    className={`rounded-xl border border-white/10 ${getCardBackground(appTheme)} px-3 py-1.5 text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+                  {isSeasonOpen && (
+                    <div className={`absolute left-0 mt-2 z-50 max-h-60 w-56 overflow-y-auto rounded-xl border border-white/20 ${getCardBackground(appTheme)} shadow-2xl backdrop-blur p-1`}>
+                      {mediaDetails?.seasons
+                        ?.filter((s: any) => s.season_number > 0)
+                        .map((s: any) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              setSeason(s.season_number);
+                              setEpisode(1);
+                              setIsSeasonOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm rounded-lg transition ${
+                              season === s.season_number ? `${activeTheme.bg} text-white font-bold` : "text-slate-200 hover:bg-white/10"
+                            }`}
+                          >
+                            {s.name} ({s.episode_count} Eps)
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Custom Active Player Episode Dropdown */}
+                <div className="relative" ref={episodeRef}>
+                  <span className="block text-xs text-slate-400 mb-1">Episode</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsEpisodeOpen(!isEpisodeOpen)}
+                    className={`flex items-center justify-between gap-3 rounded-xl border border-white/10 ${getCardBackground(appTheme)} px-4 py-2 text-white font-medium focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   >
-                    {seasonEpisodes.length > 0 ? (
-                      seasonEpisodes.map((ep: any) => (
-                        <option key={ep.id} value={ep.episode_number} className={`${getCardBackground(appTheme)} text-white py-2`}>
-                          Ep {ep.episode_number}: {ep.name}
-                        </option>
-                      ))
-                    ) : (
-                      <option value={episode} className={`${getCardBackground(appTheme)} text-white py-2`}>Episode {episode}</option>
-                    )}
-                  </select>
-                </label>
+                    <span>{currentEpisodeObj ? `Ep ${currentEpisodeObj.episode_number}: ${currentEpisodeObj.name}` : `Episode ${episode}`}</span>
+                    <span>▾</span>
+                  </button>
+
+                  {isEpisodeOpen && (
+                    <div className={`absolute left-0 mt-2 z-50 max-h-60 w-72 overflow-y-auto rounded-xl border border-white/20 ${getCardBackground(appTheme)} shadow-2xl backdrop-blur p-1`}>
+                      {seasonEpisodes.length > 0 ? (
+                        seasonEpisodes.map((ep: any) => (
+                          <button
+                            key={ep.id}
+                            type="button"
+                            onClick={() => {
+                              setEpisode(ep.episode_number);
+                              setIsEpisodeOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm rounded-lg transition ${
+                              episode === ep.episode_number ? `${activeTheme.bg} text-white font-bold` : "text-slate-200 hover:bg-white/10"
+                            }`}
+                          >
+                            Ep {ep.episode_number}: {ep.name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-slate-400">Loading episodes...</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               <div className="flex items-center gap-3">
@@ -431,7 +489,7 @@ export function DetailsPage() {
           </div>
         </div>
       ) : (
-        /* Overview Card with Theme-Aware Clean Season & Episode Pickers */
+        /* Overview Card with Custom Theme-Aware Dropdown Pickers */
         <div className="mx-auto flex max-w-5xl flex-col gap-8 md:flex-row md:items-start">
           <img
             src={poster}
@@ -464,47 +522,83 @@ export function DetailsPage() {
               {overview}
             </p>
 
-            {/* Theme-Aware Season & Episode Dropdown Pickers for TV Series */}
+            {/* Custom Theme-Aware Season & Episode Dropdown Pickers for TV Series */}
             {mediaType === "tv" && mediaDetails?.seasons && (
               <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2`}>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-400">Select Season</label>
-                  <select
-                    value={season}
-                    onChange={(e) => {
-                      setSeason(Number(e.target.value));
-                      setEpisode(1);
-                    }}
-                    className={`rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-3.5 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+                
+                {/* Custom Season Dropdown */}
+                <div className="relative" ref={seasonRef}>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Season</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsSeasonOpen(!isSeasonOpen)}
+                    className={`flex items-center justify-between gap-6 rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-4 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   >
-                    {mediaDetails.seasons
-                      .filter((s: any) => s.season_number > 0)
-                      .map((s: any) => (
-                        <option key={s.id} value={s.season_number} className={`${getCardBackground(appTheme)} text-white py-2`}>
-                          {s.name} ({s.episode_count} Episodes)
-                        </option>
-                      ))}
-                  </select>
+                    <span>{currentSeasonObj ? `${currentSeasonObj.name} (${currentSeasonObj.episode_count} Episodes)` : `Season ${season}`}</span>
+                    <span>▾</span>
+                  </button>
+
+                  {isSeasonOpen && (
+                    <div className={`absolute left-0 mt-2 z-50 max-h-65 w-72 overflow-y-auto rounded-xl border border-white/20 ${getCardBackground(appTheme)} shadow-2xl backdrop-blur p-1`}>
+                      {mediaDetails.seasons
+                        .filter((s: any) => s.season_number > 0)
+                        .map((s: any) => (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              setSeason(s.season_number);
+                              setEpisode(1);
+                              setIsSeasonOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm rounded-lg transition ${
+                              season === s.season_number ? `${activeTheme.bg} text-white font-bold` : "text-slate-200 hover:bg-white/10"
+                            }`}
+                          >
+                            {s.name} ({s.episode_count} Episodes)
+                          </button>
+                        ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-400">Select Episode</label>
-                  <select
-                    value={episode}
-                    onChange={(e) => setEpisode(Number(e.target.value))}
-                    className={`rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-3.5 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+                {/* Custom Episode Dropdown */}
+                <div className="relative" ref={episodeRef}>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Episode</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsEpisodeOpen(!isEpisodeOpen)}
+                    className={`flex items-center justify-between gap-6 rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-4 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   >
-                    {seasonEpisodes.length > 0 ? (
-                      seasonEpisodes.map((ep: any) => (
-                        <option key={ep.id} value={ep.episode_number} className={`${getCardBackground(appTheme)} text-white py-2`}>
-                          Ep {ep.episode_number}: {ep.name}
-                        </option>
-                      ))
-                    ) : (
-                      <option value={episode} className={`${getCardBackground(appTheme)} text-white py-2`}>Episode {episode}</option>
-                    )}
-                  </select>
+                    <span>{currentEpisodeObj ? `Ep ${currentEpisodeObj.episode_number}: ${currentEpisodeObj.name}` : `Episode ${episode}`}</span>
+                    <span>▾</span>
+                  </button>
+
+                  {isEpisodeOpen && (
+                    <div className={`absolute left-0 mt-2 z-50 max-h-65 w-80 overflow-y-auto rounded-xl border border-white/20 ${getCardBackground(appTheme)} shadow-2xl backdrop-blur p-1`}>
+                      {seasonEpisodes.length > 0 ? (
+                        seasonEpisodes.map((ep: any) => (
+                          <button
+                            key={ep.id}
+                            type="button"
+                            onClick={() => {
+                              setEpisode(ep.episode_number);
+                              setIsEpisodeOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm rounded-lg transition ${
+                              episode === ep.episode_number ? `${activeTheme.bg} text-white font-bold` : "text-slate-200 hover:bg-white/10"
+                            }`}
+                          >
+                            Ep {ep.episode_number}: {ep.name}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-slate-400">Loading episodes...</div>
+                      )}
+                    </div>
+                  )}
                 </div>
+
               </div>
             )}
 
