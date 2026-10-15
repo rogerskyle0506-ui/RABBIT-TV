@@ -42,11 +42,19 @@ export function MediaCard({ item }: { item: MediaItem }) {
 
   const dimensions = getPosterDimensions(cardSize);
 
+  // Width adjustment for medium size to ensure 2 per row
+  const sizeSpecificWidthClass =
+    cardSize === "medium"
+      ? "w-[calc(50%-6px)] max-w-[calc(50%-6px)]"
+      : cardSize === "small"
+      ? "w-[calc(33.333%-6px)] max-w-[calc(33.333%-6px)]"
+      : "w-full max-w-[280px]";
+
   if (cardSize === "small") {
     return (
       <Link
         to={item.href}
-        className={`group relative flex overflow-hidden rounded-xl bg-slate-900 transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-violet-400 ${dimensions.card}`}
+        className={`group relative flex overflow-hidden rounded-xl bg-slate-900 transition hover:scale-105 focus:outline-none focus:ring-4 focus:ring-violet-400 ${dimensions.card} ${sizeSpecificWidthClass}`}
       >
         <img
           src={item.image}
@@ -63,7 +71,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
 
   return (
     <div
-      className={`group relative flex flex-col overflow-hidden rounded-2xl bg-slate-900/90 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 w-[calc(50%-8px)] sm:w-auto ${dimensions.card}`}
+      className={`group relative flex flex-col overflow-hidden rounded-2xl bg-slate-900/90 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 ${sizeSpecificWidthClass} ${dimensions.card}`}
     >
       <Link to={item.href} className="block relative overflow-hidden flex-1 focus:outline-none">
         <img
@@ -232,83 +240,91 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs (Centered & Fully Visible) */}
+      {/* Navigation Bar Tabs (Centered inside pillbox container) */}
       <div className="border-b border-white/10 bg-slate-950/60 backdrop-blur-md px-2 py-3 mb-4 sticky top-0 z-30">
         <div className="mx-auto flex max-w-full items-center justify-center gap-1.5 overflow-x-auto px-2">
-          {navTabs.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-              className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition whitespace-nowrap focus:outline-none shrink-0 ${
-                activeTab === tab
-                  ? `${themeStyles.btnActive} shadow-md`
-                  : "bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+          <div className={`flex items-center justify-center gap-1 p-1.5 rounded-full border border-white/10 bg-gradient-to-r ${themeStyles.cardGradient} shadow-lg backdrop-blur-md`}>
+            {navTabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`rounded-full px-3.5 py-1 text-xs font-semibold transition whitespace-nowrap focus:outline-none shrink-0 ${
+                  activeTab === tab
+                    ? "bg-white/25 text-white shadow"
+                    : "text-slate-300 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-full px-2 sm:px-4 overflow-x-hidden">
-        {/* Featured Hero Banner (Edge-to-edge width, unclipped title, squashed height) */}
-        <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} p-3.5 sm:p-5 shadow-2xl h-[46vh] max-h-[380px] flex flex-col justify-center`}>
+        {/* Featured Hero Banner (65% Cover Art height, semi-transparent text box overlay) */}
+        <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
-            <div className="grid gap-3 lg:grid-cols-[1.3fr_0.7fr] items-center h-full">
-              <div className="space-y-1.5 min-w-0 flex flex-col justify-center">
-                <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] ${themeStyles.accentText}`}>
-                  <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5">
-                    Featured
-                  </span>
-                  <span className="truncate max-w-[160px]">
-                    {featured.genre ?? "Entertainment"}
-                  </span>
-                </div>
-
-                <div className="min-w-0">
-                  <h2 className="text-xl font-black text-white md:text-3xl leading-snug break-words">
-                    {featured.title}
-                  </h2>
-                  <p className="mt-0.5 max-w-xl text-xs leading-relaxed text-slate-300 line-clamp-2">
-                    {featured.description}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-200">
-                  {featured.rating && (
-                    <span className="rounded-full border border-yellow-400/40 bg-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px]">
-                      ⭐ {featured.rating}
-                    </span>
-                  )}
-                  {featured.year && (
-                    <span className="text-[11px] text-slate-400">
-                      {featured.year}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <Link
-                    to={featured.href}
-                    className={`rounded-full bg-black/70 border border-white/10 ${themeStyles.btnActive} px-4 py-1.5 text-xs font-semibold shadow-lg transition`}
-                  >
-                    WATCH NOW
-                  </Link>
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-[14px] border border-white/10 bg-slate-950/70 h-full max-h-[160px] lg:max-h-[260px]">
+            <>
+              {/* Cover Art occupying 65% of the banner height */}
+              <div className="absolute inset-0 h-[65%] w-full overflow-hidden bg-slate-950">
                 <img
                   src={featured.image}
                   alt={featured.title}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover opacity-90"
                 />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/30 to-transparent"></div>
               </div>
-            </div>
+
+              {/* Content overlay occupying bottom 35% with semi-transparent background box */}
+              <div className="absolute inset-x-0 bottom-0 top-[35%] p-3.5 sm:p-5 flex flex-col justify-end z-10">
+                <div className="bg-black/70 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-white/10 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] ${themeStyles.accentText}`}>
+                      <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5">
+                        Featured
+                      </span>
+                      <span className="truncate max-w-[140px]">
+                        {featured.genre ?? "Entertainment"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-200">
+                      {featured.rating && (
+                        <span className="rounded-full border border-yellow-400/40 bg-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px]">
+                          ⭐ {featured.rating}
+                        </span>
+                      )}
+                      {featured.year && (
+                        <span className="text-[11px] text-slate-300 font-medium">
+                          {featured.year}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <h2 className="text-xl font-black text-white md:text-2xl leading-snug break-words">
+                      {featured.title}
+                    </h2>
+                    <p className="mt-0.5 max-w-2xl text-xs leading-relaxed text-slate-200 line-clamp-2">
+                      {featured.description}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <Link
+                      to={featured.href}
+                      className={`rounded-full border border-white/10 ${themeStyles.btnActive} px-4 py-1.5 text-xs font-semibold shadow-lg transition`}
+                    >
+                      WATCH NOW
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </>
           ) : (
-            <div className="flex min-h-[140px] items-center justify-center text-slate-300">
+            <div className="flex h-full items-center justify-center text-slate-300">
               {loading
                 ? `Loading ${activeTab}...`
                 : error ?? "No media found in this section."}
