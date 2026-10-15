@@ -109,6 +109,19 @@ public class MainActivity extends BridgeActivity {
         // Handle exiting fullscreen via hardware back button if a video is expanded
         if (customView != null) {
             onHideCustomView();
+        } else if (this.bridge != null && this.bridge.getWebView() != null) {
+            WebView webView = this.bridge.getWebView();
+            
+            // Check the current web route path to handle home screen suppression vs back navigation
+            webView.evaluateJavascript("window.location.pathname", path -> {
+                if (path != null && (path.equals("\"/\"") || path.equals("/"))) {
+                    // On home screen: do nothing (suppress back button exit)
+                    return;
+                } else {
+                    // Not on home screen: navigate back in the app history via JavaScript
+                    webView.evaluateJavascript("window.history.back()", null);
+                }
+            });
         } else {
             super.onBackPressed();
         }
