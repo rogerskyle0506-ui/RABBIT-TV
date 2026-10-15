@@ -327,14 +327,14 @@ export function DetailsPage() {
                     value={season}
                     onChange={(e) => {
                       setSeason(Number(e.target.value));
-                      setEpisode(1); // reset to ep 1 on season change
+                      setEpisode(1);
                     }}
-                    className={`rounded-xl border border-white/10 bg-slate-800 px-3 py-1.5 text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+                    className={`rounded-xl border border-white/10 ${getCardBackground(appTheme)} px-3 py-1.5 text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   >
                     {mediaDetails?.seasons
                       ?.filter((s: any) => s.season_number > 0)
                       .map((s: any) => (
-                        <option key={s.id} value={s.season_number}>
+                        <option key={s.id} value={s.season_number} className={`${getCardBackground(appTheme)} text-white py-2`}>
                           {s.name} ({s.episode_count} Eps)
                         </option>
                       ))}
@@ -347,16 +347,16 @@ export function DetailsPage() {
                   <select
                     value={episode}
                     onChange={(e) => setEpisode(Number(e.target.value))}
-                    className={`rounded-xl border border-white/10 bg-slate-800 px-3 py-1.5 text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+                    className={`rounded-xl border border-white/10 ${getCardBackground(appTheme)} px-3 py-1.5 text-white focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   >
                     {seasonEpisodes.length > 0 ? (
                       seasonEpisodes.map((ep: any) => (
-                        <option key={ep.id} value={ep.episode_number}>
+                        <option key={ep.id} value={ep.episode_number} className={`${getCardBackground(appTheme)} text-white py-2`}>
                           Ep {ep.episode_number}: {ep.name}
                         </option>
                       ))
                     ) : (
-                      <option value={episode}>Episode {episode}</option>
+                      <option value={episode} className={`${getCardBackground(appTheme)} text-white py-2`}>Episode {episode}</option>
                     )}
                   </select>
                 </label>
@@ -431,7 +431,7 @@ export function DetailsPage() {
           </div>
         </div>
       ) : (
-        /* Overview Card with Interactive Season & Episode Pickers */
+        /* Overview Card with Theme-Aware Clean Season & Episode Pickers */
         <div className="mx-auto flex max-w-5xl flex-col gap-8 md:flex-row md:items-start">
           <img
             src={poster}
@@ -464,7 +464,7 @@ export function DetailsPage() {
               {overview}
             </p>
 
-            {/* Interactive Season & Episode Selectors for TV Series */}
+            {/* Theme-Aware Season & Episode Dropdown Pickers for TV Series */}
             {mediaType === "tv" && mediaDetails?.seasons && (
               <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2`}>
                 <div className="flex flex-col gap-1.5">
@@ -475,12 +475,12 @@ export function DetailsPage() {
                       setSeason(Number(e.target.value));
                       setEpisode(1);
                     }}
-                    className="rounded-xl bg-slate-800 border border-white/10 px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:ring-4 focus:ring-violet-500"
+                    className={`rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-3.5 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   >
                     {mediaDetails.seasons
                       .filter((s: any) => s.season_number > 0)
                       .map((s: any) => (
-                        <option key={s.id} value={s.season_number}>
+                        <option key={s.id} value={s.season_number} className={`${getCardBackground(appTheme)} text-white py-2`}>
                           {s.name} ({s.episode_count} Episodes)
                         </option>
                       ))}
@@ -492,16 +492,16 @@ export function DetailsPage() {
                   <select
                     value={episode}
                     onChange={(e) => setEpisode(Number(e.target.value))}
-                    className="rounded-xl bg-slate-800 border border-white/10 px-3.5 py-2.5 text-sm font-medium text-white focus:outline-none focus:ring-4 focus:ring-violet-500"
+                    className={`rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-3.5 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
                   >
                     {seasonEpisodes.length > 0 ? (
                       seasonEpisodes.map((ep: any) => (
-                        <option key={ep.id} value={ep.episode_number}>
+                        <option key={ep.id} value={ep.episode_number} className={`${getCardBackground(appTheme)} text-white py-2`}>
                           Ep {ep.episode_number}: {ep.name}
                         </option>
                       ))
                     ) : (
-                      <option value={episode}>Episode {episode}</option>
+                      <option value={episode} className={`${getCardBackground(appTheme)} text-white py-2`}>Episode {episode}</option>
                     )}
                   </select>
                 </div>
