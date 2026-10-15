@@ -49,6 +49,14 @@ function RootComponent() {
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
   useEffect(() => {
+    // Detect Fire OS / Silk WebView at runtime and tag root html element
+    if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent.toLowerCase();
+      if (ua.includes('silk') || ua.includes('firetv') || ua.includes('amazon')) {
+        document.documentElement.classList.add('fire-os');
+      }
+    }
+
     const authorized = localStorage.getItem(DISCLAIMER_ACCEPTED_KEY);
     if (!authorized) {
       setShowFirstStartModal(true);
@@ -433,156 +441,3 @@ function RootComponent() {
                         </label>
 
                         {backupStatus && (
-                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold ml-2`}>
-                            {backupStatus}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-          </header>
-
-          <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden">
-            <Outlet />
-          </main>
-
-          {showFirstStartModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
-              <form
-                onSubmit={handleFirstTimeAuthorize}
-                className={`my-auto w-full max-w-xl space-y-6 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
-              >
-                <div className="text-center space-y-2">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-slate-900">
-                    <img
-                      src={RABBIT_LOGO_DATA_URL}
-                      alt="RABBiT TV"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <h2 className={`text-2xl font-bold ${getPrimaryAccentColor(appTheme)}`}>
-                    Welcome to RABBiT TV
-                  </h2>
-                </div>
-
-                <div className="space-y-4 text-sm leading-relaxed text-slate-300">
-                  <p>
-                    This app has been shared by <strong>Rabbit</strong> as a friendly gesture. By entering the personal agreement code below, you confirm strict authorization and agree not to share or distribute this app without consent.
-                  </p>
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-300">
-                    <strong>⚠️ Device Monitoring Notice:</strong> Unique device IDs running this application are logged for authorization tracking. Unauthorized installations or unapproved sharing can be detected immediately.
-                  </div>
-                </div>
-
-                {/* Theme Selector on Splash Screen */}
-                <div className="space-y-2 border-t border-white/10 pt-4">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Select Startup Theme:
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { id: "violet", label: "🟣 Violet" },
-                      { id: "red", label: "🔴 Red" },
-                      { id: "midnight", label: "🔵 Midnight" },
-                    ].map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setAppTheme(t.id as AppTheme)}
-                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
-                          appTheme === t.id
-                            ? `border-white/30 ${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-lg`
-                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Display Size Selector on Splash Screen */}
-                <div className="space-y-2 border-t border-white/10 pt-4">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Select Display Size (Adjustable anytime in settings):
-                  </label>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    {(["small", "medium", "large"] as CardSize[]).map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => handleSizeChange(size)}
-                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
-                          cardSize === size
-                            ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
-                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                        }`}
-                      >
-                        {size === "small" ? "Small (25%)" : size === "medium" ? "Medium (60%)" : "Large (100%)"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* XL Mouse Toggle on Splash Screen */}
-                <div className="flex items-center justify-between border-t border-white/10 pt-4">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      XL Mouse Pointer
-                    </label>
-                    <p className="text-[11px] text-slate-400">Enlarges cursor 3x for easy projector/TV navigation.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleMouseToggle(!helpfulMouse)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        helpfulMouse ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="space-y-2 border-t border-white/10 pt-4">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Enter Personal Agreement Code:
-                  </label>
-                  <input
-                    type="password"
-                    maxLength={10}
-                    value={passcodeInput}
-                    onChange={(e) => setPasscodeInput(e.target.value)}
-                    placeholder="Enter Code"
-                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
-                  />
-
-                  {passcodeError && (
-                    <p className="text-xs font-semibold text-red-400 text-center">
-                      ⚠️ Invalid Authorization Code. Agreement Not Accepted.
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-4 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
-                >
-                  Accept Agreement & Launch App
-                </button>
-              </form>
-            </div>
-          )}
-        </AuthProvider>
-        <Scripts />
-      </body>
-    </html>
-  );
-}
