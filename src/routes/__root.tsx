@@ -158,15 +158,66 @@ function RootComponent() {
     }
   };
 
+  // Dynamic theme background mapping for the entire app body
+  const getBodyBackground = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-[#120202]";
+      case "midnight":
+        return "bg-[#020617]";
+      case "violet":
+      default:
+        return "bg-[#050b16]";
+    }
+  };
+
+  // Dynamic theme accent mapping for buttons and highlights
+  const getActiveThemeBtnClass = (theme: AppTheme, active: boolean) => {
+    if (!active) return "border-white/10 bg-slate-800 text-slate-200 hover:bg-slate-700";
+    switch (theme) {
+      case "red":
+        return "border-red-500 bg-red-600 text-white shadow-md shadow-red-600/30";
+      case "midnight":
+        return "border-blue-500 bg-blue-600 text-white shadow-md shadow-blue-600/30";
+      case "violet":
+      default:
+        return "border-violet-500 bg-violet-600 text-white shadow-md shadow-violet-600/30";
+    }
+  };
+
+  const getPrimaryAccentColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "text-red-400";
+      case "midnight":
+        return "text-blue-400";
+      case "violet":
+      default:
+        return "text-violet-400";
+    }
+  };
+
+  const getPrimaryBgColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-red-600 hover:bg-red-500 shadow-red-600/40";
+      case "midnight":
+        return "bg-blue-600 hover:bg-blue-500 shadow-blue-600/40";
+      case "violet":
+      default:
+        return "bg-violet-600 hover:bg-violet-500 shadow-violet-600/40";
+    }
+  };
+
   return (
-    <html lang="en">
+    <html lang="en" data-theme={appTheme}>
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen max-w-full overflow-x-hidden bg-[#050b16] text-slate-100 antialiased">
+      <body className={`min-h-screen max-w-full overflow-x-hidden ${getBodyBackground(appTheme)} text-slate-100 antialiased transition-colors duration-300`}>
         <PreviewHostBridge />
         <AuthProvider>
-          <header className="sticky top-0 z-40 border-b border-white/10 bg-[#050b16]/95 backdrop-blur-md">
+          <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
             <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-3 py-2.5 sm:px-6">
               {/* Brand Logo */}
               <Link
@@ -189,11 +240,10 @@ function RootComponent() {
                   <button
                     type="button"
                     onClick={() => toggleSettingsSection("theme")}
-                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
+                      appTheme,
                       showSettings && activeSettingsTab === "theme"
-                        ? "border-violet-500 bg-violet-600 text-white"
-                        : "border-white/10 bg-slate-800 text-slate-200 hover:bg-slate-700"
-                    }`}
+                    )}`}
                   >
                     🎨 Color Theme
                   </button>
@@ -201,11 +251,10 @@ function RootComponent() {
                   <button
                     type="button"
                     onClick={() => toggleSettingsSection("scale")}
-                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
+                      appTheme,
                       showSettings && activeSettingsTab === "scale"
-                        ? "border-violet-500 bg-violet-600 text-white"
-                        : "border-white/10 bg-slate-800 text-slate-200 hover:bg-slate-700"
-                    }`}
+                    )}`}
                   >
                     📐 Poster Scale
                   </button>
@@ -213,11 +262,10 @@ function RootComponent() {
                   <button
                     type="button"
                     onClick={() => toggleSettingsSection("quality")}
-                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
+                      appTheme,
                       showSettings && activeSettingsTab === "quality"
-                        ? "border-violet-500 bg-violet-600 text-white"
-                        : "border-white/10 bg-slate-800 text-slate-200 hover:bg-slate-700"
-                    }`}
+                    )}`}
                   >
                     ⚙️ Stream Quality
                   </button>
@@ -225,11 +273,10 @@ function RootComponent() {
                   <button
                     type="button"
                     onClick={() => toggleSettingsSection("backup")}
-                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                    className={`rounded-xl border px-2.5 py-1 text-xs font-semibold transition shrink-0 ${getActiveThemeBtnClass(
+                      appTheme,
                       showSettings && activeSettingsTab === "backup"
-                        ? "border-violet-500 bg-violet-600 text-white"
-                        : "border-white/10 bg-slate-800 text-slate-200 hover:bg-slate-700"
-                    }`}
+                    )}`}
                   >
                     💾 Backup Profile
                   </button>
@@ -255,7 +302,7 @@ function RootComponent() {
                           onClick={() => handleThemeChange(t.id as AppTheme)}
                           className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
                             appTheme === t.id
-                              ? "bg-violet-600 text-white shadow-md shadow-violet-600/30"
+                              ? `${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-md`
                               : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                           }`}
                         >
@@ -275,7 +322,7 @@ function RootComponent() {
                           onClick={() => handleSizeChange(size)}
                           className={`rounded-lg px-3 py-1 text-xs font-bold capitalize transition ${
                             cardSize === size
-                              ? "bg-violet-600 text-white shadow-md shadow-violet-600/30"
+                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
                               : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                           }`}
                         >
@@ -300,7 +347,7 @@ function RootComponent() {
                           onClick={() => handleQualityChange(item.key as StreamQuality)}
                           className={`rounded-lg px-3 py-1 text-xs font-bold transition ${
                             streamQuality === item.key
-                              ? "bg-violet-600 text-white shadow-md shadow-violet-600/30"
+                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
                               : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                           }`}
                         >
@@ -331,7 +378,7 @@ function RootComponent() {
                       </label>
 
                       {backupStatus && (
-                        <span className="text-xs text-violet-400 font-semibold">
+                        <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold`}>
                           {backupStatus}
                         </span>
                       )}
@@ -350,17 +397,17 @@ function RootComponent() {
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
               <form
                 onSubmit={handleFirstTimeAuthorize}
-                className="my-auto w-full max-w-xl space-y-6 rounded-2xl border border-violet-500/30 bg-slate-900 p-6 text-white shadow-2xl md:p-8"
+                className="my-auto w-full max-w-xl space-y-6 rounded-2xl border border-white/10 bg-slate-900 p-6 text-white shadow-2xl md:p-8"
               >
                 <div className="text-center space-y-2">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-violet-500/40 bg-slate-900">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-slate-900">
                     <img
                       src={RABBIT_LOGO_DATA_URL}
                       alt="RABBiT TV"
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <h2 className="text-2xl font-bold text-violet-400">
+                  <h2 className={`text-2xl font-bold ${getPrimaryAccentColor(appTheme)}`}>
                     Welcome to RABBiT TV
                   </h2>
                 </div>
@@ -385,9 +432,9 @@ function RootComponent() {
                         key={size}
                         type="button"
                         onClick={() => setCardSize(size)}
-                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 focus:ring-violet-400 ${
+                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
                           cardSize === size
-                            ? "border-violet-400 bg-violet-600 text-white shadow-lg shadow-violet-600/30"
+                            ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
                             : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
                       >
@@ -407,7 +454,7 @@ function RootComponent() {
                     value={passcodeInput}
                     onChange={(e) => setPasscodeInput(e.target.value)}
                     placeholder="Enter Code"
-                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-violet-400"
+                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
                   />
 
                   {passcodeError && (
@@ -419,7 +466,7 @@ function RootComponent() {
 
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-violet-600 py-4 text-base font-bold text-white shadow-lg shadow-violet-600/40 transition hover:bg-violet-500 active:scale-95 focus:outline-none focus:ring-4 focus:ring-violet-400"
+                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-4 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
                 >
                   Accept Agreement & Launch App
                 </button>
