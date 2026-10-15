@@ -39,8 +39,23 @@ public class MainActivity extends BridgeActivity {
             settings.setUseWideViewPort(true);
             settings.setSupportZoom(false);
             
-            // Enable hardware acceleration specifically for video decoding and iframe positioning
+            // Force hardware acceleration layer type to resolve Fire OS iframe positioning bugs
             webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+            // Force layout pass recalculation on load so iframes don't collapse to top-left (0,0)
+            webView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    webView.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            webView.requestLayout();
+                            webView.invalidate();
+                        }
+                    });
+                }
+            });
 
             // Extend Capacitor's native BridgeWebViewClient to preserve local app routing while blocking ad redirects
             webView.setWebViewClient(new BridgeWebViewClient(this.bridge) {
