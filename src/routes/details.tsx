@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 const WATCH_HISTORY_STORAGE_KEY = "rabtv_watch_history";
 const MY_LIST_STORAGE_KEY = "rabtv_my_list";
 const FAVORITES_STORAGE_KEY = "rabtv_favorites";
-const THEME_STORAGE_KEY = "rabtv_theme"; // Key where your app stores the theme
+const THEME_STORAGE_KEY = "rabtv_theme";
 
 export const Route = createFileRoute("/details")({
   component: DetailsPage,
@@ -36,10 +36,8 @@ export function DetailsPage() {
   useEffect(() => {
     const loadTheme = () => {
       try {
-        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-        if (savedTheme) {
-          setAccentColor(savedTheme);
-        }
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || localStorage.getItem("theme") || "violet";
+        setAccentColor(savedTheme);
       } catch (err) {
         console.error("Error reading theme", err);
       }
@@ -55,51 +53,41 @@ export function DetailsPage() {
     };
   }, []);
 
-  // Helper mappings for dynamic theme colors so Tailwind compiles them correctly
-  const themeClasses: Record<string, { text: string; bg: string; border: string; ring: string; shadow: string; hoverBg: string }> = {
-    violet: {
+  // Smart Theme Normalizer to match Red, Midnight/Blue, or Violet strings
+  const getThemeClasses = (rawTheme: string) => {
+    const val = rawTheme.toLowerCase();
+    if (val.includes("red")) {
+      return {
+        text: "text-red-500",
+        bg: "bg-red-600",
+        hoverBg: "hover:bg-red-500",
+        border: "border-red-500",
+        ring: "focus:ring-red-400",
+        shadow: "shadow-red-600/30",
+      };
+    }
+    if (val.includes("midnight") || val.includes("blue")) {
+      return {
+        text: "text-blue-400",
+        bg: "bg-blue-600",
+        hoverBg: "hover:bg-blue-500",
+        border: "border-blue-500",
+        ring: "focus:ring-blue-400",
+        shadow: "shadow-blue-600/30",
+      };
+    }
+    // Default / Violet & Neon
+    return {
       text: "text-violet-400",
       bg: "bg-violet-600",
       hoverBg: "hover:bg-violet-500",
       border: "border-violet-500",
       ring: "focus:ring-violet-400",
       shadow: "shadow-violet-600/30",
-    },
-    indigo: {
-      text: "text-indigo-400",
-      bg: "bg-indigo-600",
-      hoverBg: "hover:bg-indigo-500",
-      border: "border-indigo-500",
-      ring: "focus:ring-indigo-400",
-      shadow: "shadow-indigo-600/30",
-    },
-    emerald: {
-      text: "text-emerald-400",
-      bg: "bg-emerald-600",
-      hoverBg: "hover:bg-emerald-500",
-      border: "border-emerald-500",
-      ring: "focus:ring-emerald-400",
-      shadow: "shadow-emerald-600/30",
-    },
-    rose: {
-      text: "text-rose-400",
-      bg: "bg-rose-600",
-      hoverBg: "hover:bg-rose-500",
-      border: "border-rose-500",
-      ring: "focus:ring-rose-400",
-      shadow: "shadow-rose-600/30",
-    },
-    amber: {
-      text: "text-amber-400",
-      bg: "bg-amber-600",
-      hoverBg: "hover:bg-amber-500",
-      border: "border-amber-500",
-      ring: "focus:ring-amber-400",
-      shadow: "shadow-amber-600/30",
-    },
+    };
   };
 
-  const activeTheme = themeClasses[accentColor] || themeClasses.violet;
+  const activeTheme = getThemeClasses(accentColor);
 
   // Check saved state for My List & Favorites
   useEffect(() => {
