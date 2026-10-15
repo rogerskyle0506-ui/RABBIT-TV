@@ -102,14 +102,7 @@ jobs:
       - name: Add Android Platform
         run: npx @capacitor/cli add android
 
-      - name: Map TV Banner to Splash Screen Asset
-        run: |
-          if [ -f assets/tv_banner.png ]; then
-            cp assets/tv_banner.png assets/splash.png
-            echo "Successfully set tv_banner.png as splash.png for native splash generation"
-          fi
-
-      - name: Generate App Icons and Splash Screens from Custom Icon
+      - name: Generate App Icons and Splash Screens from Standard Assets
         run: npx @capacitor/assets generate --android
 
       - name: Sync Capacitor
@@ -121,14 +114,14 @@ jobs:
           mkdir -p android/app/src/main/java/com/rabbittv/app
           cp patches/MainActivity.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
 
-          # 2. Copy TV banner into Android drawable resources
+          # 2. Copy TV banner into Android drawable resources (for TV Leanback launcher icon only)
           mkdir -p android/app/src/main/res/drawable
           cp assets/tv_banner.png android/app/src/main/res/drawable/tv_banner.png
 
           # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
           cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
-          # 4. Configure clean dark styles.xml to fix Fire Stick banner bleed & top-left video scaling bug
+          # 4. Configure clean dark styles.xml to eliminate banner background bleed & fix Fire Stick video scaling
           mkdir -p android/app/src/main/res/values
           cat << 'EOF' > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
