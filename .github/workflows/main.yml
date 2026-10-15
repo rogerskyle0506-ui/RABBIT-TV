@@ -99,7 +99,7 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Inject Custom MainActivity, TV Banner, Manifest & Splash Style
+      - name: Inject Custom MainActivity, TV Banner, Manifest & Fullscreen Banner Splash
         run: |
           # 1. Inject popup-blocking MainActivity
           mkdir -p android/app/src/main/java/com/rabbittv/app
@@ -112,12 +112,12 @@ jobs:
           # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
           cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
-          # 4. Overwrite Android Launch Theme to force TV Banner full-screen
+          # 4. Completely override styles.xml to bypass Android 12 circular icon splash & show full banner
           mkdir -p android/app/src/main/res/values
           cat << 'EOF' > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+              <style name="AppTheme" parent="Theme.AppCompat.NoActionBar">
                   <item name="colorPrimary">@color/colorPrimary</item>
                   <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
                   <item name="colorAccent">@color/colorAccent</item>
@@ -132,6 +132,8 @@ jobs:
               <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
                   <item name="android:background">@drawable/tv_banner</item>
                   <item name="android:windowBackground">@drawable/tv_banner</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/tv_banner</item>
+                  <item name="android:windowSplashScreenBackground">#050b16</item>
               </style>
           </resources>
           EOF
