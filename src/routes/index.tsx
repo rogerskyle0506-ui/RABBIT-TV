@@ -1,12 +1,3 @@
-Here is the updated code for `src/routes/index.tsx` with all the requested layout and UI adjustments applied:
-
-* Centered the top navigation menu tabs and made them scale dynamically.
-* Removed the "About RABBiTs TV" footer box.
-* Adjusted the featured hero banner to take up about 50% of the display height, keeping text properly constrained with smooth scrolling.
-* Styled the genre filter buttons inside a centered decorative pillbox with theme-matched gradient styling.
-* Removed borders from `MediaCard` components for a floating effect and updated the 'Watch' button to a pill shape with a dark theme-matched gradient.
-
-```tsx
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import type { MediaItem } from "@/lib/tmdb-scraper";
@@ -455,5 +446,3 @@ function Home() {
 export const Route = createFileRoute("/")({
   component: Home,
 });
-
-```
