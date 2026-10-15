@@ -1,4 +1,5 @@
-import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
+import { Outlet, createRootRoute, HeadContent, Scripts, Link, useRouter, useLocation } from "@tanstack/react-router";
+import { App as CapacitorApp } from "@capacitor/app";
 import { AuthProvider } from "@/components/auth-provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import "@/styles.css";
@@ -34,6 +35,9 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const router = useRouter();
+  const location = useLocation();
+
   const [showFirstStartModal, setShowFirstStartModal] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState(false);
@@ -46,6 +50,7 @@ function RootComponent() {
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
+  // Load initial settings and theme state
   useEffect(() => {
     const authorized = localStorage.getItem(DISCLAIMER_ACCEPTED_KEY);
     if (!authorized) {
@@ -55,7 +60,45 @@ function RootComponent() {
     setCardSize(getSavedCardSize());
     setStreamQuality(getSavedStreamQuality());
     setAppTheme(getSavedTheme());
+
+    const handleSettingsUpdate = () => {
+      setCardSize(getSavedCardSize());
+      setStreamQuality(getSavedStreamQuality());
+      setAppTheme(getSavedTheme());
+    };
+
+    window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
+    return () => {
+      window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
+    };
   }, []);
+
+  // Handle Android Hardware Back Button via Capacitor
+  useEffect(() => {
+    let backButtonListener: Promise<any> | null = null;
+
+    try {
+      backButtonListener = CapacitorApp.addListener("backButton", () => {
+        // If on the home screen, set back action to null (do nothing / don't exit)
+        if (location.pathname === "/") {
+          return;
+        }
+
+        // Otherwise, return to the previous view/screen in history
+        if (router.history.canGoBack()) {
+          router.history.back();
+        }
+      });
+    } catch (err) {
+      console.debug("Capacitor App plugin not available in browser environment", err);
+    }
+
+    return () => {
+      if (backButtonListener) {
+        backButtonListener.then((listener) => listener.remove());
+      }
+    };
+  }, [router, location]);
 
   const handleFirstTimeAuthorize = (e: React.FormEvent) => {
     e.preventDefault();
