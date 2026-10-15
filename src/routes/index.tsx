@@ -35,46 +35,6 @@ export function MediaCard({ item }: { item: MediaItem }) {
       setCardSize(getSavedCardSize());
     };
 
-    window.addEventListener("rabHere is the complete, fully updated `src/routes/index.tsx` file with the fixed navigation bar, proper spacing buffers to prevent edge clipping, and clean JSX syntax:
-
-```tsx
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import type { MediaItem } from "@/lib/tmdb-scraper";
-import { scrapeCategoryContent } from "@/lib/tmdb-scraper";
-import {
-  CardSize,
-  AppTheme,
-  getSavedCardSize,
-  getSavedTheme,
-  getPosterDimensions,
-} from "@/lib/settings";
-
-const navTabs = ["Home", "Series", "Movies", "Live", "My List"] as const;
-type NavTab = (typeof navTabs)[number];
-
-const genreCategories = [
-  "Trending",
-  "Action",
-  "Drama",
-  "Comedy",
-  "Sci-Fi",
-  "Horror",
-];
-
-const MY_LIST_STORAGE_KEY = "rabtv_my_list";
-const FAVORITES_STORAGE_KEY = "rabtv_favorites";
-
-export function MediaCard({ item }: { item: MediaItem }) {
-  const [cardSize, setCardSize] = useState<CardSize>("large");
-
-  useEffect(() => {
-    setCardSize(getSavedCardSize());
-
-    const handleSettingsUpdate = () => {
-      setCardSize(getSavedCardSize());
-    };
-
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
     return () =>
       window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
@@ -84,7 +44,10 @@ export function MediaCard({ item }: { item: MediaItem }) {
 
   if (cardSize === "small") {
     return (
-      <Link ${dimensions.card}`} bg-slate-900 className="{`group" flex focus:outline-none focus:ring-4 focus:ring-violet-400 hover:scale-105 overflow-hidden relative rounded-xl to="{item.href}" transition w-full>
+      <Link
+        to={item.href}
+        className={`group flex ${dimensions.card} bg-slate-900 focus:outline-none focus:ring-4 focus:ring-violet-400 hover:scale-105 overflow-hidden relative rounded-xl transition w-full`}
+      >
         <img
           src={item.image}
           alt={item.title}
@@ -92,7 +55,9 @@ export function MediaCard({ item }: { item: MediaItem }) {
           loading="lazy"
         />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5 text-center">
-          <p className="text-[10px] font-bold text-white truncate px-1 rounded bg-black/40 backdrop-blur-sm">{item.title}</p>
+          <p className="text-[10px] font-bold text-white truncate px-1 rounded bg-black/40 backdrop-blur-sm">
+            {item.title}
+          </p>
         </div>
       </Link>
     );
@@ -102,7 +67,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
     <div
       className={`group relative flex w-full flex-col overflow-hidden rounded-2xl bg-slate-900/90 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 ${dimensions.card}`}
     >
-      <Link className="block relative overflow-hidden flex-1 focus:outline-none" to="{item.href}">
+      <Link className="block relative overflow-hidden flex-1 focus:outline-none" to={item.href}>
         <img
           src={item.image}
           alt={item.title}
@@ -128,7 +93,10 @@ export function MediaCard({ item }: { item: MediaItem }) {
       </Link>
 
       <div className="p-2 bg-black/80 border-t border-white/10 flex items-center justify-between">
-        <Link className="w-full text-center rounded-full bg-black/70 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-violet-400" to="{item.href}">
+        <Link
+          to={item.href}
+          className="w-full text-center rounded-full bg-black/70 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-violet-400"
+        >
           WATCH →
         </Link>
       </div>
@@ -351,7 +319,10 @@ function Home() {
                   </div>
 
                   <div className="shrink-0 w-full sm:w-auto">
-                    <Link ${themeStyles.btnActive} border border-white/10 className="{`w-full" font-bold inline-flex items-center justify-center px-5 py-2.5 rounded-full shadow-lg sm:w-auto text-xs to="{featured.href}" transition whitespace-nowrap`}>
+                    <Link
+                      to={featured.href}
+                      className={`w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-full shadow-lg text-xs font-bold transition whitespace-nowrap border border-white/10 ${themeStyles.btnActive}`}
+                    >
                       WATCH NOW
                     </Link>
                   </div>
@@ -444,7 +415,7 @@ function Home() {
           {filteredItems.length > 0 ? (
             <div className={gridColsClass}>
               {filteredItems.slice(activeTab === "My List" ? 0 : 1).map((item) => (
-                <MediaCard item="{item}" key="{item.id}"/>
+                <MediaCard item={item} key={item.id} />
               ))}
             </div>
           ) : (
