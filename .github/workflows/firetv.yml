@@ -77,12 +77,12 @@ jobs:
           </html>
           EOF
 
-      - name: Inject Balanced Fire TV CSS Adjustments into Stylesheet
+      - name: Inject Fire TV CSS Adjustments (Video Aspect & Full-Screen Fit) into Stylesheet
         run: |
           if [ -f src/styles.css ]; then
             echo "" >> src/styles.css
             echo "/* ==========================================================" >> src/styles.css
-            echo "   Fire TV Direct Workflow Injection (Safe Viewport & Modal Fix)" >> src/styles.css
+            echo "   Fire TV Direct Workflow Injection (Video Aspect & Full-Screen Fit)" >> src/styles.css
             echo "   ================================================---------- */" >> src/styles.css
             echo "html, body {" >> src/styles.css
             echo "  overflow-x: hidden !important;" >> src/styles.css
@@ -95,12 +95,13 @@ jobs:
             echo "" >> src/styles.css
             echo "iframe, video, .video-player-container {" >> src/styles.css
             echo "  width: 100% !important;" >> src/styles.css
-            echo "  height: auto !important;" >> src/styles.css
-            echo "  max-width: 100% !important;" >> src/styles.css
+            echo "  height: 100% !important;" >> src/styles.css
             echo "  position: relative !important;" >> src/styles.css
+            echo "  top: 0 !important;" >> src/styles.css
+            echo "  object-fit: contain !important;" >> src/styles.css
             echo "  box-sizing: border-box !important;" >> src/styles.css
             echo "}" >> src/styles.css
-            echo "Successfully injected safe Fire TV CSS adjustments into src/styles.css"
+            echo "Successfully injected video aspect Fire TV CSS adjustments into src/styles.css"
           else
             echo "Error: src/styles.css not found!"
             exit 1
