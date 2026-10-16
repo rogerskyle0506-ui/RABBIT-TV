@@ -1,4 +1,4 @@
-name: Build Fire TV Edition APK
+name: Build Fire TV Edition fireAPK
 
 on:
   push:
@@ -82,18 +82,21 @@ jobs:
           if [ -f src/styles.css ]; then
             echo "" >> src/styles.css
             echo "/* ==========================================================" >> src/styles.css
-            echo "   Fire TV Direct Workflow Injection" >> src/styles.css
+            echo "   Fire TV Direct Workflow Injection (Centered Viewport Fix)" >> src/styles.css
             echo "   ================================================---------- */" >> src/styles.css
             echo "main {" >> src/styles.css
-            echo "  padding-top: 48px !important;" >> src/styles.css
+            echo "  padding-top: 33vh !important;" >> src/styles.css
             echo "}" >> src/styles.css
             echo "" >> src/styles.css
             echo "iframe {" >> src/styles.css
-            echo "  width: 100% !important;" >> src/styles.css
-            echo "  height: 100% !important;" >> src/styles.css
-            echo "  position: relative !important;" >> src/styles.css
+            echo "  position: absolute !important;" >> src/styles.css
+            echo "  top: 50% !important;" >> src/styles.css
+            echo "  left: 50% !important;" >> src/styles.css
+            echo "  transform: translate(-50%, -50%) !important;" >> src/styles.css
+            echo "  width: 100vw !important;" >> src/styles.css
+            echo "  height: 100vh !important;" >> src/styles.css
             echo "}" >> src/styles.css
-            echo "Successfully injected direct Fire TV CSS adjustments into src/styles.css"
+            echo "Successfully injected centered Fire TV CSS adjustments into src/styles.css"
           else
             echo "Error: src/styles.css not found!"
             exit 1
