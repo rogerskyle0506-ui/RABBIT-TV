@@ -166,7 +166,7 @@ jobs:
 
               <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
                   <item name="android:windowBackground">#050b16</item>
-                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/tv_banner</i>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/tv_banner</item>
                   <item name="android:windowSplashScreenBackground">#050b16</item>
               </style>
           </resources>
