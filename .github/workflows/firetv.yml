@@ -77,31 +77,39 @@ jobs:
           </html>
           EOF
 
-      - name: Inject Fire TV CSS Adjustments (Video Aspect & Full-Screen Fit) into Stylesheet
+      - name: Inject Fire TV CSS Adjustments (Corrected Player Positioning) into Stylesheet
         run: |
           if [ -f src/styles.css ]; then
             echo "" >> src/styles.css
             echo "/* ==========================================================" >> src/styles.css
-            echo "   Fire TV Direct Workflow Injection (Video Aspect & Full-Screen Fit)" >> src/styles.css
+            echo "   Fire TV Direct Workflow Injection (Corrected Player Positioning)" >> src/styles.css
             echo "   ================================================---------- */" >> src/styles.css
-            echo "html, body {" >> src/styles.css
-            echo "  overflow-x: hidden !important;" >> src/styles.css
+            echo "html, body, #root {" >> src/styles.css
+            echo "  width: 100vw !important;" >> src/styles.css
+            echo "  height: 100vh !important;" >> src/styles.css
+            echo "  overflow: hidden !important;" >> src/styles.css
             echo "  background-color: var(--app-bg, #050b16) !important;" >> src/styles.css
             echo "}" >> src/styles.css
             echo "" >> src/styles.css
             echo "main {" >> src/styles.css
             echo "  padding-top: 0px !important;" >> src/styles.css
+            echo "  width: 100vw !important;" >> src/styles.css
+            echo "  height: 100vh !important;" >> src/styles.css
             echo "}" >> src/styles.css
             echo "" >> src/styles.css
             echo "iframe, video, .video-player-container {" >> src/styles.css
-            echo "  width: 100% !important;" >> src/styles.css
-            echo "  height: 100% !important;" >> src/styles.css
-            echo "  position: relative !important;" >> src/styles.css
+            echo "  position: fixed !important;" >> src/styles.css
             echo "  top: 0 !important;" >> src/styles.css
+            echo "  left: 0 !important;" >> src/styles.css
+            echo "  width: 100vw !important;" >> src/styles.css
+            echo "  height: 100vh !important;" >> src/styles.css
+            echo "  max-width: 100vw !important;" >> src/styles.css
+            echo "  max-height: 100vh !important;" >> src/styles.css
             echo "  object-fit: contain !important;" >> src/styles.css
-            echo "  box-sizing: border-box !important;" >> src/styles.css
+            echo "  z-index: 9999 !important;" >> src/styles.css
+            echo "  pointer-events: auto !important;" >> src/styles.css
             echo "}" >> src/styles.css
-            echo "Successfully injected video aspect Fire TV CSS adjustments into src/styles.css"
+            echo "Successfully injected corrected player positioning CSS adjustments into src/styles.css"
           else
             echo "Error: src/styles.css not found!"
             exit 1
