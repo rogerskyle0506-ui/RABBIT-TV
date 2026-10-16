@@ -77,6 +77,26 @@ jobs:
           </html>
           EOF
 
+      - name: Inject Fire OS 7 CSS Adjustments into Stylesheet
+        run: |
+          if [ -f src/styles.css ]; then
+            echo "" >> src/styles.css
+            echo "/* ==========================================================" >> src/styles.css
+            echo "   Fire OS 7 Dynamic Injection via Workflow" >> src/styles.css
+            echo "   ================================================---------- */" >> src/styles.css
+            echo ".fire-os main {" >> src/styles.css
+            echo "  padding-top: 33vh !important;" >> src/styles.css
+            echo "}" >> src/styles.css
+            echo "" >> src/styles.css
+            echo ".fire-os iframe {" >> src/styles.css
+            echo "  transform: translate(25vw, 33vh) !important;" >> src/styles.css
+            echo "}" >> src/styles.css
+            echo "Successfully injected Fire OS 7 CSS adjustments into src/styles.css"
+          else
+            echo "Error: src/styles.css not found!"
+            exit 1
+          fi
+
       - name: Build Web Assets for Capacitor
         env:
           CAPACITOR_BUILD: "true"
@@ -146,7 +166,7 @@ jobs:
 
               <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
                   <item name="android:windowBackground">#050b16</item>
-                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/tv_banner</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@drawable/tv_banner</i>
                   <item name="android:windowSplashScreenBackground">#050b16</item>
               </style>
           </resources>
