@@ -59,9 +59,8 @@ jobs:
             exit 1
           fi
 
-      - name: Generate Dynamic Provider Route & Patch __root.tsx
+      - name: Generate Robust TMDB Provider Route & Patch __root.tsx
         run: |
-          # 1. Create dynamic provider route file for TanStack Router
           mkdir -p src/routes
           cat << 'EOF' > src/routes/providers.$providerId.tsx
           import { createFileRoute, Link } from '@tanstack/react-router'
@@ -91,7 +90,7 @@ jobs:
                   const token = import.meta.env.VITE_TMDB_READ_TOKEN || ''
                   const apiKey = import.meta.env.VITE_TMDB_API_KEY || ''
                   
-                  let url = `https://api.themoviedb.org/3/discover/movie?with_watch_providers=${providerId}&watch_region=CA&sort_by=popularity.desc`
+                  let url = `https://api.themoviedb.org/3/discover/movie?include_adult=false&include_video=false&language=en-US&page=1&sort_by=popularity.desc&with_watch_providers=${providerId}&watch_region=CA`
                   
                   const headers = { accept: 'application/json' }
                   if (token) {
@@ -100,13 +99,21 @@ jobs:
                     url += `&api_key=${apiKey}`
                   }
 
-                  const res = await fetch(url, { headers })
-                  const data = await res.json()
-                  if (data && data.results) {
+                  let res = await fetch(url, { headers })
+                  let data = await res.json()
+                  
+                  if (data && data.results && data.results.length > 0) {
                     setMovies(data.results)
+                  } else {
+                    let fallbackUrl = `https://api.themoviedb.org/3/movie/popular?language=en-US&page=1`
+                    if (apiKey) fallbackUrl += `&api_key=${apiKey}`
+                    res = await fetch(fallbackUrl, { headers })
+                    data = await res.json()
+                    setMovies(data && data.results ? data.results : [])
                   }
                 } catch (err) {
                   console.error('Failed to fetch provider movies:', err)
+                  setMovies([])
                 } finally {
                   setLoading(false)
                 }
@@ -118,7 +125,7 @@ jobs:
               <div className="min-h-screen bg-[#050b16] text-white p-6 pb-24">
                 <div className="flex items-center justify-between mb-8">
                   <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
-                    <span className="text-purple-400">{providerName}</span> Movies
+                    <span className="text-purple-400">{providerName}</span> Catalog (Canada)
                   </h1>
                   <Link to="/" className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-sm font-semibold rounded-full border border-white/10 transition">
                     ← Back to Home
@@ -131,7 +138,7 @@ jobs:
                   </div>
                 ) : movies.length === 0 ? (
                   <div className="text-center py-20 text-slate-400">
-                    <p className="text-lg">No movies found for {providerName} in Canada right now.</p>
+                    <p className="text-lg">No movies found for {providerName} right now.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
@@ -161,7 +168,7 @@ jobs:
           }
           EOF
 
-          # 2. Patch __root.tsx with centered, themed gradient pill tabs
+          # 2. Patch __root.tsx with centered, themed gradient provider pill tabs
           ROOT_FILE="src/routes/__root.tsx"
           if [ -f "$ROOT_FILE" ]; then
             echo "Patching $ROOT_FILE with centered, themed gradient provider pill tabs..."
@@ -264,24 +271,6 @@ jobs:
           </html>
           EOF
 
-      - name: Inject Clean Player CSS into Stylesheet
-        run: |
-          if [ -f src/styles.css ]; then
-            echo "" >> src/styles.css
-            echo "/* ==========================================================" >> src/styles.css
-            echo "   Fire TV Player Adjustments" >> src/styles.css
-            echo "   ================================================---------- */" >> src/styles.css
-            echo "iframe, video, .video-player-container {" >> src/styles.css
-            echo "  width: 100% !important;" >> src/styles.css
-            echo "  height: 100% !important;" >> src/styles.css
-            echo "  border: none !important;" >> src/styles.css
-            echo "}" >> src/styles.css
-            echo "Successfully injected player styles into src/styles.css"
-          else
-            echo "Error: src/styles.css not found!"
-            exit 1
-          fi
-
       - name: Build Web Assets for Capacitor
         env:
           CAPACITOR_BUILD: "true"
@@ -314,7 +303,7 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Dynamically Patch MainActivity for Fullscreen & Media Playback
+      - name: Dynamically Patch MainActivity for Natural Player Rendering, Keep-Awake & Popup Suppression
         run: |
           mkdir -p android/app/src/main/java/com/rabbittv/app
           cat << 'EOF' > android/app/src/main/java/com/rabbittv/app/MainActivity.java
@@ -323,9 +312,11 @@ jobs:
           import android.os.Bundle;
           import android.view.View;
           import android.view.ViewGroup;
+          import android.view.WindowManager;
           import android.webkit.WebChromeClient;
           import android.webkit.WebSettings;
           import android.webkit.WebView;
+          import android.webkit.WebViewClient;
           import com.getcapacitor.BridgeActivity;
 
           public class MainActivity extends BridgeActivity {
@@ -378,21 +369,45 @@ jobs:
                       }
                       getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
                   }
+
+                  @Override
+                  public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, android.os.Message resultMsg) {
+                      WebView newWebView = new WebView(view.getContext());
+                      newWebView.setWebViewClient(new WebViewClient() {
+                          @Override
+                          public boolean shouldOverrideUrlLoading(WebView webView, String url) {
+                              view.loadUrl(url);
+                              return true;
+                          }
+                      });
+                      WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                      transport.setWebView(newWebView);
+                      resultMsg.sendToTarget();
+                      return true;
+                  }
               };
 
               @Override
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
+                  // Prevent Fire TV screensaver / sleep mode from activating
+                  getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
                   if (this.bridge != null && this.bridge.getWebView() != null) {
                       WebView webView = this.bridge.getWebView();
-                      WebSettings settings = webView.getSettings();
                       
+                      webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
+                      WebSettings settings = webView.getSettings();
                       settings.setJavaScriptEnabled(true);
                       settings.setDomStorageEnabled(true);
                       settings.setMediaPlaybackRequiresUserGesture(false);
                       settings.setAllowFileAccess(true);
                       settings.setAllowContentAccess(true);
+                      settings.setJavaScriptCanOpenWindowsAutomatically(true);
+                      settings.setSupportMultipleWindows(true);
+                      settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
 
                       webView.setWebChromeClient(customWebChromeClient);
                   }
@@ -408,7 +423,7 @@ jobs:
               }
           }
           EOF
-          echo "Successfully generated fixed MainActivity.java during build."
+          echo "Successfully patched MainActivity.java with keep-awake and native player settings."
 
       - name: Copy TV Banner & Manifest Overrides
         run: |
