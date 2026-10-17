@@ -59,7 +59,7 @@ jobs:
             exit 1
           fi
 
-      - name: Generate Provider Route & Inject Navigation Cleanly
+      - name: Generate Provider Route, Inject Navigation & Fix Fire OS CSS
         run: |
           mkdir -p src/routes
           
@@ -170,12 +170,14 @@ jobs:
           }
           EOF
 
-          # 2. Run clean Node script to inject header navigation
+          # 2. Run clean Node script to inject header navigation & Fire OS CSS fixes into __root.tsx
           node -e '
             const fs = require("fs");
             const rootPath = "src/routes/__root.tsx";
             if (fs.existsSync(rootPath)) {
               let rootContent = fs.readFileSync(rootPath, "utf8");
+              
+              // Inject provider navigation pills
               const pillsHTML = `
                 {/* Provider Pill Navigation */}
                 <div className="hidden md:flex items-center gap-3">
@@ -187,13 +189,31 @@ jobs:
               `;
 
               const targetAnchor = "RABBiT TV</span>\n              </Link>";
-              if (rootContent.includes(targetAnchor)) {
+              if (rootContent.includes(targetAnchor) && !rootContent.includes("Provider Pill Navigation")) {
                 rootContent = rootContent.replace(targetAnchor, targetAnchor + "\n\n              " + pillsHTML);
-                fs.writeFileSync(rootPath, rootContent, "utf8");
-                console.log("Successfully injected provider pills into header!");
-              } else {
-                console.log("Warning: Exact anchor not found.");
               }
+
+              // Inject Fire OS CSS overrides inside head to fix iframe black screens & fullscreen clipping
+              const fireOsCssFix = `
+                html.fire-os iframe {
+                  width: 100% !important;
+                  height: 100% !important;
+                  min-height: 100vh !important;
+                  background-color: #000 !important;
+                }
+                html.fire-os body {
+                  width: 100vw !important;
+                  min-height: 100vh !important;
+                  overflow-x: hidden !important;
+                }
+              `;
+
+              if (rootContent.includes("<HeadContent />") && !rootContent.includes("html.fire-os iframe")) {
+                rootContent = rootContent.replace("<HeadContent />", "<HeadContent />\n        <style>" + fireOsCssFix + "</style>");
+              }
+
+              fs.writeFileSync(rootPath, rootContent, "utf8");
+              console.log("Successfully injected provider pills and Fire OS CSS layout fixes!");
             }
           '
 
@@ -227,7 +247,7 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Forcefully Write & Register Custom MainActivity for com.rabbittv.app
+      - name: Forcefully Write & Register Custom MainActivity with Wide Viewport Support
         run: |
           TARGET_DIR="android/app/src/main/java/com/rabbittv/app"
           mkdir -p "$TARGET_DIR"
@@ -335,6 +355,9 @@ jobs:
                       settings.setJavaScriptCanOpenWindowsAutomatically(true);
                       settings.setSupportMultipleWindows(true);
                       settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+                      settings.setUseWideViewPort(true);
+                      settings.setLoadWithOverviewMode(true);
+                      settings.setLoadsImagesAutomatically(true);
 
                       webView.setWebChromeClient(customWebChromeClient);
                   }
@@ -350,7 +373,7 @@ jobs:
               }
           }
           EOF
-          echo "Successfully forced MainActivity.java into com/rabbittv/app"
+          echo "Successfully forced MainActivity.java with wide viewport settings"
 
       - name: Copy TV Banner & Manifest Overrides
         run: |
