@@ -5,7 +5,6 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/router-devtools'
 import { Meta, Scripts } from '@tanstack/start'
 import React, { useEffect, useState, useRef } from 'react'
 
@@ -27,16 +26,13 @@ function RootComponent() {
   const [showSettings, setShowSettings] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<SettingsTab>('theme')
 
-  // Remote / Keyboard navigation states
   const [isTopNavFocused, setIsTopNavFocused] = useState<boolean>(false)
   const [topNavIndex, setTopNavIndex] = useState<number>(0)
   const [isSettingsMenuFocused, setIsSettingsMenuFocused] = useState<boolean>(false)
-  const [settingsIndex, setSettingsIndex] = useState<number>(0)
 
   const settingsButtonRef = useRef<HTMLButtonElement>(null)
   const settingsModalRef = useRef<HTMLDivElement>(null)
 
-  // Load preferences from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('rab_theme') as ThemeName
@@ -55,7 +51,6 @@ function RootComponent() {
     }
   }, [])
 
-  // Save preferences
   const handleSetTheme = (newTheme: ThemeName) => {
     setTheme(newTheme)
     localStorage.setItem('rab_theme', newTheme)
@@ -71,7 +66,6 @@ function RootComponent() {
     localStorage.setItem('rab_mouse', enabled.toString())
   }
 
-  // Top navigation items
   const navItems = [
     { label: 'Home', path: '/' },
     { label: 'Movies', path: '/movies' },
@@ -83,10 +77,8 @@ function RootComponent() {
 
   const tabs: SettingsTab[] = ['theme', 'scale', 'mouse']
 
-  // Global remote control listener for TV navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // If user is inside settings modal
       if (showSettings) {
         if (e.key === 'Escape' || e.key === 'Backspace') {
           e.preventDefault()
@@ -108,11 +100,10 @@ function RootComponent() {
         return
       }
 
-      // If top nav bar is focused
       if (isTopNavFocused) {
         if (e.key === 'ArrowRight') {
           e.preventDefault()
-          setTopNavIndex((prev) => (prev + 1) % (navItems.length + 1)) // +1 for settings button
+          setTopNavIndex((prev) => (prev + 1) % (navItems.length + 1))
         } else if (e.key === 'ArrowLeft') {
           e.preventDefault()
           setTopNavIndex((prev) => (prev - 1 + navItems.length + 1) % (navItems.length + 1))
@@ -122,17 +113,15 @@ function RootComponent() {
             navigate({ to: navItems[topNavIndex].path })
             setIsTopNavFocused(false)
           } else {
-            // Settings button clicked
             setShowSettings(true)
             setIsSettingsMenuFocused(true)
             setIsTopNavFocused(false)
           }
         } else if (e.key === 'ArrowDown') {
           e.preventDefault()
-          setIsTopNavFocused(false) // Drop back into page content
+          setIsTopNavFocused(false)
         }
       } else {
-        // Pressing Up from top of page focuses top nav
         if (e.key === 'ArrowUp' && window.scrollY === 0) {
           e.preventDefault()
           setIsTopNavFocused(true)
@@ -145,7 +134,6 @@ function RootComponent() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [showSettings, isTopNavFocused, topNavIndex, activeTab, navItems, navigate])
 
-  // Theme styling helpers
   const getThemeBackground = () => {
     switch (theme) {
       case 'red':
@@ -212,7 +200,6 @@ function RootComponent() {
         className={`min-h-screen ${getThemeBackground()} antialiased selection:bg-purple-500 selection:text-white`}
         style={{ fontSize: `${uiScale}%` }}
       >
-        {/* Top Navigation Bar */}
         <header className="sticky top-0 z-50 backdrop-blur-md bg-black/40 border-b border-white/10 px-6 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <h1 className="text-xl font-black tracking-wider bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
@@ -239,7 +226,6 @@ function RootComponent() {
             </nav>
           </div>
 
-          {/* Settings Button */}
           <button
             ref={settingsButtonRef}
             onClick={() => {
@@ -263,12 +249,10 @@ function RootComponent() {
           </button>
         </header>
 
-        {/* Main Application Outlet */}
         <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden">
           <Outlet />
         </main>
 
-        {/* Settings Modal Popup */}
         {showSettings && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
             <div
@@ -285,7 +269,6 @@ function RootComponent() {
                 </button>
               </div>
 
-              {/* Settings Tabs */}
               <div className="flex space-x-2 mb-6 border-b border-white/10 pb-4">
                 {tabs.map((tab) => (
                   <button
@@ -300,7 +283,6 @@ function RootComponent() {
                 ))}
               </div>
 
-              {/* Tab Contents */}
               <div className="space-y-6">
                 {activeTab === 'theme' && (
                   <div>
@@ -368,7 +350,6 @@ function RootComponent() {
         )}
 
         <ScrollRestoration />
-        <TanStackRouterDevtools />
         <Scripts />
       </body>
     </html>
