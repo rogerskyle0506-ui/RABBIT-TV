@@ -204,21 +204,15 @@ jobs:
           VITE_TMDB_READ_TOKEN: ${{ secrets.VITE_TMDB_READ_TOKEN }}
         run: npx vite build
 
-      - name: Map TanStack Shell to Capacitor index.html
+      - name: Update Capacitor Config webDir to dist/client
         run: |
-          if [ -f dist/client/_shell.html ]; then
-            cp dist/client/_shell.html dist/client/index.html
-            echo "Successfully copied _shell.html to index.html"
-          elif [ ! -f dist/client/index.html ]; then
-            echo "Error: Could not find _shell.html or index.html in dist/client"
-            ls -R dist/ || true
-            exit 1
-          fi
-
-      - name: Create Dummy www Folder for Capacitor Init
-        run: |
-          mkdir -p www
-          cp dist/client/index.html www/index.html
+          node -e '
+            const fs = require("fs");
+            const config = JSON.parse(fs.readFileSync("capacitor.config.json", "utf8"));
+            config.webDir = "dist/client";
+            fs.writeFileSync("capacitor.config.json", JSON.stringify(config, null, 2), "utf8");
+            console.log("Updated capacitor.config.json webDir to dist/client");
+          '
 
       - name: Add Android Platform
         run: npx @capacitor/cli add android
