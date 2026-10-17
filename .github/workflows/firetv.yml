@@ -59,11 +59,11 @@ jobs:
             exit 1
           fi
 
-      - name: Create Dynamic Provider Route & Inject Provider Header into __root.tsx
+      - name: Create Dedicated Provider Route & Directly Inject Navigation into __root.tsx
         run: |
           mkdir -p src/routes
           
-          # 1. Create the dedicated provider route file
+          # 1. Create the dedicated provider route file for Netflix (8), Prime (9), Disney+ (337) in Canada
           cat << 'EOF' > src/routes/providers.$providerId.tsx
           import { createFileRoute, Link } from '@tanstack/react-router'
           import { useState, useEffect } from 'react'
@@ -124,10 +124,10 @@ jobs:
             }, [providerId])
 
             return (
-              <div className="min-h-screen bg-[#050b16] text-white p-6 pb-24">
+              <div className="min-h-screen text-white p-6 pb-24">
                 <div className="flex items-center justify-between mb-8">
                   <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
-                    <span className="text-purple-400">{providerName}</span> Catalog (Canada)
+                    <span className="text-violet-400">{providerName}</span> Catalog (Canada)
                   </h1>
                   <Link to="/" className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-sm font-semibold rounded-full border border-white/10 transition">
                     ← Back to Home
@@ -136,7 +136,7 @@ jobs:
 
                 {loading ? (
                   <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
                   </div>
                 ) : movies.length === 0 ? (
                   <div className="text-center py-20 text-slate-400">
@@ -145,7 +145,7 @@ jobs:
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
                     {movies.map((movie) => (
-                      <Link key={movie.id} to={`/movie/${movie.id}`} className="group flex flex-col bg-slate-900/60 rounded-xl overflow-hidden border border-white/10 hover:border-purple-500/50 transition transform hover:scale-105">
+                      <Link key={movie.id} to={`/movie/${movie.id}`} className="group flex flex-col bg-slate-900/60 rounded-xl overflow-hidden border border-white/10 hover:border-violet-500/50 transition transform hover:scale-105">
                         <div className="aspect-[2/3] w-full bg-slate-800 relative overflow-hidden">
                           {movie.poster_path ? (
                             <img 
@@ -158,7 +158,7 @@ jobs:
                           )}
                         </div>
                         <div className="p-3 flex flex-col flex-grow">
-                          <h2 className="text-sm font-bold truncate text-white group-hover:text-purple-400 transition">{movie.title}</h2>
+                          <h2 className="text-sm font-bold truncate text-white group-hover:text-violet-400 transition">{movie.title}</h2>
                           <p className="text-xs text-slate-400 mt-1">{movie.release_date ? movie.release_date.split('-')[0] : 'N/A'}</p>
                         </div>
                       </Link>
@@ -170,32 +170,34 @@ jobs:
           }
           EOF
 
-          # 2. Inject provider gradient pill tabs directly into __root.tsx with absolute fallback
+          # 2. Inject provider gradient pill tabs directly into the header of __root.tsx
           ROOT_FILE="src/routes/__root.tsx"
           if [ -f "$ROOT_FILE" ]; then
             node -e '
               const fs = require("fs");
               let content = fs.readFileSync("src/routes/__root.tsx", "utf8");
               
-              const providerNavJSX = `
-                <div className="flex items-center justify-center gap-6 px-6 py-4 bg-slate-950/95 border-b border-white/10 shrink-0 z-50 shadow-xl">
-                  <Link to="/" className="px-5 py-2 text-sm font-bold rounded-full bg-gradient-to-r from-slate-800 to-slate-900 text-slate-200 border border-white/10 hover:border-slate-500 shadow-md transition-all">All</Link>
-                  <Link to="/providers/8" className="px-6 py-2.5 text-sm font-extrabold rounded-full bg-gradient-to-r from-red-600 to-rose-900 text-white border border-red-500/40 shadow-lg shadow-red-900/40 hover:scale-105 transition-all">Netflix</Link>
-                  <Link to="/providers/9" className="px-6 py-2.5 text-sm font-extrabold rounded-full bg-gradient-to-r from-sky-600 to-blue-900 text-white border border-sky-500/40 shadow-lg shadow-sky-900/40 hover:scale-105 transition-all">Prime Video</Link>
-                  <Link to="/providers/337" className="px-6 py-2.5 text-sm font-extrabold rounded-full bg-gradient-to-r from-blue-700 to-indigo-900 text-white border border-blue-500/40 shadow-lg shadow-blue-900/40 hover:scale-105 transition-all">Disney+</Link>
+              const providerPillsHTML = `
+                {/* Provider Pill Navigation */}
+                <div className="hidden md:flex items-center gap-3">
+                  <Link to="/" className="px-4 py-1.5 text-xs font-bold rounded-full bg-slate-800 text-slate-200 border border-white/10 hover:border-slate-500 transition">All</Link>
+                  <Link to="/providers/8" className="px-4 py-1.5 text-xs font-extrabold rounded-full bg-gradient-to-r from-red-600 to-rose-900 text-white border border-red-500/40 shadow-md shadow-red-900/30 hover:scale-105 transition">Netflix</Link>
+                  <Link to="/providers/9" className="px-4 py-1.5 text-xs font-extrabold rounded-full bg-gradient-to-r from-sky-600 to-blue-900 text-white border border-sky-500/40 shadow-md shadow-sky-900/30 hover:scale-105 transition">Prime Video</Link>
+                  <Link to="/providers/337" className="px-4 py-1.5 text-xs font-extrabold rounded-full bg-gradient-to-r from-blue-700 to-indigo-900 text-white border border-blue-500/40 shadow-md shadow-blue-900/30 hover:scale-105 transition">Disney+</Link>
                 </div>
               `;
 
-              if (content.includes("<header")) {
-                content = content.replace("<header", providerNavJSX + "\n<header");
-              } else if (content.includes("<nav")) {
-                content = content.replace("<nav", providerNavJSX + "\n<nav");
+              // Target precisely between the Brand Logo Link and the Settings Gear button in your header
+              if (content.includes("RABBiT TV</span>\n              </Link>")) {
+                content = content.replace(
+                  'RABBiT TV</span>\n              </Link>',
+                  'RABBiT TV</span>\n              </Link>\n\n              ' + providerPillsHTML
+                );
+                fs.writeFileSync("src/routes/__root.tsx", content, "utf8");
+                console.log("Successfully injected provider pills into header!");
               } else {
-                content = content.replace(/return\s*\(\s*(<>|<div[^>]*>)/, match => match + "\n" + providerNavJSX);
+                console.log("Warning: Exact brand logo anchor not found, trying fallback injection.");
               }
-
-              fs.writeFileSync("src/routes/__root.tsx", content, "utf8");
-              console.log("Successfully injected provider tabs into __root.tsx");
             '
           fi
 
@@ -233,7 +235,6 @@ jobs:
 
       - name: Dynamically Patch MainActivity based on Capacitor Config Package ID
         run: |
-          # Automatically extract the exact package ID from capacitor.config.json (e.g. com.rabbittv.app)
           PKG_ID=$(node -p "require('./capacitor.config.json').appId || 'com.rabbittv.app'")
           PKG_PATH=$(echo "$PKG_ID" | tr '.' '/')
           TARGET_DIR="android/app/src/main/java/$PKG_PATH"
