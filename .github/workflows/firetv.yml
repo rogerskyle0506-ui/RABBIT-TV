@@ -195,16 +195,6 @@ jobs:
             }
           '
 
-      - name: Append Fire OS Layout CSS Fixes to styles.css
-        run: |
-          if [ -f src/styles.css ]; then
-            echo "" >> src/styles.css
-            echo "/* Fire OS Layout & Video Fixes */" >> src/styles.css
-            echo "html.fire-os, html.fire-os body { width: 100vw !important; height: 100vh !important; overflow: hidden !important; background-color: #000 !important; margin: 0 !important; padding: 0 !important; }" >> src/styles.css
-            echo "html.fire-os iframe, html.fire-os video { width: 100% !important; height: 100% !important; object-fit: contain !important; background-color: #000 !important; }" >> src/styles.css
-            echo "Successfully appended Fire OS CSS rules to src/styles.css"
-          fi
-
       - name: Build Web Assets for Capacitor
         env:
           CAPACITOR_BUILD: "true"
@@ -235,15 +225,13 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Forcefully Write & Register Bulletproof MainActivity to Block Silk Browser Popups
+      - name: Forcefully Write & Register Clean MainActivity (Viewport Fix Applied)
         run: |
           TARGET_DIR="android/app/src/main/java/com/rabbittv/app"
           mkdir -p "$TARGET_DIR"
           
           cat << 'EOF' > "$TARGET_DIR/MainActivity.java"
           package com.rabbittv.app;
-
-          annotation package com.rabbittv.app;
 
           import android.os.Bundle;
           import android.view.View;
@@ -308,7 +296,6 @@ jobs:
 
                   @Override
                   public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, android.os.Message resultMsg) {
-                      // Trap popup/new-window requests and load them directly inside the existing WebView
                       WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
                       transport.setWebView(view);
                       resultMsg.sendToTarget();
@@ -320,13 +307,11 @@ jobs:
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Keep screen awake and prevent Fire TV screensaver activation
                   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
                   if (this.bridge != null && this.bridge.getWebView() != null) {
                       WebView webView = this.bridge.getWebView();
                       
-                      // Force hardware acceleration for smooth video rendering
                       webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
                       WebSettings settings = webView.getSettings();
@@ -338,13 +323,10 @@ jobs:
                       settings.setJavaScriptCanOpenWindowsAutomatically(true);
                       settings.setSupportMultipleWindows(true);
                       settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-                      settings.setUseWideViewPort(true);
-                      settings.setLoadWithOverviewMode(true);
                       settings.setLoadsImagesAutomatically(true);
 
                       webView.setWebChromeClient(customWebChromeClient);
                       
-                      // Trap all URL navigation attempts inside the app to completely kill Silk popup redirects
                       webView.setWebViewClient(new WebViewClient() {
                           @Override
                           public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -365,9 +347,7 @@ jobs:
               }
           }
           EOF
-          # Clean up accidental stray line if generated
-          sed -i '/annotation package/d' "$TARGET_DIR/MainActivity.java"
-          echo "Successfully forced bulletproof MainActivity.java"
+          echo "Successfully wrote clean MainActivity.java without viewport scaling bugs"
 
       - name: Copy TV Banner & Manifest Overrides
         run: |
