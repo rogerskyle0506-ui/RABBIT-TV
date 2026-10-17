@@ -59,7 +59,7 @@ jobs:
             exit 1
           fi
 
-      - name: Generate Provider Route, Inject Navigation & Fix Fire OS CSS
+      - name: Generate Provider Route & Inject Navigation Cleanly
         run: |
           mkdir -p src/routes
           
@@ -170,14 +170,12 @@ jobs:
           }
           EOF
 
-          # 2. Run clean Node script to inject header navigation & Fire OS CSS fixes into __root.tsx
+          # 2. Run clean Node script to inject header navigation safely
           node -e '
             const fs = require("fs");
             const rootPath = "src/routes/__root.tsx";
             if (fs.existsSync(rootPath)) {
               let rootContent = fs.readFileSync(rootPath, "utf8");
-              
-              // Inject provider navigation pills
               const pillsHTML = `
                 {/* Provider Pill Navigation */}
                 <div className="hidden md:flex items-center gap-3">
@@ -191,31 +189,23 @@ jobs:
               const targetAnchor = "RABBiT TV</span>\n              </Link>";
               if (rootContent.includes(targetAnchor) && !rootContent.includes("Provider Pill Navigation")) {
                 rootContent = rootContent.replace(targetAnchor, targetAnchor + "\n\n              " + pillsHTML);
+                fs.writeFileSync(rootPath, rootContent, "utf8");
+                console.log("Successfully injected provider pills into header!");
               }
-
-              // Inject Fire OS CSS overrides inside head to fix iframe black screens & fullscreen clipping
-              const fireOsCssFix = `
-                html.fire-os iframe {
-                  width: 100% !important;
-                  height: 100% !important;
-                  min-height: 100vh !important;
-                  background-color: #000 !important;
-                }
-                html.fire-os body {
-                  width: 100vw !important;
-                  min-height: 100vh !important;
-                  overflow-x: hidden !important;
-                }
-              `;
-
-              if (rootContent.includes("<HeadContent />") && !rootContent.includes("html.fire-os iframe")) {
-                rootContent = rootContent.replace("<HeadContent />", "<HeadContent />\n        <style>" + fireOsCssFix + "</style>");
-              }
-
-              fs.writeFileSync(rootPath, rootContent, "utf8");
-              console.log("Successfully injected provider pills and Fire OS CSS layout fixes!");
             }
           '
+
+      - name: Append Fire OS Layout CSS Fixes to styles.css
+        run: |
+          if [ -f src/styles.css ]; then
+            echo "" >> src/styles.css
+            echo "/* Fire OS Layout & Video Fixes */" >> src/styles.css
+            echo "html.fire-os, html.fire-os body { width: 100vw !important; min-height: 100vh !important; overflow-x: hidden !important; background-color: #000 !important; }" >> src/styles.css
+            echo "html.fire-os iframe, html.fire-os video { width: 100% !important; height: 100% !important; min-height: 100vh !important; background-color: #000 !important; }" >> src/styles.css
+            echo "Successfully appended Fire OS CSS rules to src/styles.css"
+          else
+            echo "Warning: src/styles.css not found."
+          fi
 
       - name: Build Web Assets for Capacitor
         env:
