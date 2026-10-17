@@ -204,7 +204,7 @@ jobs:
           VITE_TMDB_READ_TOKEN: ${{ secrets.VITE_TMDB_READ_TOKEN }}
         run: npx vite build
 
-      - name: Update Capacitor Config webDir to dist/client
+      - name: Update Capacitor Config webDir to dist/client & Map Shell Index
         run: |
           node -e '
             const fs = require("fs");
@@ -213,6 +213,10 @@ jobs:
             fs.writeFileSync("capacitor.config.json", JSON.stringify(config, null, 2), "utf8");
             console.log("Updated capacitor.config.json webDir to dist/client");
           '
+          if [ -f dist/client/_shell.html ] && [ ! -f dist/client/index.html ]; then
+            cp dist/client/_shell.html dist/client/index.html
+            echo "Copied _shell.html to index.html"
+          fi
 
       - name: Add Android Platform
         run: npx @capacitor/cli add android
