@@ -1,4 +1,4 @@
-Name: Build  Global Android APK
+name: Build Global Android APK
 
 on:
   push:
@@ -59,14 +59,32 @@ jobs:
             exit 1
           fi
 
-      - name: Apply Custom __root.tsx Patch (Strips Backup & Quality Tabs)
+      - name: Apply Explicit Patches for Android TV App
         run: |
-          if [ -f patches/__root.tsx ]; then
-            mkdir -p src/routes
-            cp patches/__root.tsx src/routes/__root.tsx
-            echo "Successfully applied patches/__root.tsx to src/routes/__root.tsx!"
+          mkdir -p src/lib src/routes
+          
+          # 1. Copy storage engine to src/lib/watch-history.ts
+          if [ -f patches/watch-history.ts ]; then
+            cp patches/watch-history.ts src/lib/watch-history.ts
+            echo "Successfully patched src/lib/watch-history.ts"
           else
-            echo "Error: patches/__root.tsx not found in repository!"
+            echo "Warning: patches/watch-history.ts not found!"
+          fi
+
+          # 2. Copy watch history route UI to src/routes/watch-history.tsx
+          if [ -f patches/watch-history.tsx ]; then
+            cp patches/watch-history.tsx src/routes/watch-history.tsx
+            echo "Successfully patched src/routes/watch-history.tsx"
+          else
+            echo "Warning: patches/watch-history.tsx not found!"
+          fi
+
+          # 3. Copy root UI (settings & tabs) to src/routes/__root.tsx
+          if [ -f patches/__root.tsx ]; then
+            cp patches/__root.tsx src/routes/__root.tsx
+            echo "Successfully patched src/routes/__root.tsx"
+          else
+            echo "Error: patches/__root.tsx not found!"
             exit 1
           fi
 
