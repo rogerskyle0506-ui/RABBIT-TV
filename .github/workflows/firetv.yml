@@ -225,7 +225,7 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Forcefully Write & Register Clean MainActivity (Viewport Fix Applied)
+      - name: Forcefully Write & Register MainActivity (Fix ERR_CONNECTION_REFUSED & Silk)
         run: |
           TARGET_DIR="android/app/src/main/java/com/rabbittv/app"
           mkdir -p "$TARGET_DIR"
@@ -330,7 +330,15 @@ jobs:
                       webView.setWebViewClient(new WebViewClient() {
                           @Override
                           public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                              view.loadUrl(url);
+                              // If internal Capacitor navigation attempts full page fetch over https://localhost
+                              if (url != null && url.startsWith("https://localhost/")) {
+                                  // Pass control back to SPA client router
+                                  return false;
+                              }
+                              // For external video streams or links, load inside webView
+                              if (url != null) {
+                                  view.loadUrl(url);
+                              }
                               return true;
                           }
                       });
@@ -347,7 +355,7 @@ jobs:
               }
           }
           EOF
-          echo "Successfully wrote clean MainActivity.java without viewport scaling bugs"
+          echo "Successfully registered MainActivity.java handling localhost SPA routing"
 
       - name: Copy TV Banner & Manifest Overrides
         run: |
