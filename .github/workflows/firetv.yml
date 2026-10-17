@@ -59,9 +59,11 @@ jobs:
             exit 1
           fi
 
-      - name: Generate Robust TMDB Provider Route & Patch __root.tsx
+      - name: Create Dynamic Provider Route & Inject Provider Header into __root.tsx
         run: |
           mkdir -p src/routes
+          
+          # 1. Create the dedicated provider route file
           cat << 'EOF' > src/routes/providers.$providerId.tsx
           import { createFileRoute, Link } from '@tanstack/react-router'
           import { useState, useEffect } from 'react'
@@ -168,10 +170,9 @@ jobs:
           }
           EOF
 
-          # 2. Patch __root.tsx with centered, themed gradient provider pill tabs
+          # 2. Inject provider gradient pill tabs directly into __root.tsx with absolute fallback
           ROOT_FILE="src/routes/__root.tsx"
           if [ -f "$ROOT_FILE" ]; then
-            echo "Patching $ROOT_FILE with centered, themed gradient provider pill tabs..."
             node -e '
               const fs = require("fs");
               let content = fs.readFileSync("src/routes/__root.tsx", "utf8");
@@ -190,86 +191,13 @@ jobs:
               } else if (content.includes("<nav")) {
                 content = content.replace("<nav", providerNavJSX + "\n<nav");
               } else {
-                content = content.replace(/return\s*\(\s*<\w+>/, match => match + "\n" + providerNavJSX);
+                content = content.replace(/return\s*\(\s*(<>|<div[^>]*>)/, match => match + "\n" + providerNavJSX);
               }
 
               fs.writeFileSync("src/routes/__root.tsx", content, "utf8");
-              console.log("Successfully patched __root.tsx.");
+              console.log("Successfully injected provider tabs into __root.tsx");
             '
           fi
-
-      - name: Create Temporary index.html with Floating Back Button & Player Detector
-        run: |
-          cat << 'EOF' > index.html
-          <!DOCTYPE html>
-          <html lang="en">
-            <head>
-              <meta charset="UTF-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-              <title>RABBiT TV (Fire TV Edition)</title>
-              <style>
-                #firetv-back-to-home {
-                  position: fixed !important;
-                  top: 24px !important;
-                  left: 24px !important;
-                  z-index: 2147483647 !important;
-                  background: rgba(15, 23, 42, 0.95) !important;
-                  border: 2px solid rgba(168, 85, 247, 0.8) !important;
-                  color: #ffffff !important;
-                  padding: 12px 24px !important;
-                  border-radius: 50px !important;
-                  font-family: system-ui, -apple-system, sans-serif !important;
-                  font-size: 16px !important;
-                  font-weight: 700 !important;
-                  cursor: pointer !important;
-                  opacity: 0 !important;
-                  pointer-events: none !important;
-                  transition: opacity 0.25s ease-in-out, transform 0.2s ease !important;
-                  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8) !important;
-                }
-                #firetv-back-to-home.visible {
-                  opacity: 1 !important;
-                  pointer-events: auto !important;
-                }
-                #firetv-back-to-home:hover, #firetv-back-to-home:focus {
-                  background: rgba(168, 85, 247, 0.9) !important;
-                  transform: scale(1.05) !important;
-                }
-              </style>
-            </head>
-            <body>
-              <button id="firetv-back-to-home" onclick="if(window.history.length > 1){ window.history.back(); } else { window.location.replace('/'); }">
-                ← Back to Home
-              </button>
-              <div id="root"></div>
-              <script type="module" src="/src/entry-client.tsx"></script>
-              <script>
-                (function() {
-                  let hideTimer;
-                  function showBackButton() {
-                    const hasPlayer = window.location.pathname.includes('/watch') || 
-                                      window.location.pathname.includes('/player') || 
-                                      document.querySelector('iframe, video, .video-player-container');
-                    if (!hasPlayer) return;
-
-                    const btn = document.getElementById('firetv-back-to-home');
-                    if (!btn) return;
-
-                    btn.classList.add('visible');
-                    clearTimeout(hideTimer);
-                    hideTimer = setTimeout(() => {
-                      btn.classList.remove('visible');
-                    }, 3500);
-                  }
-
-                  window.addEventListener('mousemove', showBackButton, { passive: true });
-                  window.addEventListener('touchstart', showBackButton, { passive: true });
-                  window.addEventListener('keydown', showBackButton, { passive: true });
-                })();
-              </script>
-            </body>
-          </html>
-          EOF
 
       - name: Build Web Assets for Capacitor
         env:
@@ -303,11 +231,20 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Dynamically Patch MainActivity for Natural Player Rendering, Keep-Awake & Popup Suppression
+      - name: Dynamically Patch MainActivity based on Capacitor Config Package ID
         run: |
-          mkdir -p android/app/src/main/java/com/rabbittv/app
-          cat << 'EOF' > android/app/src/main/java/com/rabbittv/app/MainActivity.java
-          package com.rabbittv.app;
+          # Automatically extract the exact package ID from capacitor.config.json (e.g. com.rabbittv.app)
+          PKG_ID=$(node -p "require('./capacitor.config.json').appId || 'com.rabbittv.app'")
+          PKG_PATH=$(echo "$PKG_ID" | tr '.' '/')
+          TARGET_DIR="android/app/src/main/java/$PKG_PATH"
+          
+          echo "Resolved Android Package ID: $PKG_ID"
+          echo "Target Java Directory: $TARGET_DIR"
+          
+          mkdir -p "$TARGET_DIR"
+          
+          cat << EOF > "$TARGET_DIR/MainActivity.java"
+          package $PKG_ID;
 
           import android.os.Bundle;
           import android.view.View;
@@ -391,12 +328,13 @@ jobs:
               public void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
 
-                  // Prevent Fire TV screensaver / sleep mode from activating
+                  // Keep screen awake and prevent Fire TV screensaver activation
                   getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
                   if (this.bridge != null && this.bridge.getWebView() != null) {
                       WebView webView = this.bridge.getWebView();
                       
+                      // Force hardware acceleration for smooth video rendering
                       webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
                       WebSettings settings = webView.getSettings();
@@ -423,7 +361,7 @@ jobs:
               }
           }
           EOF
-          echo "Successfully patched MainActivity.java with keep-awake and native player settings."
+          echo "Successfully generated MainActivity.java into package directory: $TARGET_DIR"
 
       - name: Copy TV Banner & Manifest Overrides
         run: |
