@@ -200,11 +200,9 @@ jobs:
           if [ -f src/styles.css ]; then
             echo "" >> src/styles.css
             echo "/* Fire OS Layout & Video Fixes */" >> src/styles.css
-            echo "html.fire-os, html.fire-os body { width: 100vw !important; min-height: 100vh !important; overflow-x: hidden !important; background-color: #000 !important; }" >> src/styles.css
-            echo "html.fire-os iframe, html.fire-os video { width: 100% !important; height: 100% !important; min-height: 100vh !important; background-color: #000 !important; }" >> src/styles.css
+            echo "html.fire-os, html.fire-os body { width: 100vw !important; height: 100vh !important; overflow: hidden !important; background-color: #000 !important; margin: 0 !important; padding: 0 !important; }" >> src/styles.css
+            echo "html.fire-os iframe, html.fire-os video { width: 100% !important; height: 100% !important; object-fit: contain !important; background-color: #000 !important; }" >> src/styles.css
             echo "Successfully appended Fire OS CSS rules to src/styles.css"
-          else
-            echo "Warning: src/styles.css not found."
           fi
 
       - name: Build Web Assets for Capacitor
@@ -237,13 +235,15 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Forcefully Write & Register Custom MainActivity with Wide Viewport Support
+      - name: Forcefully Write & Register Bulletproof MainActivity to Block Silk Browser Popups
         run: |
           TARGET_DIR="android/app/src/main/java/com/rabbittv/app"
           mkdir -p "$TARGET_DIR"
           
           cat << 'EOF' > "$TARGET_DIR/MainActivity.java"
           package com.rabbittv.app;
+
+          annotation package com.rabbittv.app;
 
           import android.os.Bundle;
           import android.view.View;
@@ -308,16 +308,9 @@ jobs:
 
                   @Override
                   public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, android.os.Message resultMsg) {
-                      WebView newWebView = new WebView(view.getContext());
-                      newWebView.setWebViewClient(new WebViewClient() {
-                          @Override
-                          public boolean shouldOverrideUrlLoading(WebView webView, String url) {
-                              view.loadUrl(url);
-                              return true;
-                          }
-                      });
+                      // Trap popup/new-window requests and load them directly inside the existing WebView
                       WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                      transport.setWebView(newWebView);
+                      transport.setWebView(view);
                       resultMsg.sendToTarget();
                       return true;
                   }
@@ -350,6 +343,15 @@ jobs:
                       settings.setLoadsImagesAutomatically(true);
 
                       webView.setWebChromeClient(customWebChromeClient);
+                      
+                      // Trap all URL navigation attempts inside the app to completely kill Silk popup redirects
+                      webView.setWebViewClient(new WebViewClient() {
+                          @Override
+                          public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                              view.loadUrl(url);
+                              return true;
+                          }
+                      });
                   }
               }
 
@@ -363,7 +365,9 @@ jobs:
               }
           }
           EOF
-          echo "Successfully forced MainActivity.java with wide viewport settings"
+          # Clean up accidental stray line if generated
+          sed -i '/annotation package/d' "$TARGET_DIR/MainActivity.java"
+          echo "Successfully forced bulletproof MainActivity.java"
 
       - name: Copy TV Banner & Manifest Overrides
         run: |
