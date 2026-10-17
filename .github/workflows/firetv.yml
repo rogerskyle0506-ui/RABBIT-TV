@@ -227,19 +227,13 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Dynamically Patch MainActivity based on Capacitor Config Package ID
+      - name: Forcefully Write & Register Custom MainActivity for com.rabbittv.app
         run: |
-          PKG_ID=$(node -p "require('./capacitor.config.json').appId || 'com.rabbittv.app'")
-          PKG_PATH=$(echo "$PKG_ID" | tr '.' '/')
-          TARGET_DIR="android/app/src/main/java/$PKG_PATH"
-          
-          echo "Resolved Android Package ID: $PKG_ID"
-          echo "Target Java Directory: $TARGET_DIR"
-          
+          TARGET_DIR="android/app/src/main/java/com/rabbittv/app"
           mkdir -p "$TARGET_DIR"
           
-          cat << EOF > "$TARGET_DIR/MainActivity.java"
-          package $PKG_ID;
+          cat << 'EOF' > "$TARGET_DIR/MainActivity.java"
+          package com.rabbittv.app;
 
           import android.os.Bundle;
           import android.view.View;
@@ -356,7 +350,7 @@ jobs:
               }
           }
           EOF
-          echo "Successfully generated MainActivity.java into package directory: $TARGET_DIR"
+          echo "Successfully forced MainActivity.java into com/rabbittv/app"
 
       - name: Copy TV Banner & Manifest Overrides
         run: |
