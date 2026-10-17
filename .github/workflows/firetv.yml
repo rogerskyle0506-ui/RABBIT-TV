@@ -59,41 +59,39 @@ jobs:
             exit 1
           fi
 
-      - name: Inject Native Provider Tabs & Navigation into __root.tsx
+      - name: Inject Interactive Provider Tabs & Navigation into __root.tsx
         run: |
           ROOT_FILE="src/routes/__root.tsx"
           if [ -f "$ROOT_FILE" ]; then
-            echo "Patching $ROOT_FILE to include native Streaming Provider tabs..."
+            echo "Patching $ROOT_FILE to include interactive Streaming Provider filter tabs..."
             node -e '
               const fs = require("fs");
               let content = fs.readFileSync("src/routes/__root.tsx", "utf8");
               
-              // Insert provider buttons / links into the navbar header area if not already present
+              // Native interactive filter bar using React state-friendly window dispatcher
               const providerNavJSX = `
-                <div className="flex items-center gap-3 overflow-x-auto px-4 py-2 bg-slate-950/80 border-b border-white/10 shrink-0">
+                <div className="flex items-center gap-3 overflow-x-auto px-4 py-2.5 bg-slate-950/90 border-b border-white/10 shrink-0 z-50">
                   <span className="text-xs font-bold text-slate-400 tracking-wider">PROVIDERS:</span>
-                  <a href="/" className="px-3 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-red-600 transition">All</a>
-                  <a href="/providers/8" className="px-3 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-red-600 transition">Netflix</a>
-                  <a href="/providers/9" className="px-3 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-sky-500 transition">Prime</a>
-                  <a href="/providers/337" className="px-3 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-blue-600 transition">Disney+</a>
+                  <button onClick={() => window.dispatchEvent(new CustomEvent("firetv-filter", {detail: "all"}))} className="px-3.5 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-red-600 transition cursor-pointer">All</button>
+                  <button onClick={() => window.dispatchEvent(new CustomEvent("firetv-filter", {detail: "8"}))} className="px-3.5 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-red-600 transition cursor-pointer">Netflix</button>
+                  <button onClick={() => window.dispatchEvent(new CustomEvent("firetv-filter", {detail: "9"}))} className="px-3.5 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-sky-500 transition cursor-pointer">Prime</button>
+                  <button onClick={() => window.dispatchEvent(new CustomEvent("firetv-filter", {detail: "337"}))} className="px-3.5 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-blue-600 transition cursor-pointer">Disney+</button>
                 </div>
               `;
 
-              // Try injecting right after opening body/layout container or header tag
               if (content.includes("<header")) {
                 content = content.replace("<header", providerNavJSX + "\n<header");
               } else if (content.includes("<nav")) {
                 content = content.replace("<nav", providerNavJSX + "\n<nav");
               } else {
-                // Fallback: inject at the top of the root component return statement
                 content = content.replace(/return\s*\(\s*<\w+>/, match => match + "\n" + providerNavJSX);
               }
 
               fs.writeFileSync("src/routes/__root.tsx", content, "utf8");
-              console.log("Successfully patched __root.tsx with provider tabs.");
+              console.log("Successfully patched __root.tsx with interactive provider tabs.");
             '
           else
-            echo "Warning: src/routes/__root.tsx not found, skipping native provider injection."
+            echo "Warning: src/routes/__root.tsx not found."
           fi
 
       - name: Create Temporary index.html with Floating Back Button & Player Detector
@@ -169,38 +167,24 @@ jobs:
           </html>
           EOF
 
-      - name: Inject Split-Aware Player & Homepage CSS into Stylesheet
+      - name: Inject Corrected Non-Squished Player CSS into Stylesheet
         run: |
           if [ -f src/styles.css ]; then
             echo "" >> src/styles.css
             echo "/* ==========================================================" >> src/styles.css
-            echo "   Fire TV Split-Aware CSS (Homepage pristine vs Player full-screen)" >> src/styles.css
+            echo "   Fire TV Corrected Native Player Sizing" >> src/styles.css
             echo "   ================================================---------- */" >> src/styles.css
             
-            # Apply full-screen sizing ONLY when on player routes or when player container exists
-            echo "body.player-active html, body.player-active, body.player-active #root {" >> src/styles.css
-            echo "  width: 100vw !important;" >> src/styles.css
-            echo "  height: 100vh !important;" >> src/styles.css
-            echo "  overflow: hidden !important;" >> src/styles.css
-            echo "}" >> src/styles.css
-            echo "" >> src/styles.css
-            echo "body.player-active main {" >> src/styles.css
-            echo "  padding-top: 0px !important;" >> src/styles.css
-            echo "  width: 100vw !important;" >> src/styles.css
-            echo "  height: 100vh !important;" >> src/styles.css
-            echo "}" >> src/styles.css
-            echo "" >> src/styles.css
-            echo "body.player-active iframe, body.player-active video, body.player-active .video-player-container {" >> src/styles.css
-            echo "  position: fixed !important;" >> src/styles.css
-            echo "  top: 0 !important;" >> src/styles.css
-            echo "  left: 0 !important;" >> src/styles.css
-            echo "  width: 100vw !important;" >> src/styles.css
-            echo "  height: 100vh !important;" >> src/styles.css
-            echo "  z-index: 9999 !important;" >> src/styles.css
+            # Let the player container fill available space naturally without 20% clipping
+            echo "iframe, video, .video-player-container {" >> src/styles.css
+            echo "  width: 100% !important;" >> src/styles.css
+            echo "  height: 100% !important;" >> src/styles.css
+            echo "  max-width: 100% !important;" >> src/styles.css
+            echo "  max-height: 100% !important;" >> src/styles.css
+            echo "  border: none !important;" >> src/styles.css
             echo "}" >> src/styles.css
             
-            # Add small inline script injection to ensure body.player-active triggers correctly based on URL
-            echo "Successfully injected split-aware CSS into src/styles.css"
+            echo "Successfully injected corrected player styles into src/styles.css"
           else
             echo "Error: src/styles.css not found!"
             exit 1
