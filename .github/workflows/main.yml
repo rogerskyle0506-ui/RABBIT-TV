@@ -1,4 +1,4 @@
-name: Build Android APK
+Name: Build  Global Android APK
 
 on:
   push:
@@ -56,6 +56,17 @@ jobs:
           fi
           if [ ! -f assets/icon.png ]; then
             echo "Error: assets/icon.png is missing!"
+            exit 1
+          fi
+
+      - name: Apply Custom __root.tsx Patch (Strips Backup & Quality Tabs)
+        run: |
+          if [ -f patches/__root.tsx ]; then
+            mkdir -p src/routes
+            cp patches/__root.tsx src/routes/__root.tsx
+            echo "Successfully applied patches/__root.tsx to src/routes/__root.tsx!"
+          else
+            echo "Error: patches/__root.tsx not found in repository!"
             exit 1
           fi
 
@@ -121,7 +132,7 @@ jobs:
           # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
           cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
-          # 4. Configure clean dark styles.xml to eliminate banner background bleed & fix Fire Stick video scaling
+          # 4. Configure clean dark styles.xml to eliminate banner background bleed
           mkdir -p android/app/src/main/res/values
           cat << 'EOF' > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
