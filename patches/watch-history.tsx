@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import {
   getWatchHistory,
   calculateSeriesProgress,
@@ -9,7 +10,11 @@ import {
   DislikedTitle,
 } from "../lib/watch-history";
 
-export default function WatchHistoryPage() {
+export const Route = createFileRoute("/watch-history")({
+  component: WatchHistoryPage,
+})
+
+function WatchHistoryPage() {
   const [history, setHistory] = useState<Record<string, ShowWatchHistory>>({});
   const [dislikes, setDislikes] = useState<DislikedTitle[]>([]);
   const [selectedShow, setSelectedShow] = useState<ShowWatchHistory | null>(null);
