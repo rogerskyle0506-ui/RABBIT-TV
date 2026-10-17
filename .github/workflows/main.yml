@@ -32,7 +32,6 @@ jobs:
           APP_NAME=$(node -p "require('./package.json').name || 'RABBiT-TV'")
           VERSION=$(node -p "require('./package.json').version || '1.0.0'")
           
-          # Format clean filename slug (e.g. rabbit-tv-v1.2.4)
           SLUG=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr ' ' '-')
           
           echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
@@ -139,18 +138,14 @@ jobs:
 
       - name: Inject Custom MainActivity, TV Banner, Manifest & Clean Dark Splash Styles
         run: |
-          # 1. Inject popup-blocking MainActivity
           mkdir -p android/app/src/main/java/com/rabbittv/app
           cp patches/MainActivity.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
 
-          # 2. Copy TV banner into Android drawable resources (for TV Leanback launcher icon only)
           mkdir -p android/app/src/main/res/drawable
           cp assets/tv_banner.png android/app/src/main/res/drawable/tv_banner.png
 
-          # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
           cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
-          # 4. Configure clean dark styles.xml to eliminate banner background bleed
           mkdir -p android/app/src/main/res/values
           cat << 'EOF' > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
