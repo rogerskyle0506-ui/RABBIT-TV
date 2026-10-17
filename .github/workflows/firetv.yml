@@ -41,7 +41,7 @@ jobs:
           echo "artifact_name=${SLUG}-firetv-v${VERSION}" >> $GITHUB_OUTPUT
           echo "apk_filename=${SLUG}-firetv-v${VERSION}.apk" >> $GITHUB_OUTPUT
           
-          echo "Building Fire TV Edition: $APP_NAME version$VERSION"
+          echo "Building Fire TV Edition: $APP_NAME version $VERSION"
 
       - name: Install dependencies
         run: npm install
@@ -60,7 +60,7 @@ jobs:
             exit 1
           fi
 
-      - name: Create Temporary index.html with Back Button & Streaming Provider Bar
+      - name: Create Temporary index.html with Standalone Provider Bar & Player Detector
         run: |
           cat << 'EOF' > index.html
           <!DOCTYPE html>
@@ -70,6 +70,7 @@ jobs:
               <meta name="viewport" content="width=device-width, initial-scale=1.0" />
               <title>RABBiT TV (Fire TV Edition)</title>
               <style>
+                /* Auto-Hiding Back to Home Button */
                 #firetv-back-to-home {
                   position: fixed !important;
                   top: 24px !important;
@@ -105,17 +106,26 @@ jobs:
                   pointer-events: none !important;
                 }
 
-                /* Streaming Provider Quick-Filter Bar Styling */
+                /* Provider Filter Top Bar (Outside #root) */
                 #firetv-provider-bar {
                   display: flex;
                   gap: 12px;
-                  padding: 12px 24px;
-                  background: rgba(5, 11, 22, 0.9);
+                  padding: 10px 24px;
+                  background: rgba(5, 11, 22, 0.95);
                   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
                   overflow-x: auto;
                   white-space: nowrap;
                   align-items: center;
-                  z-index: 100;
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  width: 100vw;
+                  height: 50px;
+                  box-sizing: border-box;
+                  z-index: 999;
+                }
+                body.player-active #firetv-provider-bar {
+                  display: none !important;
                 }
                 .provider-chip {
                   background: rgba(255, 255, 255, 0.08);
@@ -129,7 +139,7 @@ jobs:
                   transition: all 0.2s ease;
                 }
                 .provider-chip:hover, .provider-chip.active {
-                  background: #e50914; /* Netflix red / accent */
+                  background: #e50914;
                   border-color: #e50914;
                 }
                 .provider-chip.disney { background: #113ccf; border-color: #113ccf; }
@@ -137,9 +147,19 @@ jobs:
               </style>
             </head>
             <body>
+              <!-- Provider Bar directly inside body to bypass TanStack root resets -->
+              <div id="firetv-provider-bar">
+                <span style="color: #94a3b8; font-size: 13px; font-weight: bold; margin-right: 8px;">PROVIDERS:</span>
+                <button class="provider-chip active" onclick="window.filterProvider('all', event)">All</button>
+                <button class="provider-chip" onclick="window.filterProvider('8', event)">Netflix</button>
+                <button class="provider-chip prime" onclick="window.filterProvider('9', event)">Prime Video</button>
+                <button class="provider-chip disney" onclick="window.filterProvider('337', event)">Disney+</button>
+              </div>
+
               <button id="firetv-back-to-home" onclick="if(window.history.length > 1){ window.history.back(); } else { window.location.replace('/'); }">
                 ← Back to Home
               </button>
+
               <div id="root"></div>
               <script type="module" src="/src/entry-client.tsx"></script>
               <script>
@@ -147,7 +167,9 @@ jobs:
                   let hideTimer;
                   
                   function checkPlayerState() {
-                    const hasPlayer = document.querySelector('iframe[src*="vidsrc"], iframe, video, .video-player-container');
+                    const hasPlayer = document.querySelector('iframe, video, .video-player-container') ||
+                                      window.location.pathname.includes('/watch') ||
+                                      window.location.pathname.includes('/player');
                     if (hasPlayer) {
                       document.body.classList.add('player-active');
                     } else {
@@ -165,41 +187,17 @@ jobs:
                     }, 3500);
                   }
 
-                  // Inject Streaming Provider Bar into top navigation on main view
-                  function injectProviderBar() {
-                    if (document.body.classList.contains('player-active')) return;
-                    if (document.getElementById('firetv-provider-bar')) return;
-
-                    const root = document.getElementById('root');
-                    if (!root || !root.firstChild) return;
-
-                    const bar = document.createElement('div');
-                    bar.id = 'firetv-provider-bar';
-                    bar.innerHTML = `
-                      <span style="color: #94a3b8; font-size: 13px; font-weight: bold; margin-right: 8px;">PROVIDERS:</span>
-                      <button class="provider-chip" onclick="window.filterProvider('all')">All</button>
-                      <button class="provider-chip" onclick="window.filterProvider('8')">Netflix</button>
-                      <button class="provider-chip prime" onclick="window.filterProvider('9')">Prime Video</button>
-                      <button class="provider-chip disney" onclick="window.filterProvider('337')">Disney+</button>
-                    `;
-                    root.insertBefore(bar, root.firstChild);
-                  }
-
-                  window.filterProvider = function(providerId) {
-                    console.log("Filtering by TMDB Watch Provider ID (Region CA):", providerId);
-                    // Dispatches custom event for app components to listen to if needed
+                  window.filterProvider = function(providerId, evt) {
+                    document.querySelectorAll('.provider-chip').forEach(btn => btn.classList.remove('active'));
+                    if (evt && evt.target) evt.target.classList.add('active');
+                    
+                    console.log("Filtering by TMDB Watch Provider ID:", providerId);
                     window.dispatchEvent(new CustomEvent('firetv-provider-filter', { detail: { providerId } }));
                   };
 
-                  const observer = new MutationObserver(() => {
-                    checkPlayerState();
-                    injectProviderBar();
-                  });
+                  const observer = new MutationObserver(checkPlayerState);
                   observer.observe(document.body, { childList: true, subtree: true });
-                  setInterval(() => {
-                    checkPlayerState();
-                    injectProviderBar();
-                  }, 1000);
+                  setInterval(checkPlayerState, 1000);
 
                   window.addEventListener('mousemove', showBackButton, { passive: true });
                   window.addEventListener('touchstart', showBackButton, { passive: true });
@@ -210,12 +208,12 @@ jobs:
           </html>
           EOF
 
-      - name: Inject Split-Aware Fire TV CSS Adjustments into Stylesheet
+      - name: Inject Split-Aware Full-Screen Player CSS
         run: |
           if [ -f src/styles.css ]; then
             echo "" >> src/styles.css
             echo "/* ==========================================================" >> src/styles.css
-            echo "   Fire TV Split-Aware CSS Injection (Home vs Vidsrc Player)" >> src/styles.css
+            echo "   Fire TV Split-Aware CSS Injection (Proven Player Sizing)" >> src/styles.css
             echo "   ================================================---------- */" >> src/styles.css
             
             echo "body.player-active html, body.player-active, body.player-active #root {" >> src/styles.css
@@ -243,7 +241,7 @@ jobs:
             echo "  z-index: 9999 !important;" >> src/styles.css
             echo "  pointer-events: auto !important;" >> src/styles.css
             echo "}" >> src/styles.css
-            echo "Successfully injected split-aware CSS adjustments into src/styles.css"
+            echo "Successfully injected proven player full-screen CSS into src/styles.css"
           else
             echo "Error: src/styles.css not found!"
             exit 1
