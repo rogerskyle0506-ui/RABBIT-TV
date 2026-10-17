@@ -5,7 +5,6 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router'
-import { Meta, Scripts } from '@tanstack/start'
 import React, { useEffect, useState, useRef } from 'react'
 
 export const Route = createRootRoute({
@@ -194,7 +193,6 @@ function RootComponent() {
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>RABBiT TV</title>
-        <Meta />
       </head>
       <body
         className={`min-h-screen ${getThemeBackground()} antialiased selection:bg-purple-500 selection:text-white`}
@@ -350,7 +348,6 @@ function RootComponent() {
         )}
 
         <ScrollRestoration />
-        <Scripts />
       </body>
     </html>
   )
