@@ -59,23 +59,122 @@ jobs:
             exit 1
           fi
 
-      - name: Inject Interactive Provider Tabs & Navigation into __root.tsx
+      - name: Generate Dynamic Provider Route & Patch __root.tsx
         run: |
+          # 1. Create the dynamic provider route file so TanStack Router compiles it
+          mkdir -p src/routes
+          cat << 'EOF' > src/routes/providers.$providerId.tsx
+          import { createFileRoute, Link } from '@tanstack/react-router'
+          import { useState, useEffect } from 'react'
+
+          export const Route = createFileRoute('/providers/$providerId')({
+            component: ProviderMoviesPage,
+          })
+
+          function ProviderMoviesPage() {
+            const { providerId } = Route.useParams()
+            const [movies, setMovies] = useState([])
+            const [loading, setLoading] = useState(true)
+
+            const providerNames = {
+              '8': 'Netflix',
+              '9': 'Prime Video',
+              '337': 'Disney+'
+            }
+
+            const providerName = providerNames[providerId] || 'Streaming Provider'
+
+            useEffect(() => {
+              async function fetchProviderMovies() {
+                setLoading(true)
+                try {
+                  const token = import.meta.env.VITE_TMDB_READ_TOKEN || ''
+                  const apiKey = import.meta.env.VITE_TMDB_API_KEY || ''
+                  
+                  let url = `https://api.themoviedb.org/3/discover/movie?with_watch_providers=${providerId}&watch_region=CA&sort_by=popularity.desc`
+                  
+                  const headers = { accept: 'application/json' }
+                  if (token) {
+                    headers['Authorization'] = `Bearer ${token}`
+                  } else if (apiKey) {
+                    url += `&api_key=${apiKey}`
+                  }
+
+                  const res = await fetch(url, { headers })
+                  const data = await res.json()
+                  if (data && data.results) {
+                    setMovies(data.results)
+                  }
+                } catch (err) {
+                  console.error('Failed to fetch provider movies:', err)
+                } finally {
+                  setLoading(false)
+                }
+              }
+              fetchProviderMovies()
+            }, [providerId])
+
+            return (
+              <div className="min-h-screen bg-[#050b16] text-white p-6 pb-24">
+                <div className="flex items-center justify-between mb-8">
+                  <h1 className="text-3xl font-extrabold tracking-tight flex items-center gap-3">
+                    <span className="text-purple-400">{providerName}</span> Movies
+                  </h1>
+                  <Link to="/" className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-sm font-semibold rounded-full border border-white/10 transition">
+                    ← Back to Home
+                  </Link>
+                </div>
+
+                {loading ? (
+                  <div className="flex items-center justify-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+                  </div>
+                ) : movies.length === 0 ? (
+                  <div className="text-center py-20 text-slate-400">
+                    <p className="text-lg">No movies found for {providerName} in Canada right now.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                    {movies.map((movie) => (
+                      <Link key={movie.id} to={`/movie/${movie.id}`} className="group flex flex-col bg-slate-900/60 rounded-xl overflow-hidden border border-white/10 hover:border-purple-500/50 transition transform hover:scale-105">
+                        <div className="aspect-[2/3] w-full bg-slate-800 relative overflow-hidden">
+                          {movie.poster_path ? (
+                            <img 
+                              src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
+                              alt={movie.title} 
+                              className="w-full h-full object-cover group-hover:opacity-90 transition"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-xs text-slate-500">No Image</div>
+                          )}
+                        </div>
+                        <div className="p-3 flex flex-col flex-grow">
+                          <h2 className="text-sm font-bold truncate text-white group-hover:text-purple-400 transition">{movie.title}</h2>
+                          <p className="text-xs text-slate-400 mt-1">{movie.release_date ? movie.release_date.split('-')[0] : 'N/A'}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          }
+          EOF
+
+          # 2. Patch __root.tsx to include centered, theme-gradient pill tabs using TanStack <Link>
           ROOT_FILE="src/routes/__root.tsx"
           if [ -f "$ROOT_FILE" ]; then
-            echo "Patching $ROOT_FILE to include interactive Streaming Provider filter tabs..."
+            echo "Patching $ROOT_FILE with centered, themed gradient provider pill tabs..."
             node -e '
               const fs = require("fs");
               let content = fs.readFileSync("src/routes/__root.tsx", "utf8");
               
-              // Native interactive filter bar using React state-friendly window dispatcher
               const providerNavJSX = `
-                <div className="flex items-center gap-3 overflow-x-auto px-4 py-2.5 bg-slate-950/90 border-b border-white/10 shrink-0 z-50">
-                  <span className="text-xs font-bold text-slate-400 tracking-wider">PROVIDERS:</span>
-                  <button onClick={() => window.dispatchEvent(new CustomEvent("firetv-filter", {detail: "all"}))} className="px-3.5 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-red-600 transition cursor-pointer">All</button>
-                  <button onClick={() => window.dispatchEvent(new CustomEvent("firetv-filter", {detail: "8"}))} className="px-3.5 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-red-600 transition cursor-pointer">Netflix</button>
-                  <button onClick={() => window.dispatchEvent(new CustomEvent("firetv-filter", {detail: "9"}))} className="px-3.5 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-sky-500 transition cursor-pointer">Prime</button>
-                  <button onClick={() => window.dispatchEvent(new CustomEvent("firetv-filter", {detail: "337"}))} className="px-3.5 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-blue-600 transition cursor-pointer">Disney+</button>
+                <div className="flex items-center justify-center gap-6 px-6 py-4 bg-slate-950/95 border-b border-white/10 shrink-0 z-50 shadow-xl">
+                  <Link to="/" className="px-5 py-2 text-sm font-bold rounded-full bg-gradient-to-r from-slate-800 to-slate-900 text-slate-200 border border-white/10 hover:border-slate-500 shadow-md transition-all">All</Link>
+                  <Link to="/providers/8" className="px-6 py-2.5 text-sm font-extrabold rounded-full bg-gradient-to-r from-red-600 to-rose-900 text-white border border-red-500/40 shadow-lg shadow-red-900/40 hover:scale-105 transition-all">Netflix</Link>
+                  <Link to="/providers/9" className="px-6 py-2.5 text-sm font-extrabold rounded-full bg-gradient-to-r from-sky-600 to-blue-900 text-white border border-sky-500/40 shadow-lg shadow-sky-900/40 hover:scale-105 transition-all">Prime Video</Link>
+                  <Link to="/providers/337" className="px-6 py-2.5 text-sm font-extrabold rounded-full bg-gradient-to-r from-blue-700 to-indigo-900 text-white border border-blue-500/40 shadow-lg shadow-blue-900/40 hover:scale-105 transition-all">Disney+</Link>
                 </div>
               `;
 
@@ -88,10 +187,8 @@ jobs:
               }
 
               fs.writeFileSync("src/routes/__root.tsx", content, "utf8");
-              console.log("Successfully patched __root.tsx with interactive provider tabs.");
+              console.log("Successfully patched __root.tsx.");
             '
-          else
-            echo "Warning: src/routes/__root.tsx not found."
           fi
 
       - name: Create Temporary index.html with Floating Back Button & Player Detector
@@ -167,24 +264,19 @@ jobs:
           </html>
           EOF
 
-      - name: Inject Corrected Non-Squished Player CSS into Stylesheet
+      - name: Inject Clean Player CSS into Stylesheet
         run: |
           if [ -f src/styles.css ]; then
             echo "" >> src/styles.css
             echo "/* ==========================================================" >> src/styles.css
-            echo "   Fire TV Corrected Native Player Sizing" >> src/styles.css
+            echo "   Fire TV Player Adjustments" >> src/styles.css
             echo "   ================================================---------- */" >> src/styles.css
-            
-            # Let the player container fill available space naturally without 20% clipping
             echo "iframe, video, .video-player-container {" >> src/styles.css
             echo "  width: 100% !important;" >> src/styles.css
             echo "  height: 100% !important;" >> src/styles.css
-            echo "  max-width: 100% !important;" >> src/styles.css
-            echo "  max-height: 100% !important;" >> src/styles.css
             echo "  border: none !important;" >> src/styles.css
             echo "}" >> src/styles.css
-            
-            echo "Successfully injected corrected player styles into src/styles.css"
+            echo "Successfully injected player styles into src/styles.css"
           else
             echo "Error: src/styles.css not found!"
             exit 1
@@ -222,18 +314,100 @@ jobs:
       - name: Sync Capacitor
         run: npx @capacitor/cli sync android
 
-      - name: Inject Custom MainActivity for Fire TV, TV Banner, Manifest & Clean Dark Splash Styles
+      - name: Dynamically Patch MainActivity for Fullscreen & Media Playback
         run: |
           mkdir -p android/app/src/main/java/com/rabbittv/app
-          if [ -f patches/MainActivity.firetv.java ]; then
-            cp patches/MainActivity.firetv.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
-          else
-            cp patches/MainActivity.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
-          fi
+          cat << 'EOF' > android/app/src/main/java/com/rabbittv/app/MainActivity.java
+          package com.rabbittv.app;
 
+          import android.os.Bundle;
+          import android.view.View;
+          import android.view.ViewGroup;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              private View mCustomView;
+              private WebChromeClient.CustomViewCallback mCustomViewCallback;
+
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+
+                  if (this.bridge != null && this.bridge.getWebView() != null) {
+                      WebView webView = this.bridge.getWebView();
+                      WebSettings settings = webView.getSettings();
+                      
+                      settings.setJavaScriptEnabled(true);
+                      settings.setDomStorageEnabled(true);
+                      settings.setMediaPlaybackRequiresUserGesture(false);
+                      settings.setAllowFileAccess(true);
+                      settings.setAllowContentAccess(true);
+
+                      webView.setWebChromeClient(new WebChromeClient() {
+                          @Override
+                          public void onShowCustomView(View view, CustomViewCallback callback) {
+                              if (mCustomView != null) {
+                                  callback.onCustomViewHidden();
+                                  return;
+                              }
+                              mCustomView = view;
+                              mCustomViewCallback = callback;
+
+                              getWindow().getDecorView().setSystemUiVisibility(
+                                  View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                                  View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                                  View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                                  View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                                  View.SYSTEM_UI_FLAG_FULLSCREEN |
+                                  View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                              );
+
+                              ViewGroup decorView = (ViewGroup) getWindow().getDecorView();
+                              decorView.addView(mCustomView, new ViewGroup.LayoutParams(
+                                  ViewGroup.LayoutParams.MATCH_PARENT,
+                                  ViewGroup.LayoutParams.MATCH_PARENT
+                              ));
+                              webView.setVisibility(View.GONE);
+                          }
+
+                          @Override
+                          public void onHideCustomView() {
+                              if (mCustomView == null) return;
+
+                              ViewGroup decorView = (ViewGroup) getWindow().getDecorView();
+                              decorView.removeView(mCustomView);
+                              mCustomView = null;
+                              
+                              if (mCustomViewCallback != null) {
+                                  mCustomViewCallback.onCustomViewHidden();
+                              }
+
+                              webView.setVisibility(View.VISIBLE);
+                              getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+                          }
+                      });
+                  }
+              }
+
+              @Override
+              public void onBackPressed() {
+                  if (mCustomView != null) {
+                      onHideCustomView();
+                  } else {
+                      super.onBackPressed();
+                  }
+              }
+          }
+          EOF
+          echo "Successfully generated custom fullscreen MainActivity.java during build."
+
+      - name: Copy TV Banner & Manifest Overrides
+        run: |
           mkdir -p android/app/src/main/res/drawable
           cp assets/tv_banner.png android/app/src/main/res/drawable/tv_banner.png
-
           cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
           mkdir -p android/app/src/main/res/values
