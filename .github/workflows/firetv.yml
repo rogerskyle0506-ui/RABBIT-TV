@@ -33,7 +33,6 @@ jobs:
           APP_NAME=$(node -p "require('./package.json').name || 'RABBiT-TV'")
           VERSION=$(node -p "require('./package.json').version || '1.0.0'")
           
-          # Format clean filename slug (e.g. rabbit-tv-firetv-v1.2.4)
           SLUG=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr ' ' '-')
           
           echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
@@ -41,7 +40,7 @@ jobs:
           echo "artifact_name=${SLUG}-firetv-v${VERSION}" >> $GITHUB_OUTPUT
           echo "apk_filename=${SLUG}-firetv-v${VERSION}.apk" >> $GITHUB_OUTPUT
           
-          echo "Building Fire TV Edition: $APP_NAME version $VERSION"
+          echo "Building Fire TV Edition: $APP_NAME version$VERSION"
 
       - name: Install dependencies
         run: npm install
@@ -60,7 +59,44 @@ jobs:
             exit 1
           fi
 
-      - name: Create Temporary index.html with Standalone Provider Bar & Player Detector
+      - name: Inject Native Provider Tabs & Navigation into __root.tsx
+        run: |
+          ROOT_FILE="src/routes/__root.tsx"
+          if [ -f "$ROOT_FILE" ]; then
+            echo "Patching $ROOT_FILE to include native Streaming Provider tabs..."
+            node -e '
+              const fs = require("fs");
+              let content = fs.readFileSync("src/routes/__root.tsx", "utf8");
+              
+              // Insert provider buttons / links into the navbar header area if not already present
+              const providerNavJSX = `
+                <div className="flex items-center gap-3 overflow-x-auto px-4 py-2 bg-slate-950/80 border-b border-white/10 shrink-0">
+                  <span className="text-xs font-bold text-slate-400 tracking-wider">PROVIDERS:</span>
+                  <a href="/" className="px-3 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-red-600 transition">All</a>
+                  <a href="/providers/8" className="px-3 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-red-600 transition">Netflix</a>
+                  <a href="/providers/9" className="px-3 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-sky-500 transition">Prime</a>
+                  <a href="/providers/337" className="px-3 py-1 text-xs font-semibold rounded-full bg-white/10 text-white hover:bg-blue-600 transition">Disney+</a>
+                </div>
+              `;
+
+              // Try injecting right after opening body/layout container or header tag
+              if (content.includes("<header")) {
+                content = content.replace("<header", providerNavJSX + "\n<header");
+              } else if (content.includes("<nav")) {
+                content = content.replace("<nav", providerNavJSX + "\n<nav");
+              } else {
+                // Fallback: inject at the top of the root component return statement
+                content = content.replace(/return\s*\(\s*<\w+>/, match => match + "\n" + providerNavJSX);
+              }
+
+              fs.writeFileSync("src/routes/__root.tsx", content, "utf8");
+              console.log("Successfully patched __root.tsx with provider tabs.");
+            '
+          else
+            echo "Warning: src/routes/__root.tsx not found, skipping native provider injection."
+          fi
+
+      - name: Create Temporary index.html with Floating Back Button & Player Detector
         run: |
           cat << 'EOF' > index.html
           <!DOCTYPE html>
@@ -70,7 +106,6 @@ jobs:
               <meta name="viewport" content="width=device-width, initial-scale=1.0" />
               <title>RABBiT TV (Fire TV Edition)</title>
               <style>
-                /* Auto-Hiding Back to Home Button */
                 #firetv-back-to-home {
                   position: fixed !important;
                   top: 24px !important;
@@ -89,11 +124,8 @@ jobs:
                   pointer-events: none !important;
                   transition: opacity 0.25s ease-in-out, transform 0.2s ease !important;
                   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.8) !important;
-                  display: flex !important;
-                  align-items: center !important;
-                  gap: 8px !important;
                 }
-                body.player-active.interaction-active #firetv-back-to-home {
+                #firetv-back-to-home.visible {
                   opacity: 1 !important;
                   pointer-events: auto !important;
                 }
@@ -101,103 +133,32 @@ jobs:
                   background: rgba(168, 85, 247, 0.9) !important;
                   transform: scale(1.05) !important;
                 }
-                body.player-active.interaction-active iframe,
-                body.player-active.interaction-active video {
-                  pointer-events: none !important;
-                }
-
-                /* Provider Filter Top Bar (Outside #root) */
-                #firetv-provider-bar {
-                  display: flex;
-                  gap: 12px;
-                  padding: 10px 24px;
-                  background: rgba(5, 11, 22, 0.95);
-                  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-                  overflow-x: auto;
-                  white-space: nowrap;
-                  align-items: center;
-                  position: fixed;
-                  top: 0;
-                  left: 0;
-                  width: 100vw;
-                  height: 50px;
-                  box-sizing: border-box;
-                  z-index: 999;
-                }
-                body.player-active #firetv-provider-bar {
-                  display: none !important;
-                }
-                .provider-chip {
-                  background: rgba(255, 255, 255, 0.08);
-                  border: 1px solid rgba(255, 255, 255, 0.2);
-                  color: #ffffff;
-                  padding: 6px 16px;
-                  border-radius: 20px;
-                  font-size: 13px;
-                  font-weight: 600;
-                  cursor: pointer;
-                  transition: all 0.2s ease;
-                }
-                .provider-chip:hover, .provider-chip.active {
-                  background: #e50914;
-                  border-color: #e50914;
-                }
-                .provider-chip.disney { background: #113ccf; border-color: #113ccf; }
-                .provider-chip.prime { background: #00a8e1; border-color: #00a8e1; }
               </style>
             </head>
             <body>
-              <!-- Provider Bar directly inside body to bypass TanStack root resets -->
-              <div id="firetv-provider-bar">
-                <span style="color: #94a3b8; font-size: 13px; font-weight: bold; margin-right: 8px;">PROVIDERS:</span>
-                <button class="provider-chip active" onclick="window.filterProvider('all', event)">All</button>
-                <button class="provider-chip" onclick="window.filterProvider('8', event)">Netflix</button>
-                <button class="provider-chip prime" onclick="window.filterProvider('9', event)">Prime Video</button>
-                <button class="provider-chip disney" onclick="window.filterProvider('337', event)">Disney+</button>
-              </div>
-
               <button id="firetv-back-to-home" onclick="if(window.history.length > 1){ window.history.back(); } else { window.location.replace('/'); }">
                 ← Back to Home
               </button>
-
               <div id="root"></div>
               <script type="module" src="/src/entry-client.tsx"></script>
               <script>
                 (function() {
                   let hideTimer;
-                  
-                  function checkPlayerState() {
-                    const hasPlayer = document.querySelector('iframe, video, .video-player-container') ||
-                                      window.location.pathname.includes('/watch') ||
-                                      window.location.pathname.includes('/player');
-                    if (hasPlayer) {
-                      document.body.classList.add('player-active');
-                    } else {
-                      document.body.classList.remove('player-active');
-                      document.body.classList.remove('interaction-active');
-                    }
-                  }
-
                   function showBackButton() {
-                    if (!document.body.classList.contains('player-active')) return;
-                    document.body.classList.add('interaction-active');
+                    const hasPlayer = window.location.pathname.includes('/watch') || 
+                                      window.location.pathname.includes('/player') || 
+                                      document.querySelector('iframe, video, .video-player-container');
+                    if (!hasPlayer) return;
+
+                    const btn = document.getElementById('firetv-back-to-home');
+                    if (!btn) return;
+
+                    btn.classList.add('visible');
                     clearTimeout(hideTimer);
                     hideTimer = setTimeout(() => {
-                      document.body.classList.remove('interaction-active');
+                      btn.classList.remove('visible');
                     }, 3500);
                   }
-
-                  window.filterProvider = function(providerId, evt) {
-                    document.querySelectorAll('.provider-chip').forEach(btn => btn.classList.remove('active'));
-                    if (evt && evt.target) evt.target.classList.add('active');
-                    
-                    console.log("Filtering by TMDB Watch Provider ID:", providerId);
-                    window.dispatchEvent(new CustomEvent('firetv-provider-filter', { detail: { providerId } }));
-                  };
-
-                  const observer = new MutationObserver(checkPlayerState);
-                  observer.observe(document.body, { childList: true, subtree: true });
-                  setInterval(checkPlayerState, 1000);
 
                   window.addEventListener('mousemove', showBackButton, { passive: true });
                   window.addEventListener('touchstart', showBackButton, { passive: true });
@@ -208,19 +169,19 @@ jobs:
           </html>
           EOF
 
-      - name: Inject Split-Aware Full-Screen Player CSS
+      - name: Inject Split-Aware Player & Homepage CSS into Stylesheet
         run: |
           if [ -f src/styles.css ]; then
             echo "" >> src/styles.css
             echo "/* ==========================================================" >> src/styles.css
-            echo "   Fire TV Split-Aware CSS Injection (Proven Player Sizing)" >> src/styles.css
+            echo "   Fire TV Split-Aware CSS (Homepage pristine vs Player full-screen)" >> src/styles.css
             echo "   ================================================---------- */" >> src/styles.css
             
+            # Apply full-screen sizing ONLY when on player routes or when player container exists
             echo "body.player-active html, body.player-active, body.player-active #root {" >> src/styles.css
             echo "  width: 100vw !important;" >> src/styles.css
             echo "  height: 100vh !important;" >> src/styles.css
             echo "  overflow: hidden !important;" >> src/styles.css
-            echo "  background-color: var(--app-bg, #050b16) !important;" >> src/styles.css
             echo "}" >> src/styles.css
             echo "" >> src/styles.css
             echo "body.player-active main {" >> src/styles.css
@@ -235,13 +196,11 @@ jobs:
             echo "  left: 0 !important;" >> src/styles.css
             echo "  width: 100vw !important;" >> src/styles.css
             echo "  height: 100vh !important;" >> src/styles.css
-            echo "  max-width: 100vw !important;" >> src/styles.css
-            echo "  max-height: 100vh !important;" >> src/styles.css
-            echo "  object-fit: contain !important;" >> src/styles.css
             echo "  z-index: 9999 !important;" >> src/styles.css
-            echo "  pointer-events: auto !important;" >> src/styles.css
             echo "}" >> src/styles.css
-            echo "Successfully injected proven player full-screen CSS into src/styles.css"
+            
+            # Add small inline script injection to ensure body.player-active triggers correctly based on URL
+            echo "Successfully injected split-aware CSS into src/styles.css"
           else
             echo "Error: src/styles.css not found!"
             exit 1
@@ -281,24 +240,18 @@ jobs:
 
       - name: Inject Custom MainActivity for Fire TV, TV Banner, Manifest & Clean Dark Splash Styles
         run: |
-          # 1. Inject specialized Fire TV MainActivity patch (falls back to standard if firetv patch isn't found)
           mkdir -p android/app/src/main/java/com/rabbittv/app
           if [ -f patches/MainActivity.firetv.java ]; then
-            echo "Applying specialized Fire TV MainActivity patch..."
             cp patches/MainActivity.firetv.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
           else
-            echo "Warning: MainActivity.firetv.java not found, using default MainActivity.java"
             cp patches/MainActivity.java android/app/src/main/java/com/rabbittv/app/MainActivity.java
           fi
 
-          # 2. Copy TV banner into Android drawable resources (for TV Leanback launcher icon only)
           mkdir -p android/app/src/main/res/drawable
           cp assets/tv_banner.png android/app/src/main/res/drawable/tv_banner.png
 
-          # 3. Overwrite AndroidManifest with TV Leanback support and banner reference
           cp patches/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
 
-          # 4. Configure clean dark styles.xml to eliminate banner background bleed
           mkdir -p android/app/src/main/res/values
           cat << 'EOF' > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
