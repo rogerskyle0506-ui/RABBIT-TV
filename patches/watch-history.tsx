@@ -56,9 +56,11 @@ function WatchHistoryComponent() {
 
   const allEntries = Object.values(historyMap);
 
-  // Separate movies (1 virtual episode) from TV Shows (multiple episodes or totalEpisodes > 1)
-  const movies = allEntries.filter((item) => item.totalEpisodes <= 1);
-  const tvShows = allEntries.filter((item) => item.totalEpisodes > 1);
+  // Robust TV show vs Movie separation using mediaType flag or episode counts
+  const tvShows = allEntries.filter(
+    (item) => item.mediaType === "tv" || item.media_type === "tv" || item.totalEpisodes > 1
+  );
+  const movies = allEntries.filter((item) => !tvShows.includes(item));
 
   const inProgressMovies = movies.filter((m) => calculateSeriesProgress(m) < 100);
   const completedMovies = movies.filter((m) => calculateSeriesProgress(m) === 100);
@@ -233,7 +235,7 @@ function WatchHistoryComponent() {
   );
 }
 
-/** STREAMLINED MOVIE CARD (Navigates to details on click) */
+/** STREAMLINED MOVIE CARD (Navigates to query parameters) */
 function MovieCard({
   movie,
   onEyeballClick,
@@ -249,7 +251,7 @@ function MovieCard({
 
   return (
     <div
-      onClick={() => navigate({ to: `/details/movie/${movie.showId}` })}
+      onClick={() => navigate({ to: "/details", search: { id: movie.showId, type: "movie" } })}
       className="group relative rounded-xl border border-white/10 bg-slate-900/90 overflow-hidden shadow-md flex flex-col justify-between transition hover:border-violet-500/50 cursor-pointer"
     >
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
@@ -296,7 +298,7 @@ function MovieCard({
   );
 }
 
-/** TV SHOW CARD (Navigates to details on click) */
+/** TV SHOW CARD (Navigates to query parameters) */
 function TvShowCard({
   show,
   onEyeballClick,
@@ -312,7 +314,7 @@ function TvShowCard({
 
   return (
     <div
-      onClick={() => navigate({ to: `/details/tv/${show.showId}` })}
+      onClick={() => navigate({ to: "/details", search: { id: show.showId, type: "tv" } })}
       className="group relative rounded-xl border border-white/10 bg-slate-900/90 overflow-hidden shadow-md flex flex-col justify-between transition hover:border-violet-500/50 cursor-pointer"
     >
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
