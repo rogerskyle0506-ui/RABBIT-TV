@@ -437,47 +437,4 @@ function RootComponent() {
                   <button
                     type="button"
                     onClick={() => handleMouseToggle(!helpfulMouse)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      helpfulMouse ? "bg-violet-600" : "bg-slate-700"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        helpfulMouse ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="space-y-2 border-t border-white/10 pt-4">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Authorization Passcode
-                  </label>
-                  <input
-                    type="password"
-                    value={passcodeInput}
-                    onChange={(e) => setPasscodeInput(e.target.value)}
-                    placeholder="Enter passcode..."
-                    className="w-full rounded-xl border border-white/20 bg-slate-900/80 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-400"
-                  />
-                  {passcodeError && (
-                    <p className="text-xs font-semibold text-red-400">
-                      Invalid passcode. Please try again.
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  className={`w-full rounded-xl py-3 text-sm font-bold uppercase tracking-wider transition ${getPrimaryBgColor(appTheme)}`}
-                >
-                  Confirm & Enter
-                </button>
-              </form>
-            </div>
-          )}
-        </AuthProvider>
-      </body>
-    </html>
-  );
-}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colo
