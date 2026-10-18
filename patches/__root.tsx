@@ -143,24 +143,6 @@ function RootComponent() {
     }
   };
 
-  const getPrimaryAccentColor = (theme: AppTheme) => {
-    switch (theme) {
-      case "red":
-        return "text-red-400";
-      case "midnight":
-        return "text-blue-400";
-      case "emerald":
-        return "text-emerald-400";
-      case "amber":
-        return "text-amber-400";
-      case "cyan":
-        return "text-cyan-400";
-      case "violet":
-      default:
-        return "text-violet-400";
-    }
-  };
-
   const getPrimaryBgColor = (theme: AppTheme) => {
     switch (theme) {
       case "red":
@@ -355,13 +337,14 @@ function RootComponent() {
             <Outlet />
           </main>
 
+          {/* FIRST-START / DISCLAIMER AUTHORIZATION MODAL WITH FULL SETTINGS CONFIGURATION */}
           {showFirstStartModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
               <form
                 onSubmit={handleFirstTimeAuthorize}
-                className={`my-auto w-full max-w-xl space-y-6 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
+                className={`my-auto w-full max-w-xl space-y-5 rounded-2xl border p-5 text-white shadow-2xl md:p-7 ${getCardBackground(appTheme)}`}
               >
-                <div className="text-center space-y-2">
+                <div className="text-center space-y-1.5">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-slate-900">
                     <img
                       src={RABBIT_LOGO_DATA_URL}
@@ -369,16 +352,94 @@ function RootComponent() {
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Authorization Required</h2>
+                  <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Authorization & Setup</h2>
                   <p className="text-xs text-slate-300 sm:text-sm">
-                    Please enter your 8-digit passcode to accept terms and continue into RABBiT TV.
+                    Configure your initial preferences and enter your 8-digit passcode to enter RABBiT TV.
                   </p>
                 </div>
 
-                <div className="space-y-4">
+                {/* Initial Setup Options Inside Modal */}
+                <div className="space-y-4 rounded-xl border border-white/10 bg-slate-950/60 p-4">
+                  {/* Theme Selector */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Select App Theme:
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        { id: "violet", label: "Violet & Neon" },
+                        { id: "red", label: "Red & Black" },
+                        { id: "midnight", label: "Midnight Blue & Black" },
+                        { id: "emerald", label: "Emerald" },
+                        { id: "amber", label: "Amber" },
+                        { id: "cyan", label: "Cyan" },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => handleThemeChange(t.id as AppTheme)}
+                          className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition text-center ${
+                            appTheme === t.id
+                              ? `${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-md`
+                              : "bg-slate-900 text-slate-300 hover:bg-slate-800 border border-white/10"
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card Scale Selector */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Card Scale Size:
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => handleSizeChange(size)}
+                          className={`rounded-lg px-2.5 py-1.5 text-xs font-bold capitalize transition text-center ${
+                            cardSize === size
+                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                              : "bg-slate-900 text-slate-300 hover:bg-slate-800 border border-white/10"
+                          }`}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* XL Mouse Toggle */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      <p className="text-xs font-bold text-white">XL Mouse Pointer (3x Scaled)</p>
+                      <p className="text-[10px] text-slate-400">Enlarges the cursor for TVs and projectors.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleMouseToggle(!helpfulMouse)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          helpfulMouse ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Passcode Input Section */}
+                <div className="space-y-3">
                   <div>
                     <label htmlFor="passcode" className="block text-xs font-medium text-slate-300">
-                      Passcode
+                      Authorization Passcode
                     </label>
                     <input
                       id="passcode"
@@ -386,28 +447,4 @@ function RootComponent() {
                       value={passcodeInput}
                       onChange={(e) => setPasscodeInput(e.target.value)}
                       placeholder="Enter 8-digit code"
-                      className="mt-1 block w-full rounded-xl border border-white/20 bg-slate-950/80 px-4 py-3 text-center text-lg font-mono tracking-widest text-white placeholder-slate-500 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/40"
-                    />
-                    {passcodeError && (
-                      <p className="mt-2 text-center text-xs font-semibold text-red-400">
-                        Invalid passcode. Please try again.
-                      </p>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    className={`w-full rounded-xl py-3 text-sm font-bold text-white transition shadow-lg ${getPrimaryBgColor(appTheme)}`}
-                  >
-                    Confirm & Enter
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
-        </AuthProvider>
-        <Scripts />
-      </body>
-    </html>
-  );
-}
+                      className="mt-1 block w-full rounded-xl border border-white/20 bg-slate-950/80 px-4 py-3 text-center tex
