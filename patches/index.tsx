@@ -96,7 +96,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
       <div className="p-2 bg-black/80 border-t border-white/10 flex items-center justify-between">
         <Link
           to={item.href}
-          className="w-full text-center rounded-full bg-black/70 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-violet-400"
+          className="w-full text-center rounded-full bg-gradient-to-r from-slate-900 via-black to-slate-900 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-violet-400"
         >
           WATCH →
         </Link>
@@ -127,7 +127,6 @@ function Home() {
       const listData = JSON.parse(localStorage.getItem(MY_LIST_STORAGE_KEY) || "[]");
       const favData = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || "[]");
       
-      // Load watch history and map active/in-progress items to MediaItem format
       const rawHistory = getRawWatchHistory();
       const mappedHistory: MediaItem[] = rawHistory.map((h) => {
         const cleanId = String(h.mediaId ?? h.id).replace(/^(movie|tv)-/, "");
@@ -223,7 +222,6 @@ function Home() {
     };
   }, [activeTab, page]);
 
-  // Active in-progress titles (excluding completed ones)
   const inProgressHistory = useMemo(
     () => historyItems.filter((i: any) => !i.confirmedCompleted && (i.progressPercent ?? 0) < 100),
     [historyItems]
@@ -234,7 +232,6 @@ function Home() {
     if (myListSubTab === "favorites") return savedFavorites;
     if (myListSubTab === "in_progress") return inProgressHistory;
 
-    // "All Saved" combines Watch Later, Favorites, and active In Progress
     const map = new Map();
     [...savedFavorites, ...savedMyList, ...inProgressHistory].forEach((item) => map.set(item.id, item));
     return Array.from(map.values());
@@ -260,29 +257,57 @@ function Home() {
     return "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4";
   }, [cardSize]);
 
+  // Full 6-Theme Multi-Stop Gradient Dictionary
   const themeStyles = {
     violet: {
-      bg: "bg-[#050b16]",
-      cardGradient: "from-slate-900 via-slate-950 to-violet-950",
-      btnActive: "bg-violet-600 text-white shadow-violet-600/30",
+      bg: "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950",
+      cardGradient: "from-purple-950/60 via-slate-900 to-indigo-950/60",
+      btnActive: "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30",
       accentText: "text-violet-300",
       borderGlow: "border-violet-500/30",
     },
     red: {
-      bg: "bg-black",
-      cardGradient: "from-zinc-950 via-zinc-900 to-red-950",
-      btnActive: "bg-red-600 text-white shadow-red-600/30",
+      bg: "bg-gradient-to-br from-zinc-950 via-red-950/40 to-black",
+      cardGradient: "from-red-950/60 via-zinc-900 to-neutral-950",
+      btnActive: "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30",
       accentText: "text-red-400",
       borderGlow: "border-red-500/30",
     },
     midnight: {
-      bg: "bg-[#020617]",
-      cardGradient: "from-slate-950 via-blue-950 to-slate-900",
-      btnActive: "bg-blue-600 text-white shadow-blue-600/30",
+      bg: "bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950",
+      cardGradient: "from-blue-950/60 via-slate-900 to-sky-950/60",
+      btnActive: "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30",
       accentText: "text-sky-300",
       borderGlow: "border-sky-500/30",
     },
-  }[appTheme];
+    emerald: {
+      bg: "bg-gradient-to-br from-slate-950 via-emerald-950/40 to-slate-950",
+      cardGradient: "from-emerald-950/60 via-slate-900 to-teal-950/60",
+      btnActive: "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30",
+      accentText: "text-emerald-300",
+      borderGlow: "border-emerald-500/30",
+    },
+    amber: {
+      bg: "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950",
+      cardGradient: "from-yellow-950/60 via-stone-900 to-amber-950/60",
+      btnActive: "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30",
+      accentText: "text-amber-300",
+      borderGlow: "border-amber-500/30",
+    },
+    cyan: {
+      bg: "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950",
+      cardGradient: "from-cyan-950/60 via-slate-900 to-blue-950/60",
+      btnActive: "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30",
+      accentText: "text-cyan-300",
+      borderGlow: "border-cyan-500/30",
+    },
+  }[appTheme] ?? {
+    bg: "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950",
+    cardGradient: "from-purple-950/60 via-slate-900 to-indigo-950/60",
+    btnActive: "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30",
+    accentText: "text-violet-300",
+    borderGlow: "border-violet-500/30",
+  };
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
@@ -297,7 +322,7 @@ function Home() {
                 onClick={() => setActiveTab(tab)}
                 className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition focus:outline-none ${
                   activeTab === tab
-                    ? "bg-white/25 text-white shadow"
+                    ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
                     : "text-slate-300 hover:bg-white/10 hover:text-white"
                 }`}
               >
@@ -339,7 +364,7 @@ function Home() {
                         {featured.title}
                       </h2>
                       {featured.rating && (
-                        <span className="rounded-full border border-yellow-400/40 bg-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px] font-semibold">
+                        <span className="rounded-full border border-yellow-400/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px] font-semibold">
                           ⭐ {featured.rating}
                         </span>
                       )}
@@ -386,7 +411,7 @@ function Home() {
                   onClick={() => setSelectedGenre(genre)}
                   className={`rounded-full px-3.5 py-1 text-xs font-semibold transition focus:outline-none focus:ring-4 ${
                     selectedGenre === genre
-                      ? "bg-white/25 text-white shadow"
+                      ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
                       : "text-slate-300 hover:text-white hover:bg-white/10"
                   }`}
                 >
@@ -406,7 +431,7 @@ function Home() {
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                 myListSubTab === "all"
                   ? themeStyles.btnActive
-                  : "bg-slate-900/60 text-slate-300"
+                  : "bg-gradient-to-r from-slate-900/90 to-slate-950/90 text-slate-300 border border-white/5"
               }`}
             >
               All Saved ({savedMyList.length + savedFavorites.length + inProgressHistory.length})
@@ -417,8 +442,8 @@ function Home() {
               onClick={() => setMyListSubTab("in_progress")}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                 myListSubTab === "in_progress"
-                  ? themeStyles.btnActive
-                  : "bg-slate-900/60 text-slate-300"
+                  ? "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-cyan-600/30"
+                  : "bg-gradient-to-r from-slate-900/90 to-slate-950/90 text-slate-300 border border-white/5"
               }`}
             >
               ⏳ In Progress ({inProgressHistory.length})
@@ -430,7 +455,7 @@ function Home() {
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                 myListSubTab === "mylist"
                   ? themeStyles.btnActive
-                  : "bg-slate-900/60 text-slate-300"
+                  : "bg-gradient-to-r from-slate-900/90 to-slate-950/90 text-slate-300 border border-white/5"
               }`}
             >
               🔖 Watch Later ({savedMyList.length})
@@ -441,8 +466,8 @@ function Home() {
               onClick={() => setMyListSubTab("favorites")}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
                 myListSubTab === "favorites"
-                  ? "bg-amber-600 text-white shadow-md shadow-amber-600/30"
-                  : "bg-slate-900/60 text-slate-300"
+                  ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30"
+                  : "bg-gradient-to-r from-slate-900/90 to-slate-950/90 text-slate-300 border border-white/5"
               }`}
             >
               ⭐ Favorites ({savedFavorites.length})
@@ -468,7 +493,7 @@ function Home() {
               ))}
             </div>
           ) : (
-            <div className="rounded-[20px] bg-slate-900/80 p-6 text-center mx-2">
+            <div className="rounded-[20px] bg-gradient-to-br from-slate-900/90 via-slate-950/90 to-slate-900/90 p-6 text-center mx-2 border border-white/5 shadow-xl">
               <p className="text-sm text-slate-300">
                 {activeTab === "My List"
                   ? "No saved titles in this section yet. Open any movie or show to save it!"
@@ -482,12 +507,12 @@ function Home() {
 
         {/* Pagination Controls */}
         {activeTab !== "My List" && totalPages > 1 && (
-          <div className="mb-6 flex items-center justify-center gap-3 rounded-2xl bg-slate-900/60 p-3 mx-2">
+          <div className="mb-6 flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-slate-900/80 via-slate-950/80 to-slate-900/80 p-3 mx-2 border border-white/5">
             <button
               type="button"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page <= 1 || loading}
-              className="rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40 focus:outline-none focus:ring-4"
+              className="rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:from-slate-700 hover:to-slate-800 disabled:opacity-40 focus:outline-none focus:ring-4"
             >
               ◀ Previous
             </button>
