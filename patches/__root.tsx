@@ -1,354 +1,453 @@
+import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
+import { AuthProvider } from "@/components/auth-provider";
+import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import "@/styles.css";
+import { useState, useEffect } from "react";
 import {
-  Outlet,
-  ScrollRestoration,
-  createRootRoute,
-  useNavigate,
-  useRouterState,
-} from '@tanstack/react-router'
-import React, { useEffect, useState, useRef } from 'react'
+  CardSize,
+  AppTheme,
+  DISCLAIMER_ACCEPTED_KEY,
+  getSavedCardSize,
+  saveCardSize,
+  getSavedTheme,
+  saveTheme,
+  getHelpfulMouse,
+  setHelpfulMouse,
+} from "@/lib/settings";
+
+const AUTHORIZATION_CODE = "34688643";
+
+const RABBIT_LOGO_DATA_URL =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%236d28d9'/><text x='50%' y='55%' font-size='50' text-anchor='middle' dominant-baseline='middle'>🐇</text></svg>";
 
 export const Route = createRootRoute({
   component: RootComponent,
-})
-
-type ThemeName = 'violet' | 'red' | 'midnight' | 'emerald' | 'amber' | 'cyan'
-type SettingsTab = 'theme' | 'scale' | 'mouse'
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+    ],
+    title: "RABTV - Stream Your Favorite Shows",
+  }),
+});
 
 function RootComponent() {
-  const navigate = useNavigate()
-  const routerState = useRouterState()
-  const currentPath = routerState.location.pathname
+  const [showFirstStartModal, setShowFirstStartModal] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState("");
+  const [passcodeError, setPasscodeError] = useState(false);
 
-  const [theme, setTheme] = useState<ThemeName>('violet')
-  const [uiScale, setUiScale] = useState<number>(100)
-  const [mouseMode, setMouseMode] = useState<boolean>(false)
-  const [showSettings, setShowSettings] = useState<boolean>(false)
-  const [activeTab, setActiveTab] = useState<SettingsTab>('theme')
+  const [showSettings, setShowSettings] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "mouse">("theme");
 
-  const [isTopNavFocused, setIsTopNavFocused] = useState<boolean>(false)
-  const [topNavIndex, setTopNavIndex] = useState<number>(0)
-  const [isSettingsMenuFocused, setIsSettingsMenuFocused] = useState<boolean>(false)
-
-  const settingsButtonRef = useRef<HTMLButtonElement>(null)
-  const settingsModalRef = useRef<HTMLDivElement>(null)
+  const [cardSize, setCardSize] = useState<CardSize>("large");
+  const [appTheme, setAppTheme] = useState<AppTheme>("violet");
+  const [helpfulMouse, setHelpfulMouseState] = useState(false);
 
   useEffect(() => {
+    // Detect Fire OS / Silk WebView at runtime and tag root html element
     if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem('rab_theme') as ThemeName
-      const validThemes: ThemeName[] = ['violet', 'red', 'midnight', 'emerald', 'amber', 'cyan']
-      if (savedTheme && validThemes.includes(savedTheme)) {
-        setTheme(savedTheme)
-      }
-      const savedScale = localStorage.getItem('rab_scale')
-      if (savedScale) {
-        setUiScale(parseInt(savedScale, 10))
-      }
-      const savedMouse = localStorage.getItem('rab_mouse')
-      if (savedMouse !== null) {
-        setMouseMode(savedMouse === 'true')
-      }
-    }
-  }, [])
-
-  const handleSetTheme = (newTheme: ThemeName) => {
-    setTheme(newTheme)
-    localStorage.setItem('rab_theme', newTheme)
-  }
-
-  const handleSetScale = (scale: number) => {
-    setUiScale(scale)
-    localStorage.setItem('rab_scale', scale.toString())
-  }
-
-  const handleSetMouse = (enabled: boolean) => {
-    setMouseMode(enabled)
-    localStorage.setItem('rab_mouse', enabled.toString())
-  }
-
-  const navItems = [
-    { label: 'Home', path: '/' },
-    { label: 'Movies', path: '/movies' },
-    { label: 'TV Shows', path: '/tv' },
-    { label: 'Search', path: '/search' },
-    { label: 'My List', path: '/mylist' },
-    { label: 'Watch History', path: '/watch-history' },
-  ]
-
-  const tabs: SettingsTab[] = ['theme', 'scale', 'mouse']
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (showSettings) {
-        if (e.key === 'Escape' || e.key === 'Backspace') {
-          e.preventDefault()
-          setShowSettings(false)
-          setIsSettingsMenuFocused(false)
-          settingsButtonRef.current?.focus()
-          return
-        }
-
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-          e.preventDefault()
-          const currentIndex = tabs.indexOf(activeTab)
-          const nextIndex =
-            e.key === 'ArrowRight'
-              ? (currentIndex + 1) % tabs.length
-              : (currentIndex - 1 + tabs.length) % tabs.length
-          setActiveTab(tabs[nextIndex])
-        }
-        return
-      }
-
-      if (isTopNavFocused) {
-        if (e.key === 'ArrowRight') {
-          e.preventDefault()
-          setTopNavIndex((prev) => (prev + 1) % (navItems.length + 1))
-        } else if (e.key === 'ArrowLeft') {
-          e.preventDefault()
-          setTopNavIndex((prev) => (prev - 1 + navItems.length + 1) % (navItems.length + 1))
-        } else if (e.key === 'Enter') {
-          e.preventDefault()
-          if (topNavIndex < navItems.length) {
-            navigate({ to: navItems[topNavIndex].path })
-            setIsTopNavFocused(false)
-          } else {
-            setShowSettings(true)
-            setIsSettingsMenuFocused(true)
-            setIsTopNavFocused(false)
-          }
-        } else if (e.key === 'ArrowDown') {
-          e.preventDefault()
-          setIsTopNavFocused(false)
-        }
-      } else {
-        if (e.key === 'ArrowUp' && window.scrollY === 0) {
-          e.preventDefault()
-          setIsTopNavFocused(true)
-          setTopNavIndex(0)
-        }
+      const ua = navigator.userAgent.toLowerCase();
+      if (ua.includes('silk') || ua.includes('firetv') || ua.includes('amazon')) {
+        document.documentElement.classList.add('fire-os');
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [showSettings, isTopNavFocused, topNavIndex, activeTab, navItems, navigate])
+    const authorized = localStorage.getItem(DISCLAIMER_ACCEPTED_KEY);
+    if (!authorized) {
+      setShowFirstStartModal(true);
+    }
 
-  const getThemeBackground = () => {
+    setCardSize(getSavedCardSize());
+    setAppTheme(getSavedTheme());
+    setHelpfulMouseState(getHelpfulMouse());
+
+    const handleSettingsUpdate = () => {
+      setCardSize(getSavedCardSize());
+      setAppTheme(getSavedTheme());
+      setHelpfulMouseState(getHelpfulMouse());
+    };
+
+    window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
+    return () => {
+      window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
+    };
+  }, []);
+
+  const handleFirstTimeAuthorize = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (passcodeInput.trim() === AUTHORIZATION_CODE) {
+      localStorage.setItem(DISCLAIMER_ACCEPTED_KEY, "true");
+      saveCardSize(cardSize);
+      saveTheme(appTheme);
+      setHelpfulMouse(helpfulMouse);
+      setShowFirstStartModal(false);
+      setPasscodeError(false);
+      window.dispatchEvent(new Event("rabtv_settings_updated"));
+    } else {
+      setPasscodeError(true);
+      setPasscodeInput("");
+    }
+  };
+
+  const handleSizeChange = (newSize: CardSize) => {
+    saveCardSize(newSize);
+    setCardSize(newSize);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
+  const handleThemeChange = (newTheme: AppTheme) => {
+    saveTheme(newTheme);
+    setAppTheme(newTheme);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
+  const handleMouseToggle = (enabled: boolean) => {
+    setHelpfulMouse(enabled);
+    setHelpfulMouseState(enabled);
+  };
+
+  const getBodyBackground = (theme: AppTheme) => {
     switch (theme) {
-      case 'red':
-        return 'bg-[#0f0505] text-zinc-100'
-      case 'midnight':
-        return 'bg-[#020617] text-slate-100'
-      case 'emerald':
-        return 'bg-[#031109] text-emerald-50'
-      case 'amber':
-        return 'bg-[#120a02] text-amber-50'
-      case 'cyan':
-        return 'bg-[#021013] text-cyan-50'
-      case 'violet':
+      case "red":
+        return "bg-[#120202]";
+      case "midnight":
+        return "bg-[#020617]";
+      case "emerald":
+        return "bg-[#02140a]";
+      case "amber":
+        return "bg-[#140b02]";
+      case "cyan":
+        return "bg-[#021217]";
+      case "violet":
       default:
-        return 'bg-[#090514] text-purple-50'
+        return "bg-[#050b16]";
     }
-  }
+  };
 
-  const getPrimaryAccent = () => {
+  const getCardBackground = (theme: AppTheme) => {
     switch (theme) {
-      case 'red':
-        return 'bg-red-600 hover:bg-red-500 text-white'
-      case 'midnight':
-        return 'bg-blue-600 hover:bg-blue-500 text-white'
-      case 'emerald':
-        return 'bg-emerald-600 hover:bg-emerald-500 text-white'
-      case 'amber':
-        return 'bg-amber-600 hover:bg-amber-500 text-white'
-      case 'cyan':
-        return 'bg-cyan-600 hover:bg-cyan-500 text-white'
-      case 'violet':
+      case "red":
+        return "bg-[#160404] border-red-500/20";
+      case "midnight":
+        return "bg-[#03091e] border-blue-500/20";
+      case "emerald":
+        return "bg-[#041d10] border-emerald-500/20";
+      case "amber":
+        return "bg-[#1f1003] border-amber-500/20";
+      case "cyan":
+        return "bg-[#031a20] border-cyan-500/20";
+      case "violet":
       default:
-        return 'bg-purple-600 hover:bg-purple-500 text-white'
+        return "bg-[#090e1f] border-violet-500/20";
     }
-  }
+  };
 
-  const getBorderColor = () => {
+  const getPrimaryAccentColor = (theme: AppTheme) => {
     switch (theme) {
-      case 'red':
-        return 'border-red-900/40 focus:border-red-500'
-      case 'midnight':
-        return 'border-blue-900/40 focus:border-blue-500'
-      case 'emerald':
-        return 'border-emerald-900/40 focus:border-emerald-500'
-      case 'amber':
-        return 'border-amber-900/40 focus:border-amber-500'
-      case 'cyan':
-        return 'border-cyan-900/40 focus:border-cyan-500'
-      case 'violet':
+      case "red":
+        return "text-red-400";
+      case "midnight":
+        return "text-blue-400";
+      case "emerald":
+        return "text-emerald-400";
+      case "amber":
+        return "text-amber-400";
+      case "cyan":
+        return "text-cyan-400";
+      case "violet":
       default:
-        return 'border-purple-900/40 focus:border-purple-500'
+        return "text-violet-400";
     }
-  }
+  };
+
+  const getPrimaryBgColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-red-600 hover:bg-red-500 shadow-red-600/40";
+      case "midnight":
+        return "bg-blue-600 hover:bg-blue-500 shadow-blue-600/40";
+      case "emerald":
+        return "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/40";
+      case "amber":
+        return "bg-amber-600 hover:bg-amber-500 shadow-amber-600/40";
+      case "cyan":
+        return "bg-cyan-600 hover:bg-cyan-500 shadow-cyan-600/40";
+      case "violet":
+      default:
+        return "bg-violet-600 hover:bg-violet-500 shadow-violet-600/40";
+    }
+  };
 
   return (
-    <html lang="en" className={mouseMode ? '' : 'cursor-none'}>
+    <html lang="en" data-theme={appTheme}>
       <head>
-        <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>RABBiT TV</title>
+        <HeadContent />
+        {/* 3x Scaled High-Visibility Cursor when Helpful Mouse / XL Mouse is enabled */}
+        {helpfulMouse && (
+          <style>{`
+            *, button, a, select, input, [role="button"] {
+              cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 24 24' fill='%23ffffff' stroke='%23000000' stroke-width='2'%3E%3Cpath d='M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z'/%3E%3C/svg%3E"), auto !important;
+            }
+          `}</style>
+        )}
       </head>
-      <body
-        className={`min-h-screen ${getThemeBackground()} antialiased selection:bg-purple-500 selection:text-white`}
-        style={{ fontSize: `${uiScale}%` }}
-      >
-        <header className="sticky top-0 z-50 backdrop-blur-md bg-black/40 border-b border-white/10 px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <h1 className="text-xl font-black tracking-wider bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-              RABBiT TV
-            </h1>
-            <nav className="hidden md:flex items-center space-x-1">
-              {navItems.map((item, idx) => {
-                const isActive = currentPath === item.path
-                const isFocused = isTopNavFocused && topNavIndex === idx
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate({ to: item.path })}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      isActive
-                        ? `${getPrimaryAccent()} shadow-lg`
-                        : 'text-zinc-300 hover:text-white hover:bg-white/10'
-                    } ${isFocused ? 'ring-2 ring-white scale-105' : ''}`}
-                  >
-                    {item.label}
-                  </button>
-                )
-              })}
-            </nav>
-          </div>
-
-          <button
-            ref={settingsButtonRef}
-            onClick={() => {
-              setShowSettings(true)
-              setIsSettingsMenuFocused(true)
-            }}
-            className={`p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-all text-zinc-200 hover:text-white ${
-              isTopNavFocused && topNavIndex === navItems.length ? 'ring-2 ring-white scale-105' : ''
-            }`}
-            title="Settings"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </button>
-        </header>
-
-        <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden">
-          <Outlet />
-        </main>
-
-        {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div
-              ref={settingsModalRef}
-              className={`w-full max-w-xl rounded-2xl bg-zinc-900 border ${getBorderColor()} p-6 shadow-2xl text-zinc-100`}
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
-                <h2 className="text-xl font-bold">Settings</h2>
-                <button
-                  onClick={() => setShowSettings(false)}
-                  className="text-zinc-400 hover:text-white px-3 py-1 rounded-lg bg-white/5"
+      <body className={`min-h-screen max-w-full overflow-x-hidden ${getBodyBackground(appTheme)} text-slate-100 antialiased transition-colors duration-300`}>
+        <PreviewHostBridge />
+        <AuthProvider>
+          <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
+            <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
+              {/* Brand Logo & Watch History Navigation */}
+              <div className="flex items-center gap-4 sm:gap-6">
+                <Link
+                  to="/"
+                  className="flex items-center gap-2 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0"
                 >
-                  ✕ Close
-                </button>
-              </div>
+                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-slate-900/80 shrink-0">
+                    <img
+                      src={RABBIT_LOGO_DATA_URL}
+                      alt="RABBiT TV"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <span className="whitespace-nowrap">RABBiT TV</span>
+                </Link>
 
-              <div className="flex space-x-2 mb-6 border-b border-white/10 pb-4">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all ${
-                      activeTab === tab ? getPrimaryAccent() : 'bg-white/5 text-zinc-400 hover:text-white'
-                    }`}
+                {!showFirstStartModal && (
+                  <Link
+                    to="/watch-history"
+                    className="rounded-lg bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white border border-white/10 flex items-center gap-1.5"
                   >
-                    {tab}
-                  </button>
-                ))}
+                    <span>🕒</span> Watch History
+                  </Link>
+                )}
               </div>
 
-              <div className="space-y-6">
-                {activeTab === 'theme' && (
-                  <div>
-                    <label className="text-sm font-medium text-zinc-300 block mb-3">Color Theme</label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {(['violet', 'red', 'midnight', 'emerald', 'amber', 'cyan'] as ThemeName[]).map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => handleSetTheme(t)}
-                          className={`p-3 rounded-xl border text-center capitalize font-medium transition-all ${
-                            theme === t
-                              ? 'border-white bg-white/20 text-white shadow-lg'
-                              : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10'
-                          }`}
-                        >
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {/* Single Gear Settings Icon Button */}
+              {!showFirstStartModal && (
+                <button
+                  type="button"
+                  onClick={() => setShowSettings((prev) => !prev)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-800 text-white text-lg transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  aria-label="Settings"
+                >
+                  ⚙️
+                </button>
+              )}
+            </div>
 
-                {activeTab === 'scale' && (
-                  <div>
-                    <label className="text-sm font-medium text-zinc-300 block mb-3">
-                      UI Scale: <span className="text-white font-bold">{uiScale}%</span>
-                    </label>
-                    <div className="grid grid-cols-4 gap-3">
-                      {[90, 100, 110, 125].map((scale) => (
-                        <button
-                          key={scale}
-                          onClick={() => handleSetScale(scale)}
-                          className={`p-3 rounded-xl border text-center font-medium transition-all ${
-                            uiScale === scale
-                              ? 'border-white bg-white/20 text-white'
-                              : 'border-white/10 bg-white/5 text-zinc-400 hover:bg-white/10'
-                          }`}
-                        >
-                          {scale}%
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'mouse' && (
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <h3 className="font-medium text-white">Mouse Cursor</h3>
-                      <p className="text-xs text-zinc-400">Show or hide cursor on projector/TV display</p>
-                    </div>
+            {/* Popout Settings Menu */}
+            {showSettings && !showFirstStartModal && (
+              <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-md shadow-2xl`}>
+                <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
+                  {/* Settings Sub-tabs (Quality & Backup Removed) */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-white/10 w-full justify-center">
                     <button
-                      onClick={() => handleSetMouse(!mouseMode)}
-                      className={`px-5 py-2.5 rounded-xl font-semibold transition-all ${
-                        mouseMode ? 'bg-emerald-600 text-white' : 'bg-zinc-800 text-zinc-400'
+                      type="button"
+                      onClick={() => setActiveSettingsTab("theme")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "theme"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                       }`}
                     >
-                      {mouseMode ? 'Enabled' : 'Hidden'}
+                      Theme
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSettingsTab("scale")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "scale"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Scale
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSettingsTab("mouse")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "mouse"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      XL Mouse
                     </button>
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
-        <ScrollRestoration />
-      </body>
-    </html>
-  )
-}
+                  {/* Active Tab Content Panel */}
+                  <div className="w-full flex justify-center py-1">
+                    {activeSettingsTab === "theme" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Theme:</span>
+                        {[
+                          { id: "violet", label: "🟣 Violet" },
+                          { id: "red", label: "🔴 Red" },
+                          { id: "midnight", label: "🔵 Midnight" },
+                          { id: "emerald", label: "🟢 Emerald" },
+                          { id: "amber", label: "🟠 Amber" },
+                          { id: "cyan", label: "🩵 Cyan" },
+                        ].map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => handleThemeChange(t.id as AppTheme)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                              appTheme === t.id
+                                ? `${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-md`
+                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSettingsTab === "scale" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Scale:</span>
+                        {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => handleSizeChange(size)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
+                              cardSize === size
+                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                            }`}
+                          >
+                            {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSettingsTab === "mouse" && (
+                      <div className="flex items-center justify-center gap-4 py-1">
+                        <div className="text-left">
+                          <p className="text-xs font-bold text-white">XL Mouse Pointer (3x Scaled)</p>
+                          <p className="text-[10px] text-slate-400">Enlarges the cursor for improved visibility on TVs and projectors.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleMouseToggle(!helpfulMouse)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              helpfulMouse ? "translate-x-6" : "translate-x-1"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </header>
+
+          <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden">
+            <Outlet />
+          </main>
+
+          {showFirstStartModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
+              <form
+                onSubmit={handleFirstTimeAuthorize}
+                className={`my-auto w-full max-w-xl space-y-6 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
+              >
+                <div className="text-center space-y-2">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-slate-900">
+                    <img
+                      src={RABBIT_LOGO_DATA_URL}
+                      alt="RABBiT TV"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <h2 className={`text-2xl font-bold ${getPrimaryAccentColor(appTheme)}`}>
+                    Welcome to RABBiT TV
+                  </h2>
+                </div>
+
+                <div className="space-y-4 text-sm leading-relaxed text-slate-300">
+                  <p>
+                    This app has been shared by <strong>Rabbit</strong> as a friendly gesture. By entering the personal agreement code below, you confirm strict authorization and agree not to share or distribute this app without consent.
+                  </p>
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-300">
+                    <strong>⚠️ Device Monitoring Notice:</strong> Unique device IDs running this application are logged for authorization tracking. Unauthorized installations or unapproved sharing can be detected immediately.
+                  </div>
+                </div>
+
+                {/* Theme Selector on Splash Screen */}
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Select Startup Theme:
+                  </label>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {[
+                      { id: "violet", label: "🟣 Violet" },
+                      { id: "red", label: "🔴 Red" },
+                      { id: "midnight", label: "🔵 Midnight" },
+                      { id: "emerald", label: "🟢 Emerald" },
+                      { id: "amber", label: "🟠 Amber" },
+                      { id: "cyan", label: "🩵 Cyan" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setAppTheme(t.id as AppTheme)}
+                        className={`rounded-xl border py-2 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                          appTheme === t.id
+                            ? `border-white/30 ${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-lg`
+                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Display Size Selector on Splash Screen */}
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Select Display Size (Adjustable anytime in settings):
+                  </label>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => handleSizeChange(size)}
+                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                          cardSize === size
+                            ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
+                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        }`}
+                      >
+                        {size === "small" ? "Small (25%)" : size === "medium" ? "Medium (60%)" : "Large (100%)"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* XL Mouse Toggle on Splash Screen */}
+                <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      XL Mouse Pointer
+                    </label>
+                    <p className="text-[11px] text-slate-400">Enlarges cursor 3x for easy projector/TV navigation.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleMouseToggle(!helpfulMouse)}
+            
