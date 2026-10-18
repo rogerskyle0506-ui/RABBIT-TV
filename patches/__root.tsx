@@ -44,7 +44,6 @@ function RootComponent() {
   const [helpfulMouse, setHelpfulMouseState] = useState(false);
 
   useEffect(() => {
-    // Detect Fire OS / Silk WebView at runtime and tag root html element
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent.toLowerCase();
       if (ua.includes('silk') || ua.includes('firetv') || ua.includes('amazon')) {
@@ -183,7 +182,6 @@ function RootComponent() {
     <html lang="en" data-theme={appTheme}>
       <head>
         <HeadContent />
-        {/* 3x Scaled High-Visibility Cursor when Helpful Mouse / XL Mouse is enabled */}
         {helpfulMouse && (
           <style>{`
             *, button, a, select, input, [role="button"] {
@@ -197,7 +195,6 @@ function RootComponent() {
         <AuthProvider>
           <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
-              {/* Brand Logo & Watch History Navigation */}
               <div className="flex items-center gap-4 sm:gap-6">
                 <Link
                   to="/"
@@ -223,7 +220,6 @@ function RootComponent() {
                 )}
               </div>
 
-              {/* Single Gear Settings Icon Button */}
               {!showFirstStartModal && (
                 <button
                   type="button"
@@ -236,11 +232,9 @@ function RootComponent() {
               )}
             </div>
 
-            {/* Popout Settings Menu */}
             {showSettings && !showFirstStartModal && (
               <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-md shadow-2xl`}>
                 <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
-                  {/* Settings Sub-tabs (Quality & Backup Removed) */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-white/10 w-full justify-center">
                     <button
                       type="button"
@@ -277,7 +271,6 @@ function RootComponent() {
                     </button>
                   </div>
 
-                  {/* Active Tab Content Panel */}
                   <div className="w-full flex justify-center py-1">
                     {activeSettingsTab === "theme" && (
                       <div className="flex flex-wrap items-center justify-center gap-2">
@@ -385,7 +378,6 @@ function RootComponent() {
                   </div>
                 </div>
 
-                {/* Theme Selector on Splash Screen */}
                 <div className="space-y-2 border-t border-white/10 pt-4">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Select Startup Theme:
@@ -415,7 +407,6 @@ function RootComponent() {
                   </div>
                 </div>
 
-                {/* Display Size Selector on Splash Screen */}
                 <div className="space-y-2 border-t border-white/10 pt-4">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Select Display Size (Adjustable anytime in settings):
@@ -439,7 +430,6 @@ function RootComponent() {
                   </div>
                 </div>
 
-                {/* XL Mouse Toggle on Splash Screen */}
                 <div className="flex items-center justify-between border-t border-white/10 pt-4">
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -450,4 +440,50 @@ function RootComponent() {
                   <button
                     type="button"
                     onClick={() => handleMouseToggle(!helpfulMouse)}
-            
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        helpfulMouse ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Enter Personal Agreement Code:
+                  </label>
+                  <input
+                    type="password"
+                    maxLength={10}
+                    value={passcodeInput}
+                    onChange={(e) => setPasscodeInput(e.target.value)}
+                    placeholder="Enter Code"
+                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
+                  />
+
+                  {passcodeError && (
+                    <p className="text-xs font-semibold text-red-400 text-center">
+                      ⚠️ Invalid Authorization Code. Agreement Not Accepted.
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-4 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
+                >
+                  Accept Agreement & Launch App
+                </button>
+              </form>
+            </div>
+          )}
+        </AuthProvider>
+        <Scripts />
+      </body>
+    </html>
+  );
+}
