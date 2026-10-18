@@ -1,3 +1,11 @@
+export function removeDislikedTitle(id: number | string): void {
+  try {
+    const disliked = getDislikedTitles().filter(item => item.id !== id);
+    localStorage.setItem('rabbit_tv_disliked_titles', JSON.stringify(disliked));
+  } catch (e) {
+    console.error('Failed to remove disliked title:', e);
+  }
+}
 export interface WatchHistoryItem {
   id: string; // e.g. "movie-123" or "tv-456-s1-e2"
   mediaId: string;
