@@ -448,3 +448,4 @@ function RootComponent() {
                       onChange={(e) => setPasscodeInput(e.target.value)}
                       placeholder="Enter 8-digit code"
                       className="mt-1 block w-full rounded-xl border border-white/20 bg-slate-950/80 px-4 py-3 text-center text-white"
+/>
