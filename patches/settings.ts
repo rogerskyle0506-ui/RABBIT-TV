@@ -1,6 +1,6 @@
 export type CardSize = "small" | "medium" | "large";
 export type StreamQuality = "1080p" | "720p" | "480p" | "auto";
-export type AppTheme = "violet" | "red" | "midnight" | "emerald" | "amber" | "cyan";
+export type AppTheme = "violet" | "red" | "midnight";
 
 export const DISCLAIMER_ACCEPTED_KEY = "rabtv_disclaimer_accepted";
 export const CARD_SIZE_KEY = "rabtv_card_size";
@@ -16,7 +16,6 @@ export function getSavedCardSize(): CardSize {
 export function saveCardSize(size: CardSize) {
   if (typeof window !== "undefined") {
     localStorage.setItem(CARD_SIZE_KEY, size);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
   }
 }
 
@@ -28,7 +27,6 @@ export function getSavedStreamQuality(): StreamQuality {
 export function saveStreamQuality(quality: StreamQuality) {
   if (typeof window !== "undefined") {
     localStorage.setItem(STREAM_QUALITY_KEY, quality);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
   }
 }
 
@@ -40,7 +38,6 @@ export function getSavedTheme(): AppTheme {
 export function saveTheme(theme: AppTheme) {
   if (typeof window !== "undefined") {
     localStorage.setItem(THEME_KEY, theme);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
   }
 }
 
@@ -56,7 +53,6 @@ export function setHelpfulMouse(enabled: boolean) {
   }
 }
 
-// Helper to get Tailwind CSS width/height classes + responsive container constraints
 export function getPosterDimensions(size: CardSize) {
   switch (size) {
     case "small":
@@ -81,4 +77,5 @@ export function getPosterDimensions(size: CardSize) {
         isSmall: false,
       };
   }
-}
+      }
+  
