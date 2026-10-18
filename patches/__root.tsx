@@ -32,7 +32,7 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
-  const [showFirstStartModal, setShowFirstStartModal] = useState(true);
+  const [showFirstStartModal, setShowFirstStartModal] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState(false);
 
