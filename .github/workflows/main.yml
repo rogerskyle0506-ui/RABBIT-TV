@@ -39,7 +39,7 @@ jobs:
           echo "artifact_name=${SLUG}-v${VERSION}" >> $GITHUB_OUTPUT
           echo "apk_filename=${SLUG}-v${VERSION}.apk" >> $GITHUB_OUTPUT
           
-          echo "Building: $APP_NAME version $VERSION"
+          echo "Building: $APP_NAME version$VERSION"
 
       - name: Install dependencies
         run: npm install
@@ -62,6 +62,14 @@ jobs:
         run: |
           mkdir -p src/lib src/routes
           
+          # 0. Copy settings store & theme types to src/lib/settings.ts
+          if [ -f patches/settings.ts ]; then
+            cp patches/settings.ts src/lib/settings.ts
+            echo "Successfully patched src/lib/settings.ts"
+          else
+            echo "Warning: patches/settings.ts not found!"
+          fi
+
           # 1. Copy storage engine to src/lib/watch-history.ts
           if [ -f patches/watch-history.ts ]; then
             cp patches/watch-history.ts src/lib/watch-history.ts
