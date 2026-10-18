@@ -105,6 +105,10 @@ export function MediaCard({ item }: { item: MediaItem }) {
   );
 }
 
+export const Route = createFileRoute("/")({
+  component: Home,
+});
+
 function Home() {
   const [activeTab, setActiveTab] = useState<NavTab>("Home");
   const [selectedGenre, setSelectedGenre] = useState<string>("Trending");
@@ -476,66 +480,18 @@ function Home() {
         )}
 
         {/* Content Grid */}
-        <section className="mb-6 px-1">
-          <div className="mb-3 flex items-center justify-between px-1">
-            <h3 className="text-lg font-bold text-white">
-              {activeTab === "My List" ? "Saved Catalog" : `${activeTab} Catalog`}
-            </h3>
-            <span className={`text-xs font-medium ${themeStyles.accentText}`}>
-              {filteredItems.length} titles available
-            </span>
-          </div>
-
-          {filteredItems.length > 0 ? (
-            <div className={gridColsClass}>
-              {filteredItems.map((item) => (
-                <MediaCard item={item} key={item.id} />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-[20px] bg-gradient-to-br from-slate-900/90 via-slate-950/90 to-slate-900/90 p-6 text-center mx-2 border border-white/5 shadow-xl">
-              <p className="text-sm text-slate-300">
-                {activeTab === "My List"
-                  ? "No saved titles in this section yet. Open any movie or show to save it!"
-                  : loading
-                  ? `Loading ${activeTab} content...`
-                  : error ?? "No titles available in this view."}
-              </p>
-            </div>
-          )}
+        <section className={gridColsClass}>
+          {filteredItems.map((item) => (
+            <MediaCard key={item.id} item={item} />
+          ))}
         </section>
 
-        {/* Pagination Controls */}
-        {activeTab !== "My List" && totalPages > 1 && (
-          <div className="mb-6 flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-slate-900/80 via-slate-950/80 to-slate-900/80 p-3 mx-2 border border-white/5">
-            <button
-              type="button"
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={page <= 1 || loading}
-              className="rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:from-slate-700 hover:to-slate-800 disabled:opacity-40 focus:outline-none focus:ring-4"
-            >
-              ◀ Previous
-            </button>
-
-            <span className={`text-xs font-bold ${themeStyles.accentText}`}>
-              Page {page} of {totalPages}
-            </span>
-
-            <button
-              type="button"
-              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page >= totalPages || loading}
-              className={`rounded-xl ${themeStyles.btnActive} px-3 py-2 text-xs font-semibold shadow transition disabled:opacity-40 focus:outline-none focus:ring-4`}
-            >
-              Next ▶
-            </button>
+        {!loading && filteredItems.length === 0 && (
+          <div className="py-16 text-center text-slate-400">
+            <p className="text-base font-semibold">No media items found in this section.</p>
           </div>
         )}
       </div>
     </main>
   );
 }
-
-export const Route = createFileRoute("/")({
-  component: Home,
-});
