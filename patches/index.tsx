@@ -133,8 +133,8 @@ function Home() {
       
       const rawHistory = getRawWatchHistory();
       const mappedHistory: MediaItem[] = rawHistory.map((h) => {
+        const type = h.mediaType ?? h.media_type ?? (h.id?.startsWith("tv-") ? "tv" : "movie");
         const cleanId = String(h.mediaId ?? h.id).replace(/^(movie|tv)-/, "");
-        const type = h.mediaType ?? h.media_type ?? "movie";
         const imagePath = h.posterPath ?? h.poster_path ?? h.image;
         const imageUrl = imagePath?.startsWith("http")
           ? imagePath
@@ -148,9 +148,10 @@ function Home() {
           image: imageUrl,
           href: `/details?id=${cleanId}&type=${type}`,
           genre: type.toUpperCase(),
+          mediaType: type as "movie" | "tv",
           progressPercent: h.progressPercent ?? (h.confirmedCompleted ? 100 : 0),
           confirmedCompleted: h.confirmedCompleted ?? false,
-        } as MediaItem & { progressPercent?: number; confirmedCompleted?: boolean };
+        } as MediaItem & { progressPercent?: number; confirmedCompleted?: boolean; mediaType?: "movie" | "tv" };
       });
 
       setSavedMyList(listData);
