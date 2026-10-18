@@ -1,5 +1,5 @@
 export interface WatchHistoryItem {
-  id: string; // e.g. "movie-123" or "tv-456-s1-e2"
+  id: string | number;
   mediaId: string | number;
   title?: string;
   name?: string;
@@ -9,6 +9,7 @@ export interface WatchHistoryItem {
   poster_path?: string | null;
   backdropPath?: string | null;
   backdrop_path?: string | null;
+  image?: string | null;
   progressPercent?: number;
   progress?: number;
   lastWatchedAt?: string;
@@ -36,17 +37,25 @@ export function getWatchHistory(): WatchHistoryItem[] {
     const raw = localStorage.getItem(WATCH_HISTORY_KEY);
     if (!raw) return [];
     const items = JSON.parse(raw);
-    // Normalize properties so components using snake_case or camelCase both work seamlessly
-    return items.map((item: any) => ({
-      ...item,
-      mediaId: item.mediaId ?? item.id,
-      title: item.title ?? item.name,
-      mediaType: item.mediaType ?? item.media_type ?? "movie",
-      posterPath: item.posterPath ?? item.poster_path,
-      backdropPath: item.backdropPath ?? item.backdrop_path,
-      progressPercent: item.progressPercent ?? item.progress ?? 0,
-      confirmedCompleted: item.confirmedCompleted ?? item.completed ?? false,
-    }));
+    return items.map((item: any) => {
+      const resolvedId = String(item.mediaId ?? item.id ?? "");
+      const cleanId = resolvedId.replace(/^(movie|tv)-/, "");
+      const mediaType = item.mediaType ?? item.media_type ?? (String(item.id).startsWith("tv") ? "tv" : "movie");
+      
+      return {
+        ...item,
+        id: resolvedId,
+        mediaId: cleanId,
+        title: item.title ?? item.name,
+        mediaType,
+        media_type: mediaType,
+        posterPath: item.posterPath ?? item.poster_path ?? item.image,
+        poster_path: item.posterPath ?? item.poster_path ?? item.image,
+        image: item.image ?? item.posterPath ?? item.poster_path,
+        progressPercent: item.progressPercent ?? item.progress ?? 0,
+        confirmedCompleted: item.confirmedCompleted ?? item.completed ?? false,
+      };
+    });
   } catch {
     return [];
   }
@@ -55,17 +64,18 @@ export function getWatchHistory(): WatchHistoryItem[] {
 export function saveWatchProgress(item: Omit<WatchHistoryItem, "lastWatchedAt">): void {
   if (typeof window === "undefined") return;
   const history = getWatchHistory();
-  const existingIndex = history.findIndex((h) => String(h.id) === String(item.id));
+  const existingIndex = history.findIndex((h) => String(h.id) === String(item.id) || String(h.mediaId) === String(item.mediaId));
 
   const progressVal = item.progressPercent ?? item.progress ?? 0;
   const existingConfirmed = existingIndex >= 0 ? history[existingIndex].confirmedCompleted ?? false : false;
 
   const updatedItem: WatchHistoryItem = {
     ...item,
-    mediaId: item.mediaId ?? item.id,
+    mediaId: String(item.mediaId ?? item.id).replace(/^(movie|tv)-/, ""),
     mediaType: item.mediaType ?? item.media_type ?? "movie",
-    posterPath: item.posterPath ?? item.poster_path,
+    posterPath: item.posterPath ?? item.poster_path ?? item.image,
     backdropPath: item.backdropPath ?? item.backdrop_path,
+    image: item.image ?? item.posterPath ?? item.poster_path,
     progressPercent: progressVal,
     lastWatchedAt: new Date().toISOString(),
     updatedAt: Date.now(),
@@ -85,7 +95,7 @@ export function saveWatchProgress(item: Omit<WatchHistoryItem, "lastWatchedAt">)
 export function markAsConfirmedCompleted(id: string, completed: boolean): void {
   if (typeof window === "undefined") return;
   const history = getWatchHistory();
-  const item = history.find((h) => String(h.id) === String(id));
+  const item = history.find((h) => String(h.id) === String(id) || String(h.mediaId) === String(id));
   if (item) {
     item.confirmedCompleted = completed;
     item.completed = completed;
@@ -102,14 +112,15 @@ export function markEpisodeCompleted(id: string, seasonNumber?: number, episodeN
 
 export function removeFromWatchHistory(id: string): void {
   if (typeof window === "undefined") return;
-  const history = getWatchHistory().filter((h) => String(h.id) !== String(id));
+  const history = getWatchHistory().filter((h) => String(h.id) !== String(id) && String(h.mediaId) !== String(id));
   localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
   window.dispatchEvent(new Event("rabtv_watch_history_updated"));
 }
 
 export function calculateSeriesProgress(id: number | string): number {
   const history = getWatchHistory();
-  const item = history.find((h) => String(h.id) === String(id) || String(h.mediaId) === String(id));
+  const cleanId = String(id).replace(/^(movie|tv)-/, "");
+  const item = history.find((h) => String(h.id) === String(id) || String(h.mediaId) === cleanId);
   if (!item) return 0;
   return item.progressPercent ?? (item.confirmedCompleted ? 100 : 0);
 }
