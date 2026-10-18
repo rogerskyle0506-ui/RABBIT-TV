@@ -1,10 +1,12 @@
 export type CardSize = "small" | "medium" | "large";
 export type AppTheme = "violet" | "red" | "midnight" | "emerald" | "amber" | "cyan";
+export type StreamQuality = "1080p" | "720p" | "480p" | "auto";
 
 export const DISCLAIMER_ACCEPTED_KEY = "rabtv_disclaimer_accepted";
 export const CARD_SIZE_KEY = "rabtv_card_size";
 export const THEME_KEY = "rabtv_app_theme";
 export const HELPFUL_MOUSE_KEY = "rabtv_helpful_mouse";
+export const STREAM_QUALITY_KEY = "rabtv_stream_quality";
 
 export function getSavedCardSize(): CardSize {
   if (typeof window === "undefined") return "large";
@@ -25,6 +27,18 @@ export function getSavedTheme(): AppTheme {
 export function saveTheme(theme: AppTheme) {
   if (typeof window !== "undefined") {
     localStorage.setItem(THEME_KEY, theme);
+  }
+}
+
+export function getSavedStreamQuality(): StreamQuality {
+  if (typeof window === "undefined") return "1080p";
+  const val = localStorage.getItem(STREAM_QUALITY_KEY);
+  return (val as StreamQuality) || "1080p";
+}
+
+export function saveStreamQuality(quality: StreamQuality) {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(STREAM_QUALITY_KEY, quality);
   }
 }
 
