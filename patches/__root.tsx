@@ -5,10 +5,13 @@ import "@/styles.css";
 import { useState, useEffect } from "react";
 import {
   CardSize,
+  StreamQuality,
   AppTheme,
   DISCLAIMER_ACCEPTED_KEY,
   getSavedCardSize,
   saveCardSize,
+  getSavedStreamQuality,
+  saveStreamQuality,
   getSavedTheme,
   saveTheme,
   getHelpfulMouse,
@@ -37,14 +40,15 @@ function RootComponent() {
   const [passcodeError, setPasscodeError] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "mouse">("theme");
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "quality" | "mouse" | "backup">("theme");
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
+  const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [helpfulMouse, setHelpfulMouseState] = useState(false);
+  const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    // Detect Fire OS / Silk WebView at runtime and tag root html element
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent.toLowerCase();
       if (ua.includes('silk') || ua.includes('firetv') || ua.includes('amazon')) {
@@ -58,11 +62,13 @@ function RootComponent() {
     }
 
     setCardSize(getSavedCardSize());
+    setStreamQuality(getSavedStreamQuality());
     setAppTheme(getSavedTheme());
     setHelpfulMouseState(getHelpfulMouse());
 
     const handleSettingsUpdate = () => {
       setCardSize(getSavedCardSize());
+      setStreamQuality(getSavedStreamQuality());
       setAppTheme(getSavedTheme());
       setHelpfulMouseState(getHelpfulMouse());
     };
@@ -79,6 +85,7 @@ function RootComponent() {
     if (passcodeInput.trim() === AUTHORIZATION_CODE) {
       localStorage.setItem(DISCLAIMER_ACCEPTED_KEY, "true");
       saveCardSize(cardSize);
+      saveStreamQuality(streamQuality);
       saveTheme(appTheme);
       setHelpfulMouse(helpfulMouse);
       setShowFirstStartModal(false);
@@ -96,6 +103,12 @@ function RootComponent() {
     window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
+  const handleQualityChange = (newQuality: StreamQuality) => {
+    saveStreamQuality(newQuality);
+    setStreamQuality(newQuality);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
   const handleThemeChange = (newTheme: AppTheme) => {
     saveTheme(newTheme);
     setAppTheme(newTheme);
@@ -105,6 +118,55 @@ function RootComponent() {
   const handleMouseToggle = (enabled: boolean) => {
     setHelpfulMouse(enabled);
     setHelpfulMouseState(enabled);
+  };
+
+  const handleSaveBackup = () => {
+    const backupData = {
+      cardSize,
+      streamQuality,
+      appTheme,
+      helpfulMouse,
+      myList: localStorage.getItem("rabtv_my_list"),
+      favorites: localStorage.getItem("rabtv_favorites"),
+      backedUpAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "rabtv_profile_backup.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    setBackupStatus("Profile settings backup saved!");
+    setTimeout(() => setBackupStatus(null), 3000);
+  };
+
+  const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.cardSize) saveCardSize(data.cardSize);
+        if (data.streamQuality) saveStreamQuality(data.streamQuality);
+        if (data.appTheme) saveTheme(data.appTheme);
+        if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
+        if (data.myList) localStorage.setItem("rabtv_my_list", data.myList);
+        if (data.favorites) localStorage.setItem("rabtv_favorites", data.favorites);
+
+        localStorage.removeItem(DISCLAIMER_ACCEPTED_KEY);
+        setShowFirstStartModal(true);
+        setShowSettings(false);
+        setBackupStatus("Settings restored. Please reinstate your passcode agreement.");
+      } catch {
+        setBackupStatus("Failed to restore backup file.");
+      }
+    };
+    reader.readAsText(file);
   };
 
   const getBodyBackground = (theme: AppTheme) => {
@@ -143,6 +205,24 @@ function RootComponent() {
     }
   };
 
+  const getPrimaryAccentColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "text-red-400";
+      case "midnight":
+        return "text-blue-400";
+      case "emerald":
+        return "text-emerald-400";
+      case "amber":
+        return "text-amber-400";
+      case "cyan":
+        return "text-cyan-400";
+      case "violet":
+      default:
+        return "text-violet-400";
+    }
+  };
+
   const getPrimaryBgColor = (theme: AppTheme) => {
     switch (theme) {
       case "red":
@@ -165,7 +245,6 @@ function RootComponent() {
     <html lang="en" data-theme={appTheme}>
       <head>
         <HeadContent />
-        {/* 3x Scaled High-Visibility Cursor when Helpful Mouse / XL Mouse is enabled */}
         {helpfulMouse && (
           <style>{`
             *, button, a, select, input, [role="button"] {
@@ -179,7 +258,6 @@ function RootComponent() {
         <AuthProvider>
           <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
-              {/* Brand Logo & Watch History Tab */}
               <div className="flex items-center gap-4">
                 <Link
                   to="/"
@@ -203,7 +281,6 @@ function RootComponent() {
                 </Link>
               </div>
 
-              {/* Single Gear Settings Icon Button */}
               {!showFirstStartModal && (
                 <button
                   type="button"
@@ -216,11 +293,9 @@ function RootComponent() {
               )}
             </div>
 
-            {/* Popout Settings Menu */}
             {showSettings && !showFirstStartModal && (
               <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-md shadow-2xl`}>
                 <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
-                  {/* Settings Sub-tabs */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-white/10 w-full justify-center">
                     <button
                       type="button"
@@ -246,6 +321,17 @@ function RootComponent() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => setActiveSettingsTab("quality")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "quality"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Quality
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setActiveSettingsTab("mouse")}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "mouse"
@@ -255,20 +341,30 @@ function RootComponent() {
                     >
                       XL Mouse
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSettingsTab("backup")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "backup"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Backup
+                    </button>
                   </div>
 
-                  {/* Active Tab Content Panel */}
                   <div className="w-full flex justify-center py-1">
                     {activeSettingsTab === "theme" && (
                       <div className="flex flex-wrap items-center justify-center gap-2">
                         <span className="text-xs font-semibold text-slate-300 mr-2">Choose Theme:</span>
                         {[
-                          { id: "violet", label: "Violet & Neon" },
-                          { id: "red", label: "Red & Black" },
-                          { id: "midnight", label: "Midnight Blue & Black" },
-                          { id: "emerald", label: "Emerald" },
-                          { id: "amber", label: "Amber" },
-                          { id: "cyan", label: "Cyan" },
+                          { id: "violet", label: "🟣 Violet & Neon" },
+                          { id: "red", label: "🔴 Red & Black" },
+                          { id: "midnight", label: "🔵 Midnight Blue & Black" },
+                          { id: "emerald", label: "🟢 Emerald" },
+                          { id: "amber", label: "🟠 Amber" },
+                          { id: "cyan", label: "🔵 Cyan" },
                         ].map((t) => (
                           <button
                             key={t.id}
@@ -306,6 +402,31 @@ function RootComponent() {
                       </div>
                     )}
 
+                    {activeSettingsTab === "quality" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Cap:</span>
+                        {[
+                          { key: "1080p", label: "FHD (1080p)" },
+                          { key: "720p", label: "HD (720p)" },
+                          { key: "480p", label: "SD (480p)" },
+                          { key: "auto", label: "Auto Bandwidth" },
+                        ].map((item) => (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => handleQualityChange(item.key as StreamQuality)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                              streamQuality === item.key
+                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                            }`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     {activeSettingsTab === "mouse" && (
                       <div className="flex items-center justify-center gap-4 py-1">
                         <div className="text-left">
@@ -327,6 +448,34 @@ function RootComponent() {
                         </button>
                       </div>
                     )}
+
+                    {activeSettingsTab === "backup" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveBackup}
+                          className="rounded-lg bg-slate-800 border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                        >
+                          💾 Export Backup File
+                        </button>
+
+                        <label className="cursor-pointer rounded-lg bg-slate-800 border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">
+                          🔄 Restore Profile File
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleRestoreBackup}
+                            className="hidden"
+                          />
+                        </label>
+
+                        {backupStatus && (
+                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold ml-2`}>
+                            {backupStatus}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -337,14 +486,14 @@ function RootComponent() {
             <Outlet />
           </main>
 
-          {/* FIRST-START / DISCLAIMER AUTHORIZATION MODAL WITH FULL SETTINGS CONFIGURATION */}
+          {/* Clean Splash Modal Without Bloated Settings Dashboard */}
           {showFirstStartModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
               <form
                 onSubmit={handleFirstTimeAuthorize}
-                className={`my-auto w-full max-w-xl space-y-5 rounded-2xl border p-5 text-white shadow-2xl md:p-7 ${getCardBackground(appTheme)}`}
+                className={`my-auto w-full max-w-xl space-y-6 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
               >
-                <div className="text-center space-y-1.5">
+                <div className="text-center space-y-2">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-slate-900">
                     <img
                       src={RABBIT_LOGO_DATA_URL}
@@ -352,122 +501,127 @@ function RootComponent() {
                       className="h-full w-full object-cover"
                     />
                   </div>
-                  <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Authorization & Setup</h2>
-                  <p className="text-xs text-slate-300 sm:text-sm">
-                    Configure your initial preferences and enter your 8-digit passcode to enter RABBiT TV.
+                  <h2 className={`text-2xl font-bold ${getPrimaryAccentColor(appTheme)}`}>
+                    Welcome to RABBiT TV
+                  </h2>
+                </div>
+
+                <div className="space-y-4 text-sm leading-relaxed text-slate-300">
+                  <p>
+                    This app has been shared by <strong>Rabbit</strong> as a friendly gesture. By entering the personal agreement code below, you confirm strict authorization and agree not to share or distribute this app without consent.
                   </p>
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-300">
+                    <strong>⚠️ Device Monitoring Notice:</strong> Unique device IDs running this application are logged for authorization tracking. Unauthorized installations or unapproved sharing can be detected immediately.
+                  </div>
                 </div>
 
-                {/* Initial Setup Options Inside Modal */}
-                <div className="space-y-4 rounded-xl border border-white/10 bg-slate-950/60 p-4">
-                  {/* Theme Selector */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Select App Theme:
-                    </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {[
-                        { id: "violet", label: "Violet & Neon" },
-                        { id: "red", label: "Red & Black" },
-                        { id: "midnight", label: "Midnight Blue & Black" },
-                        { id: "emerald", label: "Emerald" },
-                        { id: "amber", label: "Amber" },
-                        { id: "cyan", label: "Cyan" },
-                      ].map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => handleThemeChange(t.id as AppTheme)}
-                          className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition text-center ${
-                            appTheme === t.id
-                              ? `${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-md`
-                              : "bg-slate-900 text-slate-300 hover:bg-slate-800 border border-white/10"
-                          }`}
-                        >
-                          {t.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Card Scale Selector */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Card Scale Size:
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {(["small", "medium", "large"] as CardSize[]).map((size) => (
-                        <button
-                          key={size}
-                          type="button"
-                          onClick={() => handleSizeChange(size)}
-                          className={`rounded-lg px-2.5 py-1.5 text-xs font-bold capitalize transition text-center ${
-                            cardSize === size
-                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                              : "bg-slate-900 text-slate-300 hover:bg-slate-800 border border-white/10"
-                          }`}
-                        >
-                          {size}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* XL Mouse Toggle */}
-                  <div className="flex items-center justify-between pt-1">
-                    <div>
-                      <p className="text-xs font-bold text-white">XL Mouse Pointer (3x Scaled)</p>
-                      <p className="text-[10px] text-slate-400">Enlarges the cursor for TVs and projectors.</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleMouseToggle(!helpfulMouse)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          helpfulMouse ? "translate-x-6" : "translate-x-1"
+                {/* Theme Selector on Splash Screen */}
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Select Startup Theme:
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {[
+                      { id: "violet", label: "🟣 Violet" },
+                      { id: "red", label: "🔴 Red" },
+                      { id: "midnight", label: "🔵 Midnight" },
+                      { id: "emerald", label: "🟢 Emerald" },
+                      { id: "amber", label: "🟠 Amber" },
+                      { id: "cyan", label: "🔵 Cyan" },
+                    ].map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => handleThemeChange(t.id as AppTheme)}
+                        className={`rounded-xl border py-2.5 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                          appTheme === t.id
+                            ? `border-white/30 ${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-lg`
+                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
-                      />
-                    </button>
+                      >
+                        {t.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* Passcode Input Section */}
-                <div className="space-y-3">
-                  <div>
-                    <label htmlFor="passcode" className="block text-xs font-medium text-slate-300">
-                      Authorization Passcode
-                    </label>
-                    <input
-                      id="passcode"
-                      type="password"
-                      value={passcodeInput}
-                      onChange={(e) => setPasscodeInput(e.target.value)}
-                      placeholder="Enter 8-digit code"
-                      className="mt-1 block w-full rounded-xl border border-white/20 bg-slate-950/80 px-4 py-3 text-center text-white focus:border-violet-500 focus:outline-none"
-                    />
+                {/* Display Size Selector on Splash Screen */}
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Select Display Size:
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => handleSizeChange(size)}
+                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                          cardSize === size
+                            ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
+                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
+                        }`}
+                      >
+                        {size === "small" ? "Small (25%)" : size === "medium" ? "Medium (60%)" : "Large (100%)"}
+                      </button>
+                    ))}
                   </div>
+                </div>
 
-                  {passcodeError && (
-                    <p className="text-center text-xs font-semibold text-red-400">
-                      Incorrect passcode. Please try again.
-                    </p>
-                  )}
-
+                {/* XL Mouse Toggle on Splash Screen */}
+                <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      XL Mouse Pointer
+                    </label>
+                    <p className="text-[11px] text-slate-400">Enlarges cursor 3x for easy projector/TV navigation.</p>
+                  </div>
                   <button
-                    type="submit"
-                    className={`w-full rounded-xl py-3 text-sm font-bold text-white shadow-lg transition ${getPrimaryBgColor(appTheme)}`}
+                    type="button"
+                    onClick={() => handleMouseToggle(!helpfulMouse)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                    }`}
                   >
-                    Authorize & Enter
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        helpfulMouse ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
                   </button>
                 </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Enter Personal Agreement Code:
+                  </label>
+                  <input
+                    type="password"
+                    maxLength={10}
+                    value={passcodeInput}
+                    onChange={(e) => setPasscodeInput(e.target.value)}
+                    placeholder="Enter Code"
+                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
+                  />
+
+                  {passcodeError && (
+                    <p className="text-xs font-semibold text-red-400 text-center">
+                      ⚠️ Invalid Authorization Code. Agreement Not Accepted.
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-4 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
+                >
+                  Accept Agreement & Launch App
+                </button>
               </form>
             </div>
           )}
         </AuthProvider>
+        <Scripts />
       </body>
     </html>
   );
