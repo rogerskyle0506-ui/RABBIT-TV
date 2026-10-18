@@ -210,18 +210,21 @@ export function DetailsPage() {
     fetchDetailsWithCache();
   }, [mediaId, mediaType]);
 
+  // Inferred type check ensures TV shows with seasons are locked as "tv"
+  const inferredMediaType = mediaDetails?.seasons ? "tv" : (mediaType || "movie");
+
   const buildCatalogItem = () => ({
-    id: `${mediaType}-${mediaId}`,
+    id: `${inferredMediaType}-${mediaId}`,
     mediaId: String(mediaId),
     title: mediaDetails?.title || mediaDetails?.name || "Untitled",
     description: mediaDetails?.overview || "",
     image: mediaDetails?.poster_path
       ? `https://image.tmdb.org/t/p/w500${mediaDetails.poster_path}`
       : "",
-    href: `/details?id=${mediaId}&type=${mediaType}`,
+    href: `/details?id=${mediaId}&type=${inferredMediaType}`,
     year: (mediaDetails?.release_date || mediaDetails?.first_air_date || "").split("-")[0],
     rating: mediaDetails?.vote_average ? mediaDetails.vote_average.toFixed(1) : undefined,
-    mediaType: mediaType as "movie" | "tv",
+    mediaType: inferredMediaType as "movie" | "tv",
     genreIds: mediaDetails?.genres?.map((g: any) => g.id) || [],
   });
 
@@ -243,6 +246,7 @@ export function DetailsPage() {
         WATCH_HISTORY_STORAGE_KEY,
         JSON.stringify(updatedHistory)
       );
+      window.dispatchEvent(new Event("rabtv_watch_history_updated"));
     } catch (err) {
       console.error("Could not save to watch history", err);
     }
@@ -323,7 +327,7 @@ export function DetailsPage() {
   const genres = mediaDetails?.genres?.map((g: any) => g.name).join(", ") || "Entertainment";
 
   const embedUrl =
-    mediaType === "tv"
+    inferredMediaType === "tv"
       ? `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`
       : `https://vidsrc.to/embed/movie/${mediaId}`;
 
@@ -341,7 +345,7 @@ export function DetailsPage() {
 
       {isPlaying ? (
         <div className="mx-auto flex max-w-5xl flex-col gap-6">
-          {mediaType === "tv" && (
+          {inferredMediaType === "tv" && (
             <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur`}>
               <div className="flex flex-wrap items-center gap-4 text-sm font-semibold relative">
                 
@@ -453,7 +457,7 @@ export function DetailsPage() {
 
           <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl shadow-black/50 border border-white/10">
             <iframe
-              key={`${mediaType}-${mediaId}-${season}-${episode}`}
+              key={`${inferredMediaType}-${mediaId}-${season}-${episode}`}
               srcDoc={`
                 <!DOCTYPE html>
                 <html>
@@ -514,7 +518,7 @@ export function DetailsPage() {
               )}
               {releaseYear && <span>{releaseYear}</span>}
               <span className="uppercase rounded-md bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300 border border-white/10">
-                {mediaType}
+                {inferredMediaType}
               </span>
             </div>
 
@@ -523,7 +527,7 @@ export function DetailsPage() {
             </p>
 
             {/* Custom Theme-Aware Season & Episode Dropdown Pickers for TV Series */}
-            {mediaType === "tv" && mediaDetails?.seasons && (
+            {inferredMediaType === "tv" && mediaDetails?.seasons && (
               <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2`}>
                 
                 {/* Custom Season Dropdown */}
@@ -609,7 +613,7 @@ export function DetailsPage() {
                 onClick={handlePlay}
                 className={`flex items-center gap-2 rounded-full ${activeTheme.bg} px-8 py-4 text-lg font-bold text-white shadow-lg ${activeTheme.shadow} transition ${activeTheme.hoverBg} active:scale-95 focus:outline-none focus:ring-4 ${activeTheme.ring} focus:scale-105`}
               >
-                ▶ Play {mediaType === "tv" ? `S${season}:E${episode}` : "Movie"}
+                ▶ Play {inferredMediaType === "tv" ? `S${season}:E${episode}` : "Movie"}
               </button>
 
               <button
