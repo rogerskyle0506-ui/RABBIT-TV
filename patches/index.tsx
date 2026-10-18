@@ -146,7 +146,7 @@ function Home() {
           id: String(h.id),
           title: h.title ?? "Unknown Title",
           image: imageUrl,
-          href: `/${type}/${cleanId}`,
+          href: `/details/${type}/${cleanId}`,
           genre: type.toUpperCase(),
           progressPercent: h.progressPercent ?? (h.confirmedCompleted ? 100 : 0),
           confirmedCompleted: h.confirmedCompleted ?? false,
@@ -232,12 +232,23 @@ function Home() {
   );
 
   const savedCatalogItems = useMemo(() => {
-    if (myListSubTab === "mylist") return savedMyList;
-    if (myListSubTab === "favorites") return savedFavorites;
-    if (myListSubTab === "in_progress") return inProgressHistory;
+    let rawList: MediaItem[] = [];
+    if (myListSubTab === "mylist") rawList = savedMyList;
+    else if (myListSubTab === "favorites") rawList = savedFavorites;
+    else if (myListSubTab === "in_progress") rawList = inProgressHistory;
+    else {
+      rawList = [...savedFavorites, ...savedMyList, ...inProgressHistory];
+    }
 
-    const map = new Map();
-    [...savedFavorites, ...savedMyList, ...inProgressHistory].forEach((item) => map.set(item.id, item));
+    const map = new Map<string, MediaItem>();
+    for (const item of rawList) {
+      const normalizedTitle = (item.title ?? "").trim().toLowerCase();
+      const uniqueKey = normalizedTitle || String(item.id);
+      
+      if (!map.has(uniqueKey)) {
+        map.set(uniqueKey, item);
+      }
+    }
     return Array.from(map.values());
   }, [myListSubTab, savedMyList, savedFavorites, inProgressHistory]);
 
