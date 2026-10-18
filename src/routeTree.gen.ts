@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from "./routes/__root";
 import { Route as IndexRouteImport } from "./routes/index";
+import { Route as DetailsRouteImport } from "./routes/details";
+import { Route as WatchHistoryRouteImport } from "./routes/watch-history";
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
@@ -17,26 +19,50 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any);
 
+const DetailsRoute = DetailsRouteImport.update({
+  id: "/details",
+  path: "/details",
+  getParentRoute: () => rootRouteImport,
+} as any);
+
+const WatchHistoryRoute = WatchHistoryRouteImport.update({
+  id: "/watch-history",
+  path: "/watch-history",
+  getParentRoute: () => rootRouteImport,
+} as any);
+
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
+  "/details": typeof DetailsRoute;
+  "/watch-history": typeof WatchHistoryRoute;
 }
+
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
+  "/details": typeof DetailsRoute;
+  "/watch-history": typeof WatchHistoryRoute;
 }
+
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   "/": typeof IndexRoute;
+  "/details": typeof DetailsRoute;
+  "/watch-history": typeof WatchHistoryRoute;
 }
+
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/";
+  fullPaths: "/" | "/details" | "/watch-history";
   fileRoutesByTo: FileRoutesByTo;
-  to: "/";
-  id: "__root__" | "/";
+  to: "/" | "/details" | "/watch-history";
+  id: "__root__" | "/" | "/details" | "/watch-history";
   fileRoutesById: FileRoutesById;
 }
+
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
+  DetailsRoute: typeof DetailsRoute;
+  WatchHistoryRoute: typeof WatchHistoryRoute;
 }
 
 declare module "@tanstack/react-router" {
@@ -48,11 +74,27 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof IndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/details": {
+      id: "/details";
+      path: "/details";
+      fullPath: "/details";
+      preLoaderRoute: typeof DetailsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/watch-history": {
+      id: "/watch-history";
+      path: "/watch-history";
+      fullPath: "/watch-history";
+      preLoaderRoute: typeof WatchHistoryRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DetailsRoute: DetailsRoute,
+  WatchHistoryRoute: WatchHistoryRoute,
 };
 
 export const routeTree = rootRouteImport
