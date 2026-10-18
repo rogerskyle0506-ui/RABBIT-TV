@@ -1,10 +1,8 @@
 export type CardSize = "small" | "medium" | "large";
-export type StreamQuality = "1080p" | "720p" | "480p" | "auto";
-export type AppTheme = "violet" | "red" | "midnight";
+export type AppTheme = "violet" | "red" | "midnight" | "emerald" | "amber" | "cyan";
 
 export const DISCLAIMER_ACCEPTED_KEY = "rabtv_disclaimer_accepted";
 export const CARD_SIZE_KEY = "rabtv_card_size";
-export const STREAM_QUALITY_KEY = "rabtv_stream_quality";
 export const THEME_KEY = "rabtv_app_theme";
 export const HELPFUL_MOUSE_KEY = "rabtv_helpful_mouse";
 
@@ -16,17 +14,6 @@ export function getSavedCardSize(): CardSize {
 export function saveCardSize(size: CardSize) {
   if (typeof window !== "undefined") {
     localStorage.setItem(CARD_SIZE_KEY, size);
-  }
-}
-
-export function getSavedStreamQuality(): StreamQuality {
-  if (typeof window === "undefined") return "1080p";
-  return (localStorage.getItem(STREAM_QUALITY_KEY) as StreamQuality) || "1080p";
-}
-
-export function saveStreamQuality(quality: StreamQuality) {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(STREAM_QUALITY_KEY, quality);
   }
 }
 
@@ -53,13 +40,14 @@ export function setHelpfulMouse(enabled: boolean) {
   }
 }
 
+// Helper to get Tailwind CSS width/height classes + responsive container constraints
 export function getPosterDimensions(size: CardSize) {
   switch (size) {
     case "small":
       return {
         card: "w-[85px] min-w-[85px] h-[125px]",
         image: "w-full h-full object-cover",
-        isSmall: true,
+        isSmall: true, // Hides inline text/badges for clean poster view
       };
     case "medium":
       return {
@@ -77,5 +65,4 @@ export function getPosterDimensions(size: CardSize) {
         isSmall: false,
       };
   }
-      }
-  
+}
