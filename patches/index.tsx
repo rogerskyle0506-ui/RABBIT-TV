@@ -146,7 +146,7 @@ function Home() {
           id: String(h.id),
           title: h.title ?? "Unknown Title",
           image: imageUrl,
-          href: `/details/${type}/${cleanId}`,
+          href: `/details?id=${cleanId}&type=${type}`,
           genre: type.toUpperCase(),
           progressPercent: h.progressPercent ?? (h.confirmedCompleted ? 100 : 0),
           confirmedCompleted: h.confirmedCompleted ?? false,
