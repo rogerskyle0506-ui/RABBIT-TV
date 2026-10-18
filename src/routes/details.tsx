@@ -13,7 +13,9 @@ export const Route = createFileRoute("/details")({
 export function DetailsPage() {
   const search = Route.useSearch() as { id?: string; type?: string };
   const mediaId = search?.id;
-  const mediaType = search?.type || "movie";
+  
+  // Dynamic mediaType state that can be corrected immediately upon data fetch
+  const [mediaType, setMediaType] = useState<string>(search?.type || "movie");
 
   const [mediaDetails, setMediaDetails] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -170,17 +172,23 @@ export function DetailsPage() {
     }
   }, [mediaId, mediaType]);
 
-  // Fetch item details + cast with LocalStorage Caching (6-hour expiry)
+  // Fetch item details + cast with LocalStorage Caching (6-hour expiry) & Type Auto-Correction
   useEffect(() => {
     async function fetchDetailsWithCache() {
       if (!mediaId) return;
-      const cacheKey = `rabtv_cache_${mediaType}_${mediaId}`;
+      
+      // Try fetching as current mediaType first, or try 'tv' if search didn't specify
+      let activeFetchType = mediaType;
+      const cacheKey = `rabtv_cache_${activeFetchType}_${mediaId}`;
 
       try {
         const cachedItem = localStorage.getItem(cacheKey);
         if (cachedItem) {
           const { data, timestamp } = JSON.parse(cachedItem);
           if (Date.now() - timestamp < 21600000) {
+            if (data?.seasons) {
+              setMediaType("tv");
+            }
             setMediaDetails(data);
             setLoading(false);
             return;
@@ -190,13 +198,27 @@ export function DetailsPage() {
         const apiKey =
           (import.meta.env.VITE_TMDB_API_KEY as string) || "9619884fc9c0e58b374a661ab2a692cd";
 
-        const res = await fetch(
-          `https://api.themoviedb.org/3/${mediaType}/${mediaId}?api_key=${apiKey}&append_to_response=credits`
+        let res = await fetch(
+          `https://api.themoviedb.org/3/${activeFetchType}/${mediaId}?api_key=${apiKey}&append_to_response=credits`
         );
-        const data = await res.json();
+        let data = await res.json();
+
+        // Fallback: If it failed or has no title/overview and we assumed movie, try fetching as TV!
+        if ((!data || data.success === false) && activeFetchType === "movie") {
+          activeFetchType = "tv";
+          res = await fetch(
+            `https://api.themoviedb.org/3/tv/${mediaId}?api_key=${apiKey}&append_to_response=credits`
+          );
+          data = await res.json();
+        }
+
+        // Lock in tv type if seasons exist
+        if (data?.seasons || activeFetchType === "tv") {
+          setMediaType("tv");
+        }
 
         localStorage.setItem(
-          cacheKey,
+          `rabtv_cache_${activeFetchType}_${mediaId}`,
           JSON.stringify({ data, timestamp: Date.now() })
         );
 
@@ -210,8 +232,8 @@ export function DetailsPage() {
     fetchDetailsWithCache();
   }, [mediaId, mediaType]);
 
-  // Inferred type check ensures TV shows with seasons are locked as "tv"
-  const inferredMediaType = mediaDetails?.seasons ? "tv" : (mediaType || "movie");
+  // Robust inferred type check
+  const inferredMediaType = mediaDetails?.seasons || mediaType === "tv" ? "tv" : "movie";
 
   const buildCatalogItem = () => ({
     id: `${inferredMediaType}-${mediaId}`,
