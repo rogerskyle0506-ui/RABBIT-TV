@@ -5,13 +5,10 @@ import "@/styles.css";
 import { useState, useEffect } from "react";
 import {
   CardSize,
-  StreamQuality,
   AppTheme,
   DISCLAIMER_ACCEPTED_KEY,
   getSavedCardSize,
   saveCardSize,
-  getSavedStreamQuality,
-  saveStreamQuality,
   getSavedTheme,
   saveTheme,
   getHelpfulMouse,
@@ -40,15 +37,14 @@ function RootComponent() {
   const [passcodeError, setPasscodeError] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "quality" | "mouse" | "backup">("theme");
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "mouse">("theme");
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
-  const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [helpfulMouse, setHelpfulMouseState] = useState(false);
-  const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
   useEffect(() => {
+    // Detect Fire OS / Silk WebView at runtime and tag root html element
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent.toLowerCase();
       if (ua.includes('silk') || ua.includes('firetv') || ua.includes('amazon')) {
@@ -62,13 +58,11 @@ function RootComponent() {
     }
 
     setCardSize(getSavedCardSize());
-    setStreamQuality(getSavedStreamQuality());
     setAppTheme(getSavedTheme());
     setHelpfulMouseState(getHelpfulMouse());
 
     const handleSettingsUpdate = () => {
       setCardSize(getSavedCardSize());
-      setStreamQuality(getSavedStreamQuality());
       setAppTheme(getSavedTheme());
       setHelpfulMouseState(getHelpfulMouse());
     };
@@ -85,7 +79,6 @@ function RootComponent() {
     if (passcodeInput.trim() === AUTHORIZATION_CODE) {
       localStorage.setItem(DISCLAIMER_ACCEPTED_KEY, "true");
       saveCardSize(cardSize);
-      saveStreamQuality(streamQuality);
       saveTheme(appTheme);
       setHelpfulMouse(helpfulMouse);
       setShowFirstStartModal(false);
@@ -103,12 +96,6 @@ function RootComponent() {
     window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
-  const handleQualityChange = (newQuality: StreamQuality) => {
-    saveStreamQuality(newQuality);
-    setStreamQuality(newQuality);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
-  };
-
   const handleThemeChange = (newTheme: AppTheme) => {
     saveTheme(newTheme);
     setAppTheme(newTheme);
@@ -120,61 +107,18 @@ function RootComponent() {
     setHelpfulMouseState(enabled);
   };
 
-  const handleSaveBackup = () => {
-    const backupData = {
-      cardSize,
-      streamQuality,
-      appTheme,
-      helpfulMouse,
-      myList: localStorage.getItem("rabtv_my_list"),
-      favorites: localStorage.getItem("rabtv_favorites"),
-      backedUpAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "rabtv_profile_backup.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    setBackupStatus("Profile settings backup saved!");
-    setTimeout(() => setBackupStatus(null), 3000);
-  };
-
-  const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const data = JSON.parse(event.target?.result as string);
-        if (data.cardSize) saveCardSize(data.cardSize);
-        if (data.streamQuality) saveStreamQuality(data.streamQuality);
-        if (data.appTheme) saveTheme(data.appTheme);
-        if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
-        if (data.myList) localStorage.setItem("rabtv_my_list", data.myList);
-        if (data.favorites) localStorage.setItem("rabtv_favorites", data.favorites);
-
-        localStorage.removeItem(DISCLAIMER_ACCEPTED_KEY);
-        setShowFirstStartModal(true);
-        setShowSettings(false);
-        setBackupStatus("Settings restored. Please reinstate your passcode agreement.");
-      } catch {
-        setBackupStatus("Failed to restore backup file.");
-      }
-    };
-    reader.readAsText(file);
-  };
-
   const getBodyBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
         return "bg-[#120202]";
       case "midnight":
         return "bg-[#020617]";
+      case "emerald":
+        return "bg-[#02130a]";
+      case "amber":
+        return "bg-[#140b02]";
+      case "cyan":
+        return "bg-[#020b14]";
       case "violet":
       default:
         return "bg-[#050b16]";
@@ -187,6 +131,12 @@ function RootComponent() {
         return "bg-[#160404] border-red-500/20";
       case "midnight":
         return "bg-[#03091e] border-blue-500/20";
+      case "emerald":
+        return "bg-[#041a0e] border-emerald-500/20";
+      case "amber":
+        return "bg-[#1c1003] border-amber-500/20";
+      case "cyan":
+        return "bg-[#03111e] border-cyan-500/20";
       case "violet":
       default:
         return "bg-[#090e1f] border-violet-500/20";
@@ -199,6 +149,12 @@ function RootComponent() {
         return "text-red-400";
       case "midnight":
         return "text-blue-400";
+      case "emerald":
+        return "text-emerald-400";
+      case "amber":
+        return "text-amber-400";
+      case "cyan":
+        return "text-cyan-400";
       case "violet":
       default:
         return "text-violet-400";
@@ -211,6 +167,12 @@ function RootComponent() {
         return "bg-red-600 hover:bg-red-500 shadow-red-600/40";
       case "midnight":
         return "bg-blue-600 hover:bg-blue-500 shadow-blue-600/40";
+      case "emerald":
+        return "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/40";
+      case "amber":
+        return "bg-amber-600 hover:bg-amber-500 shadow-amber-600/40";
+      case "cyan":
+        return "bg-cyan-600 hover:bg-cyan-500 shadow-cyan-600/40";
       case "violet":
       default:
         return "bg-violet-600 hover:bg-violet-500 shadow-violet-600/40";
@@ -221,6 +183,7 @@ function RootComponent() {
     <html lang="en" data-theme={appTheme}>
       <head>
         <HeadContent />
+        {/* 3x Scaled High-Visibility Cursor when Helpful Mouse / XL Mouse is enabled */}
         {helpfulMouse && (
           <style>{`
             *, button, a, select, input, [role="button"] {
@@ -234,20 +197,31 @@ function RootComponent() {
         <AuthProvider>
           <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
-              <Link
-                to="/"
-                className="flex items-center gap-2 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0"
-              >
-                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-slate-900/80 shrink-0">
-                  <img
-                    src={RABBIT_LOGO_DATA_URL}
-                    alt="RABBiT TV"
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <span className="whitespace-nowrap">RABBiT TV</span>
-              </Link>
+              {/* Brand Logo & Watch History Tab */}
+              <div className="flex items-center gap-4">
+                <Link
+                  to="/"
+                  className="flex items-center gap-2 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0"
+                >
+                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-slate-900/80 shrink-0">
+                    <img
+                      src={RABBIT_LOGO_DATA_URL}
+                      alt="RABBiT TV"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <span className="whitespace-nowrap">RABBiT TV</span>
+                </Link>
 
+                <Link
+                  to="/history"
+                  className="rounded-xl border border-white/10 bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-800"
+                >
+                  Watch History
+                </Link>
+              </div>
+
+              {/* Single Gear Settings Icon Button */}
               {!showFirstStartModal && (
                 <button
                   type="button"
@@ -260,9 +234,11 @@ function RootComponent() {
               )}
             </div>
 
+            {/* Popout Settings Menu */}
             {showSettings && !showFirstStartModal && (
               <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-md shadow-2xl`}>
                 <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
+                  {/* Settings Sub-tabs */}
                   <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-white/10 w-full justify-center">
                     <button
                       type="button"
@@ -288,17 +264,6 @@ function RootComponent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveSettingsTab("quality")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        activeSettingsTab === "quality"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                      }`}
-                    >
-                      Quality
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => setActiveSettingsTab("mouse")}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "mouse"
@@ -308,27 +273,20 @@ function RootComponent() {
                     >
                       XL Mouse
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab("backup")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        activeSettingsTab === "backup"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                      }`}
-                    >
-                      Backup
-                    </button>
                   </div>
 
+                  {/* Active Tab Content Panel */}
                   <div className="w-full flex justify-center py-1">
                     {activeSettingsTab === "theme" && (
                       <div className="flex flex-wrap items-center justify-center gap-2">
                         <span className="text-xs font-semibold text-slate-300 mr-2">Choose Theme:</span>
                         {[
-                          { id: "violet", label: "🟣 Violet / Neon" },
-                          { id: "red", label: "🔴 Red & Black" },
-                          { id: "midnight", label: "🔵 Midnight & Black" },
+                          { id: "violet", label: "Violet & Neon" },
+                          { id: "red", label: "Red & Black" },
+                          { id: "midnight", label: "Midnight Blue & Black" },
+                          { id: "emerald", label: "Emerald" },
+                          { id: "amber", label: "Amber" },
+                          { id: "cyan", label: "Cyan" },
                         ].map((t) => (
                           <button
                             key={t.id}
@@ -366,31 +324,6 @@ function RootComponent() {
                       </div>
                     )}
 
-                    {activeSettingsTab === "quality" && (
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Cap:</span>
-                        {[
-                          { key: "1080p", label: "FHD (1080p)" },
-                          { key: "720p", label: "HD (720p)" },
-                          { key: "480p", label: "SD (480p)" },
-                          { key: "auto", label: "Auto Bandwidth" },
-                        ].map((item) => (
-                          <button
-                            key={item.key}
-                            type="button"
-                            onClick={() => handleQualityChange(item.key as StreamQuality)}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                              streamQuality === item.key
-                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                            }`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
                     {activeSettingsTab === "mouse" && (
                       <div className="flex items-center justify-center gap-4 py-1">
                         <div className="text-left">
@@ -410,34 +343,6 @@ function RootComponent() {
                             }`}
                           />
                         </button>
-                      </div>
-                    )}
-
-                    {activeSettingsTab === "backup" && (
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleSaveBackup}
-                          className="rounded-lg bg-slate-800 border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
-                        >
-                          💾 Export Backup File
-                        </button>
-
-                        <label className="cursor-pointer rounded-lg bg-slate-800 border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">
-                          🔄 Restore Profile File
-                          <input
-                            type="file"
-                            accept=".json"
-                            onChange={handleRestoreBackup}
-                            className="hidden"
-                          />
-                        </label>
-
-                        {backupStatus && (
-                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold ml-2`}>
-                            {backupStatus}
-                          </span>
-                        )}
                       </div>
                     )}
                   </div>
