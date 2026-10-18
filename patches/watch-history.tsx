@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import {
   getWatchHistory,
@@ -233,7 +233,7 @@ function WatchHistoryComponent() {
   );
 }
 
-/** STREAMLINED MOVIE CARD (No progress bars, no episode lists) */
+/** STREAMLINED MOVIE CARD (Navigates to details on click) */
 function MovieCard({
   movie,
   onEyeballClick,
@@ -243,11 +243,15 @@ function MovieCard({
   onEyeballClick: (showId: string, episodeId: string, episodeTitle: string, isCompleted: boolean) => void;
   onRemove: () => void;
 }) {
+  const navigate = useNavigate();
   const singleEp = Object.values(movie.episodes)[0] || { episodeId: "default", title: movie.title, confirmedCompleted: false };
   const isCompleted = singleEp.confirmedCompleted;
 
   return (
-    <div className="group relative rounded-xl border border-white/10 bg-slate-900/90 overflow-hidden shadow-md flex flex-col justify-between transition hover:border-violet-500/50">
+    <div
+      onClick={() => navigate({ to: `/details/movie/${movie.showId}` })}
+      className="group relative rounded-xl border border-white/10 bg-slate-900/90 overflow-hidden shadow-md flex flex-col justify-between transition hover:border-violet-500/50 cursor-pointer"
+    >
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
         {movie.posterPath ? (
           <img
@@ -262,7 +266,7 @@ function MovieCard({
         )}
 
         {/* Action Controls */}
-        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10">
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={() => onEyeballClick(movie.showId, singleEp.episodeId, movie.title, isCompleted)}
@@ -292,7 +296,7 @@ function MovieCard({
   );
 }
 
-/** TV SHOW CARD (With overall series beginning-to-end progress bar & episode sublist) */
+/** TV SHOW CARD (Navigates to details on click) */
 function TvShowCard({
   show,
   onEyeballClick,
@@ -302,11 +306,15 @@ function TvShowCard({
   onEyeballClick: (showId: string, episodeId: string, episodeTitle: string, isCompleted: boolean) => void;
   onRemove: () => void;
 }) {
+  const navigate = useNavigate();
   const progress = calculateSeriesProgress(show);
   const episodesList = Object.values(show.episodes);
 
   return (
-    <div className="group relative rounded-xl border border-white/10 bg-slate-900/90 overflow-hidden shadow-md flex flex-col justify-between transition hover:border-violet-500/50">
+    <div
+      onClick={() => navigate({ to: `/details/tv/${show.showId}` })}
+      className="group relative rounded-xl border border-white/10 bg-slate-900/90 overflow-hidden shadow-md flex flex-col justify-between transition hover:border-violet-500/50 cursor-pointer"
+    >
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
         {show.posterPath ? (
           <img
@@ -320,7 +328,7 @@ function TvShowCard({
           </div>
         )}
 
-        <div className="absolute top-1.5 right-1.5 z-10">
+        <div className="absolute top-1.5 right-1.5 z-10" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={onRemove}
@@ -354,7 +362,7 @@ function TvShowCard({
         </div>
 
         {/* Episode Breakdown Sublist */}
-        <div className="space-y-1 max-h-28 overflow-y-auto pr-0.5">
+        <div className="space-y-1 max-h-28 overflow-y-auto pr-0.5" onClick={(e) => e.stopPropagation()}>
           {episodesList.map((ep) => (
             <EpisodeRow
               key={ep.episodeId}
