@@ -49,6 +49,7 @@ function RootComponent() {
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
   useEffect(() => {
+    // Detect Fire OS / Silk WebView at runtime and tag root html element
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent.toLowerCase();
       if (ua.includes('silk') || ua.includes('firetv') || ua.includes('amazon')) {
@@ -175,12 +176,6 @@ function RootComponent() {
         return "bg-[#120202]";
       case "midnight":
         return "bg-[#020617]";
-      case "emerald":
-        return "bg-[#02130a]";
-      case "amber":
-        return "bg-[#140b02]";
-      case "cyan":
-        return "bg-[#020b14]";
       case "violet":
       default:
         return "bg-[#050b16]";
@@ -193,12 +188,6 @@ function RootComponent() {
         return "bg-[#160404] border-red-500/20";
       case "midnight":
         return "bg-[#03091e] border-blue-500/20";
-      case "emerald":
-        return "bg-[#041a0e] border-emerald-500/20";
-      case "amber":
-        return "bg-[#1c1003] border-amber-500/20";
-      case "cyan":
-        return "bg-[#03111e] border-cyan-500/20";
       case "violet":
       default:
         return "bg-[#090e1f] border-violet-500/20";
@@ -211,12 +200,6 @@ function RootComponent() {
         return "text-red-400";
       case "midnight":
         return "text-blue-400";
-      case "emerald":
-        return "text-emerald-400";
-      case "amber":
-        return "text-amber-400";
-      case "cyan":
-        return "text-cyan-400";
       case "violet":
       default:
         return "text-violet-400";
@@ -229,12 +212,6 @@ function RootComponent() {
         return "bg-red-600 hover:bg-red-500 shadow-red-600/40";
       case "midnight":
         return "bg-blue-600 hover:bg-blue-500 shadow-blue-600/40";
-      case "emerald":
-        return "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/40";
-      case "amber":
-        return "bg-amber-600 hover:bg-amber-500 shadow-amber-600/40";
-      case "cyan":
-        return "bg-cyan-600 hover:bg-cyan-500 shadow-cyan-600/40";
       case "violet":
       default:
         return "bg-violet-600 hover:bg-violet-500 shadow-violet-600/40";
@@ -258,41 +235,44 @@ function RootComponent() {
         <AuthProvider>
           <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
-              <div className="flex items-center gap-4">
-                <Link
-                  to="/"
-                  className="flex items-center gap-2 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0"
-                >
-                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-slate-900/80 shrink-0">
-                    <img
-                      src={RABBIT_LOGO_DATA_URL}
-                      alt="RABBiT TV"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <span className="whitespace-nowrap">RABBiT TV</span>
-                </Link>
+              {/* Brand Logo */}
+              <Link
+                to="/"
+                className="flex items-center gap-2 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0"
+              >
+                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-slate-900/80 shrink-0">
+                  <img
+                    src={RABBIT_LOGO_DATA_URL}
+                    alt="RABBiT TV"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <span className="whitespace-nowrap">RABBiT TV</span>
+              </Link>
 
-                <Link
-                  to="/history"
-                  className="rounded-xl border border-white/10 bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-800"
-                >
-                  Watch History
-                </Link>
-              </div>
-
+              {/* Watch History Link & Settings Gear Button */}
               {!showFirstStartModal && (
-                <button
-                  type="button"
-                  onClick={() => setShowSettings((prev) => !prev)}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-800 text-white text-lg transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400"
-                  aria-label="Settings"
-                >
-                  ⚙️
-                </button>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/watch-history"
+                    className="flex h-10 items-center justify-center rounded-xl border border-white/10 bg-slate-800 px-3 text-xs font-bold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                  >
+                    🕒 Watch History
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowSettings((prev) => !prev)}
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-800 text-white text-lg transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    aria-label="Settings"
+                  >
+                    ⚙️
+                  </button>
+                </div>
               )}
             </div>
 
+            {/* Popout Settings Menu */}
             {showSettings && !showFirstStartModal && (
               <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-md shadow-2xl`}>
                 <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
@@ -359,12 +339,9 @@ function RootComponent() {
                       <div className="flex flex-wrap items-center justify-center gap-2">
                         <span className="text-xs font-semibold text-slate-300 mr-2">Choose Theme:</span>
                         {[
-                          { id: "violet", label: "🟣 Violet & Neon" },
+                          { id: "violet", label: "🟣 Violet / Neon" },
                           { id: "red", label: "🔴 Red & Black" },
-                          { id: "midnight", label: "🔵 Midnight Blue & Black" },
-                          { id: "emerald", label: "🟢 Emerald" },
-                          { id: "amber", label: "🟠 Amber" },
-                          { id: "cyan", label: "🔵 Cyan" },
+                          { id: "midnight", label: "🔵 Midnight & Black" },
                         ].map((t) => (
                           <button
                             key={t.id}
@@ -486,7 +463,6 @@ function RootComponent() {
             <Outlet />
           </main>
 
-          {/* Clean Splash Modal Without Bloated Settings Dashboard */}
           {showFirstStartModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
               <form
@@ -515,25 +491,21 @@ function RootComponent() {
                   </div>
                 </div>
 
-                {/* Theme Selector on Splash Screen */}
                 <div className="space-y-2 border-t border-white/10 pt-4">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Select Startup Theme:
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-3">
                     {[
                       { id: "violet", label: "🟣 Violet" },
                       { id: "red", label: "🔴 Red" },
                       { id: "midnight", label: "🔵 Midnight" },
-                      { id: "emerald", label: "🟢 Emerald" },
-                      { id: "amber", label: "🟠 Amber" },
-                      { id: "cyan", label: "🔵 Cyan" },
                     ].map((t) => (
                       <button
                         key={t.id}
                         type="button"
-                        onClick={() => handleThemeChange(t.id as AppTheme)}
-                        className={`rounded-xl border py-2.5 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                        onClick={() => setAppTheme(t.id as AppTheme)}
+                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
                           appTheme === t.id
                             ? `border-white/30 ${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-lg`
                             : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -545,11 +517,11 @@ function RootComponent() {
                   </div>
                 </div>
 
-                {/* Display Size Selector on Splash Screen */}
                 <div className="space-y-2 border-t border-white/10 pt-4">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Select Display Size:
+                    Select Display Size (Adjustable anytime in settings):
                   </label>
+
                   <div className="grid grid-cols-3 gap-3">
                     {(["small", "medium", "large"] as CardSize[]).map((size) => (
                       <button
@@ -568,7 +540,6 @@ function RootComponent() {
                   </div>
                 </div>
 
-                {/* XL Mouse Toggle on Splash Screen */}
                 <div className="flex items-center justify-between border-t border-white/10 pt-4">
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
