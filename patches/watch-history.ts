@@ -1,15 +1,24 @@
 export interface WatchHistoryItem {
   id: string; // e.g. "movie-123" or "tv-456-s1-e2"
-  mediaId: string;
-  title: string;
-  mediaType: "movie" | "tv";
+  mediaId: string | number;
+  title?: string;
+  name?: string;
+  mediaType?: "movie" | "tv";
+  media_type?: "movie" | "tv";
   posterPath?: string | null;
+  poster_path?: string | null;
   backdropPath?: string | null;
-  progressPercent: number; // 0 to 100
-  lastWatchedAt: string;
+  backdrop_path?: string | null;
+  progressPercent?: number;
+  progress?: number;
+  lastWatchedAt?: string;
+  updatedAt?: number;
   seasonNumber?: number;
+  season?: number;
   episodeNumber?: number;
-  confirmedCompleted?: boolean; // false = '?', true = '✓'
+  episode?: number;
+  confirmedCompleted?: boolean;
+  completed?: boolean;
 }
 
 export interface DislikedTitle {
@@ -25,7 +34,19 @@ export function getWatchHistory(): WatchHistoryItem[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(WATCH_HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const items = JSON.parse(raw);
+    // Normalize properties so components using snake_case or camelCase both work seamlessly
+    return items.map((item: any) => ({
+      ...item,
+      mediaId: item.mediaId ?? item.id,
+      title: item.title ?? item.name,
+      mediaType: item.mediaType ?? item.media_type ?? "movie",
+      posterPath: item.posterPath ?? item.poster_path,
+      backdropPath: item.backdropPath ?? item.backdrop_path,
+      progressPercent: item.progressPercent ?? item.progress ?? 0,
+      confirmedCompleted: item.confirmedCompleted ?? item.completed ?? false,
+    }));
   } catch {
     return [];
   }
@@ -34,17 +55,21 @@ export function getWatchHistory(): WatchHistoryItem[] {
 export function saveWatchProgress(item: Omit<WatchHistoryItem, "lastWatchedAt">): void {
   if (typeof window === "undefined") return;
   const history = getWatchHistory();
-  const existingIndex = history.findIndex((h) => h.id === item.id);
+  const existingIndex = history.findIndex((h) => String(h.id) === String(item.id));
+
+  const progressVal = item.progressPercent ?? item.progress ?? 0;
+  const existingConfirmed = existingIndex >= 0 ? history[existingIndex].confirmedCompleted ?? false : false;
 
   const updatedItem: WatchHistoryItem = {
     ...item,
+    mediaId: item.mediaId ?? item.id,
+    mediaType: item.mediaType ?? item.media_type ?? "movie",
+    posterPath: item.posterPath ?? item.poster_path,
+    backdropPath: item.backdropPath ?? item.backdrop_path,
+    progressPercent: progressVal,
     lastWatchedAt: new Date().toISOString(),
-    confirmedCompleted:
-      item.progressPercent >= 95
-        ? true
-        : existingIndex >= 0
-        ? history[existingIndex].confirmedCompleted ?? false
-        : false,
+    updatedAt: Date.now(),
+    confirmedCompleted: progressVal >= 95 ? true : existingConfirmed,
   };
 
   if (existingIndex >= 0) {
@@ -60,9 +85,10 @@ export function saveWatchProgress(item: Omit<WatchHistoryItem, "lastWatchedAt">)
 export function markAsConfirmedCompleted(id: string, completed: boolean): void {
   if (typeof window === "undefined") return;
   const history = getWatchHistory();
-  const item = history.find((h) => h.id === id);
+  const item = history.find((h) => String(h.id) === String(id));
   if (item) {
     item.confirmedCompleted = completed;
+    item.completed = completed;
     if (completed) item.progressPercent = 100;
     localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
     window.dispatchEvent(new Event("rabtv_watch_history_updated"));
@@ -76,14 +102,14 @@ export function markEpisodeCompleted(id: string, seasonNumber?: number, episodeN
 
 export function removeFromWatchHistory(id: string): void {
   if (typeof window === "undefined") return;
-  const history = getWatchHistory().filter((h) => h.id !== id);
+  const history = getWatchHistory().filter((h) => String(h.id) !== String(id));
   localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
   window.dispatchEvent(new Event("rabtv_watch_history_updated"));
 }
 
 export function calculateSeriesProgress(id: number | string): number {
   const history = getWatchHistory();
-  const item = history.find((h) => h.id === String(id) || h.mediaId === String(id));
+  const item = history.find((h) => String(h.id) === String(id) || String(h.mediaId) === String(id));
   if (!item) return 0;
   return item.progressPercent ?? (item.confirmedCompleted ? 100 : 0);
 }
@@ -93,7 +119,8 @@ export function getDislikedTitles(): DislikedTitle[] {
   try {
     const data = localStorage.getItem(DISLIKED_TITLES_KEY);
     return data ? JSON.parse(data) : [];
-  } catch {
+  } catch (e) {
+    console.error('Failed to get disliked titles:', e);
     return [];
   }
 }
