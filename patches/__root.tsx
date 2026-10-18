@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
+import { Outlet, createRootRoute, HeadContent, Link } from "@tanstack/react-router";
 import { AuthProvider } from "@/components/auth-provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import "@/styles.css";
@@ -82,7 +82,6 @@ function RootComponent() {
       setHelpfulMouse(helpfulMouse);
       setShowFirstStartModal(false);
       setPasscodeError(false);
-      window.dispatchEvent(new Event("rabtv_settings_updated"));
     } else {
       setPasscodeError(true);
       setPasscodeInput("");
@@ -92,13 +91,11 @@ function RootComponent() {
   const handleSizeChange = (newSize: CardSize) => {
     saveCardSize(newSize);
     setCardSize(newSize);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
   const handleThemeChange = (newTheme: AppTheme) => {
     saveTheme(newTheme);
     setAppTheme(newTheme);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
   const handleMouseToggle = (enabled: boolean) => {
@@ -109,36 +106,36 @@ function RootComponent() {
   const getBodyBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-[#120202]";
+        return "bg-gradient-to-br from-zinc-950 via-red-950/40 to-black";
       case "midnight":
-        return "bg-[#020617]";
+        return "bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950";
       case "emerald":
-        return "bg-[#02140a]";
+        return "bg-gradient-to-br from-slate-950 via-emerald-950/40 to-slate-950";
       case "amber":
-        return "bg-[#140b02]";
+        return "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950";
       case "cyan":
-        return "bg-[#021217]";
+        return "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950";
       case "violet":
       default:
-        return "bg-[#050b16]";
+        return "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950";
     }
   };
 
   const getCardBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-[#160404] border-red-500/20";
+        return "bg-gradient-to-br from-red-950/80 via-zinc-900 to-neutral-950 border-red-500/30";
       case "midnight":
-        return "bg-[#03091e] border-blue-500/20";
+        return "bg-gradient-to-br from-blue-950/80 via-slate-900 to-sky-950/80 border-sky-500/30";
       case "emerald":
-        return "bg-[#041d10] border-emerald-500/20";
+        return "bg-gradient-to-br from-emerald-950/80 via-slate-900 to-teal-950/80 border-emerald-500/30";
       case "amber":
-        return "bg-[#1f1003] border-amber-500/20";
+        return "bg-gradient-to-br from-yellow-950/80 via-stone-900 to-amber-950/80 border-amber-500/30";
       case "cyan":
-        return "bg-[#031a20] border-cyan-500/20";
+        return "bg-gradient-to-br from-cyan-950/80 via-slate-900 to-blue-950/80 border-cyan-500/30";
       case "violet":
       default:
-        return "bg-[#090e1f] border-violet-500/20";
+        return "bg-gradient-to-br from-purple-950/80 via-slate-900 to-indigo-950/80 border-violet-500/30";
     }
   };
 
@@ -147,34 +144,34 @@ function RootComponent() {
       case "red":
         return "text-red-400";
       case "midnight":
-        return "text-blue-400";
+        return "text-sky-300";
       case "emerald":
-        return "text-emerald-400";
+        return "text-emerald-300";
       case "amber":
-        return "text-amber-400";
+        return "text-amber-300";
       case "cyan":
-        return "text-cyan-400";
+        return "text-cyan-300";
       case "violet":
       default:
-        return "text-violet-400";
+        return "text-violet-300";
     }
   };
 
   const getPrimaryBgColor = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-red-600 hover:bg-red-500 shadow-red-600/40";
+        return "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30";
       case "midnight":
-        return "bg-blue-600 hover:bg-blue-500 shadow-blue-600/40";
+        return "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30";
       case "emerald":
-        return "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/40";
+        return "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30";
       case "amber":
-        return "bg-amber-600 hover:bg-amber-500 shadow-amber-600/40";
+        return "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30";
       case "cyan":
-        return "bg-cyan-600 hover:bg-cyan-500 shadow-cyan-600/40";
+        return "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30";
       case "violet":
       default:
-        return "bg-violet-600 hover:bg-violet-500 shadow-violet-600/40";
+        return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
     }
   };
 
@@ -241,7 +238,7 @@ function RootComponent() {
                       onClick={() => setActiveSettingsTab("theme")}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "theme"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          ? `${getPrimaryBgColor(appTheme)}`
                           : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                       }`}
                     >
@@ -252,7 +249,7 @@ function RootComponent() {
                       onClick={() => setActiveSettingsTab("scale")}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "scale"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          ? `${getPrimaryBgColor(appTheme)}`
                           : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                       }`}
                     >
@@ -263,7 +260,7 @@ function RootComponent() {
                       onClick={() => setActiveSettingsTab("mouse")}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "mouse"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          ? `${getPrimaryBgColor(appTheme)}`
                           : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                       }`}
                     >
@@ -289,7 +286,7 @@ function RootComponent() {
                             onClick={() => handleThemeChange(t.id as AppTheme)}
                             className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                               appTheme === t.id
-                                ? `${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-md`
+                                ? `${getPrimaryBgColor(t.id as AppTheme)}`
                                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                             }`}
                           >
@@ -309,7 +306,7 @@ function RootComponent() {
                             onClick={() => handleSizeChange(size)}
                             className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
                               cardSize === size
-                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                ? `${getPrimaryBgColor(appTheme)}`
                                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                             }`}
                           >
@@ -329,7 +326,7 @@ function RootComponent() {
                           type="button"
                           onClick={() => handleMouseToggle(!helpfulMouse)}
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                            helpfulMouse ? "bg-violet-600" : "bg-slate-700"
                           }`}
                         >
                           <span
@@ -394,10 +391,10 @@ function RootComponent() {
                       <button
                         key={t.id}
                         type="button"
-                        onClick={() => setAppTheme(t.id as AppTheme)}
+                        onClick={() => handleThemeChange(t.id as AppTheme)}
                         className={`rounded-xl border py-2 text-xs font-bold transition focus:outline-none focus:ring-4 ${
                           appTheme === t.id
-                            ? `border-white/30 ${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-lg`
+                            ? `border-white/30 ${getPrimaryBgColor(t.id as AppTheme)}`
                             : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
                       >
@@ -420,7 +417,7 @@ function RootComponent() {
                         onClick={() => handleSizeChange(size)}
                         className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
                           cardSize === size
-                            ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
+                            ? `border-white/30 ${getPrimaryBgColor(appTheme)}`
                             : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
                       >
@@ -441,7 +438,7 @@ function RootComponent() {
                     type="button"
                     onClick={() => handleMouseToggle(!helpfulMouse)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                      helpfulMouse ? "bg-violet-600" : "bg-slate-700"
                     }`}
                   >
                     <span
@@ -454,35 +451,32 @@ function RootComponent() {
 
                 <div className="space-y-2 border-t border-white/10 pt-4">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Enter Personal Agreement Code:
+                    Authorization Passcode
                   </label>
                   <input
                     type="password"
-                    maxLength={10}
                     value={passcodeInput}
                     onChange={(e) => setPasscodeInput(e.target.value)}
-                    placeholder="Enter Code"
-                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
+                    placeholder="Enter passcode..."
+                    className="w-full rounded-xl border border-white/20 bg-slate-900/80 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-400"
                   />
-
                   {passcodeError && (
-                    <p className="text-xs font-semibold text-red-400 text-center">
-                      ⚠️ Invalid Authorization Code. Agreement Not Accepted.
+                    <p className="text-xs font-semibold text-red-400">
+                      Invalid passcode. Please try again.
                     </p>
                   )}
                 </div>
 
                 <button
                   type="submit"
-                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-4 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
+                  className={`w-full rounded-xl py-3 text-sm font-bold uppercase tracking-wider transition ${getPrimaryBgColor(appTheme)}`}
                 >
-                  Accept Agreement & Launch App
+                  Confirm & Enter
                 </button>
               </form>
             </div>
           )}
         </AuthProvider>
-        <Scripts />
       </body>
     </html>
   );
