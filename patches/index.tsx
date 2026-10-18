@@ -9,11 +9,7 @@ import {
   getSavedTheme,
   getPosterDimensions,
 } from "@/lib/settings";
-import {
-  getWatchHistory,
-  calculateSeriesProgress,
-  ShowWatchHistory,
-} from "@/lib/watch-history";
+import { getRawWatchHistory } from "@/lib/watch-history";
 
 const navTabs = ["Home", "Series", "Movies", "Live", "My List"] as const;
 type NavTab = (typeof navTabs)[number];
@@ -109,70 +105,6 @@ export function MediaCard({ item }: { item: MediaItem }) {
   );
 }
 
-/** Specialized card for In Progress items inside My List with proper progress bars */
-export function InProgressCard({ show }: { show: ShowWatchHistory }) {
-  const [cardSize, setCardSize] = useState<CardSize>("large");
-  useEffect(() => {
-    setCardSize(getSavedCardSize());
-  }, []);
-
-  const dimensions = getPosterDimensions(cardSize);
-  const progress = calculateSeriesProgress(show);
-  const posterUrl = show.posterPath ? `https://image.tmdb.org/t/p/w500${show.posterPath}` : "";
-
-  return (
-    <div
-      className={`group relative flex w-full flex-col overflow-hidden rounded-2xl bg-slate-900/90 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 ${dimensions.card}`}
-    >
-      <Link className="block relative overflow-hidden flex-1 focus:outline-none" to={`/details?id=${show.showId}&type=tv`}>
-        {posterUrl ? (
-          <img
-            src={posterUrl}
-            alt={show.title}
-            className="h-full w-full object-cover transition group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-slate-950 p-2 text-center text-slate-500 text-xs font-bold">
-            {show.title}
-          </div>
-        )}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2.5">
-          <div className="flex items-center justify-between mb-1">
-            <span className="rounded-full bg-violet-600/80 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-white truncate max-w-[70%] backdrop-blur-sm">
-              In Progress
-            </span>
-          </div>
-          <h4 className={`font-bold text-white drop-shadow truncate ${dimensions.text}`}>
-            {show.title}
-          </h4>
-          <div className="mt-2 space-y-1">
-            <div className="flex justify-between text-[9px] font-bold text-slate-300">
-              <span>Progress</span>
-              <span>{progress}%</span>
-            </div>
-            <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden border border-white/5">
-              <div
-                className="h-full bg-violet-500 transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </Link>
-
-      <div className="p-2 bg-black/80 border-t border-white/10 flex items-center justify-between">
-        <Link
-          to={`/details?id=${show.showId}&type=tv`}
-          className="w-full text-center rounded-full bg-black/70 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-violet-400"
-        >
-          RESUME →
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 function Home() {
   const [activeTab, setActiveTab] = useState<NavTab>("Home");
   const [selectedGenre, setSelectedGenre] = useState<string>("Trending");
@@ -181,10 +113,10 @@ function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
-  const [myListSubTab, setMyListSubTab] = useState<"all" | "in-progress" | "mylist" | "favorites">("all");
+  const [myListSubTab, setMyListSubTab] = useState<"all" | "in_progress" | "mylist" | "favorites">("all");
   const [savedMyList, setSavedMyList] = useState<MediaItem[]>([]);
   const [savedFavorites, setSavedFavorites] = useState<MediaItem[]>([]);
-  const [watchHistoryMap, setWatchHistoryMap] = useState<Record<string, ShowWatchHistory>>({});
+  const [historyItems, setHistoryItems] = useState<MediaItem[]>([]);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -194,10 +126,33 @@ function Home() {
     try {
       const listData = JSON.parse(localStorage.getItem(MY_LIST_STORAGE_KEY) || "[]");
       const favData = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || "[]");
-      const historyData = getWatchHistory();
+      
+      // Load watch history and map active/in-progress items to MediaItem format
+      const rawHistory = getRawWatchHistory();
+      const mappedHistory: MediaItem[] = rawHistory.map((h) => {
+        const cleanId = String(h.mediaId ?? h.id).replace(/^(movie|tv)-/, "");
+        const type = h.mediaType ?? h.media_type ?? "movie";
+        const imagePath = h.posterPath ?? h.poster_path ?? h.image;
+        const imageUrl = imagePath?.startsWith("http")
+          ? imagePath
+          : imagePath
+          ? `https://image.tmdb.org/t/p/w500${imagePath}`
+          : "/placeholder.png";
+
+        return {
+          id: String(h.id),
+          title: h.title ?? "Unknown Title",
+          image: imageUrl,
+          href: `/${type}/${cleanId}`,
+          genre: type.toUpperCase(),
+          progressPercent: h.progressPercent ?? (h.confirmedCompleted ? 100 : 0),
+          confirmedCompleted: h.confirmedCompleted ?? false,
+        } as MediaItem & { progressPercent?: number; confirmedCompleted?: boolean };
+      });
+
       setSavedMyList(listData);
       setSavedFavorites(favData);
-      setWatchHistoryMap(historyData);
+      setHistoryItems(mappedHistory);
       setAppTheme(getSavedTheme());
       setCardSize(getSavedCardSize());
     } catch (err) {
@@ -211,16 +166,12 @@ function Home() {
       loadSavedListsAndTheme();
     };
     window.addEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
-    window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
     window.addEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
-    window.addEventListener("rabtv_my_list_updated", loadSavedListsAndTheme);
-    window.addEventListener("rabtv_favorites_updated", loadSavedListsAndTheme);
+    window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
     return () => {
       window.removeEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
-      window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
       window.removeEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
-      window.removeEventListener("rabtv_my_list_updated", loadSavedListsAndTheme);
-      window.removeEventListener("rabtv_favorites_updated", loadSavedListsAndTheme);
+      window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
     };
   }, []);
 
@@ -272,20 +223,22 @@ function Home() {
     };
   }, [activeTab, page]);
 
-  // Derive In Progress shows from watch history (< 100% progress), keeping them entirely out of Watch Later
-  const inProgressItems = useMemo(() => {
-    return Object.values(watchHistoryMap).filter((show) => calculateSeriesProgress(show) < 100);
-  }, [watchHistoryMap]);
+  // Active in-progress titles (excluding completed ones)
+  const inProgressHistory = useMemo(
+    () => historyItems.filter((i: any) => !i.confirmedCompleted && (i.progressPercent ?? 0) < 100),
+    [historyItems]
+  );
 
   const savedCatalogItems = useMemo(() => {
-    if (myListSubTab === "in-progress") return []; // Handled separately with InProgressCard
     if (myListSubTab === "mylist") return savedMyList;
     if (myListSubTab === "favorites") return savedFavorites;
+    if (myListSubTab === "in_progress") return inProgressHistory;
 
+    // "All Saved" combines Watch Later, Favorites, and active In Progress
     const map = new Map();
-    [...savedFavorites, ...savedMyList].forEach((item) => map.set(item.id, item));
+    [...savedFavorites, ...savedMyList, ...inProgressHistory].forEach((item) => map.set(item.id, item));
     return Array.from(map.values());
-  }, [myListSubTab, savedMyList, savedFavorites]);
+  }, [myListSubTab, savedMyList, savedFavorites, inProgressHistory]);
 
   const filteredItems = useMemo(() => {
     if (activeTab === "My List") return savedCatalogItems;
@@ -444,7 +397,7 @@ function Home() {
           </section>
         )}
 
-        {/* My List & Favorites Sub-category Selector */}
+        {/* My List Sub-category Selector */}
         {activeTab === "My List" && (
           <section className="mb-4 flex flex-wrap items-center gap-2 border-b border-white/10 pb-3 px-2">
             <button
@@ -456,19 +409,19 @@ function Home() {
                   : "bg-slate-900/60 text-slate-300"
               }`}
             >
-              All Saved ({savedMyList.length + savedFavorites.length + inProgressItems.length})
+              All Saved ({savedMyList.length + savedFavorites.length + inProgressHistory.length})
             </button>
 
             <button
               type="button"
-              onClick={() => setMyListSubTab("in-progress")}
+              onClick={() => setMyListSubTab("in_progress")}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
-                myListSubTab === "in-progress"
+                myListSubTab === "in_progress"
                   ? themeStyles.btnActive
                   : "bg-slate-900/60 text-slate-300"
               }`}
             >
-              ⏳ In Progress ({inProgressItems.length})
+              ⏳ In Progress ({inProgressHistory.length})
             </button>
 
             <button
@@ -504,29 +457,13 @@ function Home() {
               {activeTab === "My List" ? "Saved Catalog" : `${activeTab} Catalog`}
             </h3>
             <span className={`text-xs font-medium ${themeStyles.accentText}`}>
-              {activeTab === "My List" && myListSubTab === "in-progress"
-                ? `${inProgressItems.length} titles available`
-                : `${filteredItems.length} titles available`}
+              {filteredItems.length} titles available
             </span>
           </div>
 
-          {activeTab === "My List" && myListSubTab === "in-progress" ? (
-            inProgressItems.length > 0 ? (
-              <div className={gridColsClass}>
-                {inProgressItems.map((show) => (
-                  <InProgressCard show={show} key={show.showId} />
-                ))}
-              </div>
-            ) : (
-              <div className="rounded-[20px] bg-slate-900/80 p-6 text-center mx-2">
-                <p className="text-sm text-slate-300">
-                  No items currently in progress. Start watching a show or movie to track progress here!
-                </p>
-              </div>
-            )
-          ) : filteredItems.length > 0 ? (
+          {filteredItems.length > 0 ? (
             <div className={gridColsClass}>
-              {filteredItems.slice(activeTab === "My List" ? 0 : 1).map((item) => (
+              {filteredItems.map((item) => (
                 <MediaCard item={item} key={item.id} />
               ))}
             </div>
