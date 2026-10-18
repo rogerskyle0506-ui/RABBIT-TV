@@ -49,7 +49,6 @@ function RootComponent() {
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    // Detect Fire OS / Silk WebView at runtime and tag root html element
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent.toLowerCase();
       if (ua.includes('silk') || ua.includes('firetv') || ua.includes('amazon')) {
@@ -173,24 +172,36 @@ function RootComponent() {
   const getBodyBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-[#120202]";
+        return "bg-gradient-to-br from-zinc-950 via-red-950/40 to-black";
       case "midnight":
-        return "bg-[#020617]";
+        return "bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950";
+      case "emerald":
+        return "bg-gradient-to-br from-slate-950 via-emerald-950/40 to-slate-950";
+      case "amber":
+        return "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950";
+      case "cyan":
+        return "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950";
       case "violet":
       default:
-        return "bg-[#050b16]";
+        return "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950";
     }
   };
 
   const getCardBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-[#160404] border-red-500/20";
+        return "bg-zinc-900/90 border-red-500/20";
       case "midnight":
-        return "bg-[#03091e] border-blue-500/20";
+        return "bg-slate-900/90 border-blue-500/20";
+      case "emerald":
+        return "bg-slate-900/90 border-emerald-500/20";
+      case "amber":
+        return "bg-stone-900/90 border-amber-500/20";
+      case "cyan":
+        return "bg-slate-900/90 border-cyan-500/20";
       case "violet":
       default:
-        return "bg-[#090e1f] border-violet-500/20";
+        return "bg-slate-900/90 border-violet-500/20";
     }
   };
 
@@ -200,6 +211,12 @@ function RootComponent() {
         return "text-red-400";
       case "midnight":
         return "text-blue-400";
+      case "emerald":
+        return "text-emerald-300";
+      case "amber":
+        return "text-amber-300";
+      case "cyan":
+        return "text-cyan-300";
       case "violet":
       default:
         return "text-violet-400";
@@ -209,14 +226,29 @@ function RootComponent() {
   const getPrimaryBgColor = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-red-600 hover:bg-red-500 shadow-red-600/40";
+        return "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30";
       case "midnight":
-        return "bg-blue-600 hover:bg-blue-500 shadow-blue-600/40";
+        return "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30";
+      case "emerald":
+        return "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30";
+      case "amber":
+        return "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30";
+      case "cyan":
+        return "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30";
       case "violet":
       default:
-        return "bg-violet-600 hover:bg-violet-500 shadow-violet-600/40";
+        return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
     }
   };
+
+  const allThemesList: { id: AppTheme; label: string }[] = [
+    { id: "violet", label: "🟣 Violet / Neon" },
+    { id: "red", label: "🔴 Red & Black" },
+    { id: "midnight", label: "🔵 Midnight & Black" },
+    { id: "emerald", label: "🟢 Emerald / Teal" },
+    { id: "amber", label: "🟠 Amber / Gold" },
+    { id: "cyan", label: "🔷 Cyan / Sky" },
+  ];
 
   return (
     <html lang="en" data-theme={appTheme}>
@@ -338,18 +370,14 @@ function RootComponent() {
                     {activeSettingsTab === "theme" && (
                       <div className="flex flex-wrap items-center justify-center gap-2">
                         <span className="text-xs font-semibold text-slate-300 mr-2">Choose Theme:</span>
-                        {[
-                          { id: "violet", label: "🟣 Violet / Neon" },
-                          { id: "red", label: "🔴 Red & Black" },
-                          { id: "midnight", label: "🔵 Midnight & Black" },
-                        ].map((t) => (
+                        {allThemesList.map((t) => (
                           <button
                             key={t.id}
                             type="button"
-                            onClick={() => handleThemeChange(t.id as AppTheme)}
+                            onClick={() => handleThemeChange(t.id)}
                             className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                               appTheme === t.id
-                                ? `${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-md`
+                                ? `${getPrimaryBgColor(t.id)} text-white shadow-md`
                                 : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                             }`}
                           >
@@ -414,7 +442,7 @@ function RootComponent() {
                           type="button"
                           onClick={() => handleMouseToggle(!helpfulMouse)}
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                            helpfulMouse ? "bg-violet-600" : "bg-slate-700"
                           }`}
                         >
                           <span
@@ -496,18 +524,14 @@ function RootComponent() {
                     Select Startup Theme:
                   </label>
                   <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { id: "violet", label: "🟣 Violet" },
-                      { id: "red", label: "🔴 Red" },
-                      { id: "midnight", label: "🔵 Midnight" },
-                    ].map((t) => (
+                    {allThemesList.map((t) => (
                       <button
                         key={t.id}
                         type="button"
-                        onClick={() => setAppTheme(t.id as AppTheme)}
+                        onClick={() => setAppTheme(t.id)}
                         className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
                           appTheme === t.id
-                            ? `border-white/30 ${getPrimaryBgColor(t.id as AppTheme)} text-white shadow-lg`
+                            ? `border-white/30 ${getPrimaryBgColor(t.id)} text-white shadow-lg`
                             : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
                       >
@@ -551,7 +575,7 @@ function RootComponent() {
                     type="button"
                     onClick={() => handleMouseToggle(!helpfulMouse)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      helpfulMouse ? getPrimaryBgColor(appTheme).split(" ")[0] : "bg-slate-700"
+                      helpfulMouse ? "bg-violet-600" : "bg-slate-700"
                     }`}
                   >
                     <span
