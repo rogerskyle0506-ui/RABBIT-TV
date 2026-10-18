@@ -447,5 +447,28 @@ function RootComponent() {
                       value={passcodeInput}
                       onChange={(e) => setPasscodeInput(e.target.value)}
                       placeholder="Enter 8-digit code"
-                      className="mt-1 block w-full rounded-xl border border-white/20 bg-slate-950/80 px-4 py-3 text-center text-white"
-/>
+                      className="mt-1 block w-full rounded-xl border border-white/20 bg-slate-950/80 px-4 py-3 text-center text-white focus:border-violet-500 focus:outline-none"
+                    />
+                  </div>
+
+                  {passcodeError && (
+                    <p className="text-center text-xs font-semibold text-red-400">
+                      Incorrect passcode. Please try again.
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    className={`w-full rounded-xl py-3 text-sm font-bold text-white shadow-lg transition ${getPrimaryBgColor(appTheme)}`}
+                  >
+                    Authorize & Enter
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
