@@ -65,13 +65,17 @@ function RootComponent() {
   const feedDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (feedDropdownRef.current && !feedDropdownRef.current.contains(event.target as Node)) {
         setIsFeedDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
   }, []);
 
   const handleGlobalFeedChange = (feed: GlobalFeedOption) => {
@@ -285,7 +289,7 @@ function RootComponent() {
         return "bg-cyan-950/80 border-cyan-500/20 shadow-cyan-950/40";
       case "violet":
       default:
-        return "bg-purple-950/80 border-violet-500/20 shadow-violet-950/40";
+        return "bg-purple-950/80 border-violet-500/20 shadow-purple-950/40";
     }
   };
 
@@ -387,7 +391,10 @@ function RootComponent() {
                   <div className="relative shrink-0" ref={feedDropdownRef}>
                     <button
                       type="button"
-                      onClick={() => setIsFeedDropdownOpen(!isFeedDropdownOpen)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsFeedDropdownOpen(!isFeedDropdownOpen);
+                      }}
                       className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 ${activeHeader.btnBg} gap-1.5`}
                     >
                       <span className="truncate max-w-[120px] sm:max-w-none">
@@ -405,7 +412,10 @@ function RootComponent() {
                           <button
                             key={feed}
                             type="button"
-                            onClick={() => handleGlobalFeedChange(feed)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleGlobalFeedChange(feed);
+                            }}
                             className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition flex items-center justify-between ${
                               selectedGlobalFeed === feed
                                 ? "bg-white/20 text-white font-bold"
@@ -755,7 +765,7 @@ function RootComponent() {
                   </button>
                 </div>
 
-              <div className="space-y-2 border-t border-white/10 pt-3">
+                <div className="space-y-2 border-t border-white/10 pt-3">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Enter Personal Passcode:
                   </label>
