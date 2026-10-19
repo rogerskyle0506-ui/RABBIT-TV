@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { AppTheme, CardSize, getSavedTheme, getSavedCardSize } from "@/lib/settings";
 import {
   getWatchHistory,
@@ -296,8 +296,8 @@ function WatchHistoryComponent() {
   );
 }
 
-/** STREAMLINED MOVIE CARD */
-function MovieCard({
+/** MEMOIZED MOVIE CARD */
+const MovieCard = React.memo(function MovieCard({
   movie,
   appTheme,
   onEyeballClick,
@@ -340,6 +340,7 @@ function MovieCard({
           <img
             src={`${TMDB_IMAGE_BASE}${movie.posterPath}`}
             alt={movie.title}
+            loading="lazy"
             className="h-full w-full object-cover transition transform group-hover:scale-105"
           />
         ) : (
@@ -348,7 +349,6 @@ function MovieCard({
           </div>
         )}
 
-        {/* Action Controls */}
         <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
@@ -385,10 +385,10 @@ function MovieCard({
       </div>
     </div>
   );
-}
+});
 
-/** TV SHOW CARD */
-function TvShowCard({
+/** MEMOIZED TV SHOW CARD */
+const TvShowCard = React.memo(function TvShowCard({
   show,
   appTheme,
   onEyeballClick,
@@ -431,6 +431,7 @@ function TvShowCard({
           <img
             src={`${TMDB_IMAGE_BASE}${show.posterPath}`}
             alt={show.title}
+            loading="lazy"
             className="h-full w-full object-cover transition transform group-hover:scale-105"
           />
         ) : (
@@ -464,7 +465,6 @@ function TvShowCard({
           {show.title}
         </h3>
 
-        {/* Overall Beginning-to-End Series Progress Bar */}
         <div className="space-y-1">
           <div className="flex justify-between text-[10px] font-bold text-slate-400">
             <span>Series Progress</span>
@@ -480,7 +480,6 @@ function TvShowCard({
           </div>
         </div>
 
-        {/* Episode Breakdown Sublist */}
         <div className="space-y-1 max-h-28 overflow-y-auto pr-0.5" onClick={(e) => e.stopPropagation()}>
           {episodesList.map((ep) => (
             <EpisodeRow
@@ -493,9 +492,10 @@ function TvShowCard({
       </div>
     </div>
   );
-}
+});
 
-function EpisodeRow({
+/** MEMOIZED EPISODE ROW */
+const EpisodeRow = React.memo(function EpisodeRow({
   episode,
   onEyeballClick,
 }: {
@@ -532,4 +532,4 @@ function EpisodeRow({
       </div>
     </div>
   );
-}
+});
