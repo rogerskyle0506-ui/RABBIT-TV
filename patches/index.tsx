@@ -470,6 +470,7 @@ function Home() {
     amber: {
       bg: "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950",
       cardGradient: "from-yellow-950/80 via-stone-900 to-amber-950/80",
+      cardGradient: "from-yellow-950/80 via-stone-900 to-amber-950/80",
       btnActive: "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30",
       accentText: "text-amber-300",
       borderGlow: "border-amber-500/30",
@@ -491,10 +492,10 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs (Background wrapper completely removed) */}
+      {/* Navigation Bar Tabs Container (Outline border restored, transparent background) */}
       <div className="sticky top-0 z-30 mb-4 mt-2 px-3 py-2.5">
         <div className="mx-auto flex max-w-7xl items-center justify-center">
-          <div className="flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto p-1.5 scrollbar-none">
+          <div className={`flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto p-2 scrollbar-none rounded-2xl border ${themeStyles.borderGlow} bg-transparent`}>
             {navTabs.map((tab) => (
               <button
                 key={tab}
@@ -580,10 +581,10 @@ function Home() {
           )}
         </section>
 
-        {/* Genre Filters (Background wrapper completely removed) */}
+        {/* Genre Filters Container (Outline border restored, transparent background) */}
         {activeTab !== "My List" && (
           <section className="mb-4 flex justify-center">
-            <div className="flex flex-wrap items-center justify-center gap-1.5 p-2 max-w-full">
+            <div className={`flex flex-wrap items-center justify-center gap-1.5 p-2.5 max-w-full rounded-2xl border ${themeStyles.borderGlow} bg-transparent`}>
               {genreCategories.map((genre) => (
                 <button
                   key={genre}
