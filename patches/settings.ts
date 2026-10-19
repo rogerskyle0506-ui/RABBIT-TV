@@ -7,6 +7,7 @@ export const CARD_SIZE_KEY = "rabtv_card_size";
 export const THEME_KEY = "rabtv_app_theme";
 export const HELPFUL_MOUSE_KEY = "rabtv_helpful_mouse";
 export const STREAM_QUALITY_KEY = "rabtv_stream_quality";
+export const USER_AGE_KEY = "rabtv_user_age";
 
 export function getSavedCardSize(): CardSize {
   if (typeof window === "undefined") return "large";
@@ -52,6 +53,65 @@ export function setHelpfulMouse(enabled: boolean) {
     localStorage.setItem(HELPFUL_MOUSE_KEY, String(enabled));
     window.dispatchEvent(new Event("rabtv_settings_updated"));
   }
+}
+
+/** AGE TIER & RATING VERIFICATION HELPERS */
+
+export function getSavedUserAge(): number {
+  if (typeof window === "undefined") return 18;
+  const saved = localStorage.getItem(USER_AGE_KEY);
+  if (!saved) return 18;
+  const parsed = parseInt(saved, 10);
+  return isNaN(parsed) ? 18 : parsed;
+}
+
+export function saveUserAge(age: number): void {
+  if (typeof window !== "undefined") {
+    const validAge = Math.max(1, Math.min(120, age));
+    localStorage.setItem(USER_AGE_KEY, String(validAge));
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  }
+}
+
+export function sanitizeTMDBId(rawId: string | number): string {
+  if (!rawId) return "";
+  return String(rawId).replace(/^(movie|tv)-/, "").trim();
+}
+
+export function isAllowedForAge(rating?: string | null, userAge: number = getSavedUserAge()): boolean {
+  // Ages 16+ have full unlocked access to all media including Rated R
+  if (userAge >= 16) return true;
+
+  const cleanRating = (rating || "UNRATED").trim().toUpperCase();
+
+  // Fail-Closed Security: Unrated, empty, missing, R, NC-17, or TV-MA strictly require age 16+
+  if (
+    !cleanRating ||
+    cleanRating === "UNRATED" ||
+    cleanRating === "NR" ||
+    cleanRating === "R" ||
+    cleanRating === "NC-17" ||
+    cleanRating === "TV-MA"
+  ) {
+    return false;
+  }
+
+  // Tier 1: Ages 0 - 8 (G, TV-Y, TV-G)
+  if (userAge < 9) {
+    return ["G", "TV-Y", "TV-G"].includes(cleanRating);
+  }
+
+  // Tier 2: Ages 9 - 12 (G, PG, TV-Y, TV-Y7, TV-G, TV-PG)
+  if (userAge < 13) {
+    return ["G", "PG", "TV-Y", "TV-Y7", "TV-G", "TV-PG"].includes(cleanRating);
+  }
+
+  // Tier 3: Ages 13 - 15 (G, PG, PG-13, TV-Y, TV-Y7, TV-G, TV-PG, TV-14)
+  if (userAge < 16) {
+    return ["G", "PG", "PG-13", "TV-Y", "TV-Y7", "TV-G", "TV-PG", "TV-14"].includes(cleanRating);
+  }
+
+  return false;
 }
 
 // Helper to get Tailwind CSS width/height classes + responsive container constraints
