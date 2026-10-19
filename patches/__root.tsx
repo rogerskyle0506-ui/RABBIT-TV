@@ -2,7 +2,7 @@ import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/r
 import { AuthProvider } from "@/components/auth-provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import "@/styles.css";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   CardSize,
   StreamQuality,
@@ -61,27 +61,10 @@ function RootComponent() {
     }
     return "All (Default)";
   });
-  const [isFeedDropdownOpen, setIsFeedDropdownOpen] = useState(false);
-  const feedDropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent | TouchEvent) {
-      if (feedDropdownRef.current && !feedDropdownRef.current.contains(event.target as Node)) {
-        setIsFeedDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("touchstart", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside);
-    };
-  }, []);
 
   const handleGlobalFeedChange = (feed: GlobalFeedOption) => {
     setSelectedGlobalFeed(feed);
     localStorage.setItem("rabtv_global_feed", feed);
-    setIsFeedDropdownOpen(false);
     window.dispatchEvent(new CustomEvent("rabtv_global_feed_updated", { detail: feed }));
   };
 
@@ -387,49 +370,25 @@ function RootComponent() {
 
               {!showFirstStartModal && (
                 <div className="flex items-center gap-2 shrink-0">
-                  {/* Global Feeds Header Dropdown Pillbox */}
-                  <div className="relative shrink-0" ref={feedDropdownRef}>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsFeedDropdownOpen(!isFeedDropdownOpen);
-                      }}
-                      className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 ${activeHeader.btnBg} gap-1.5`}
-                    >
-                      <span className="truncate max-w-[120px] sm:max-w-none">
+                  {/* Global Feeds Header Selector Pillbox */}
+                  <div className="relative shrink-0">
+                    <div className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus-within:ring-2 ${activeHeader.btnBg} gap-1.5 relative pointer-events-auto`}>
+                      <span className="whitespace-nowrap pointer-events-none">
                         🌍 Global: {selectedGlobalFeed}
                       </span>
-                      <span className="text-[10px]">▼</span>
-                    </button>
+                      <span className="text-[10px] pointer-events-none">▼</span>
 
-                    {isFeedDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-44 rounded-xl bg-black/95 border border-white/20 shadow-2xl backdrop-blur-xl py-1.5 z-50">
-                        <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-slate-400 border-b border-white/10 font-bold">
-                          Global Feed Override
-                        </div>
-                        {globalFeedOptions.map((feed) => (
-                          <button
-                            key={feed}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleGlobalFeedChange(feed);
-                            }}
-                            className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition flex items-center justify-between ${
-                              selectedGlobalFeed === feed
-                                ? "bg-white/20 text-white font-bold"
-                                : "text-slate-300 hover:bg-white/10 hover:text-white"
-                            }`}
-                          >
-                            <span>
-                              {feed === "Russian" ? "🇷🇺 Russian" : feed === "British" ? "🇬🇧 British" : feed === "Hungarian" ? "🇭🇺 Hungarian" : "🌐 All (Default)"}
-                            </span>
-                            {selectedGlobalFeed === feed && <span className="text-[10px]">✓</span>}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                      <select
+                        value={selectedGlobalFeed}
+                        onChange={(e) => handleGlobalFeedChange(e.target.value as GlobalFeedOption)}
+                        className="absolute inset-0 w-full h-full opacity-0 bg-transparent text-white cursor-pointer z-50 appearance-none"
+                      >
+                        <option value="All (Default)" className="bg-slate-900 text-white p-2">🌐 All (Default)</option>
+                        <option value="Russian" className="bg-slate-900 text-white p-2">🇷🇺 Russian</option>
+                        <option value="British" className="bg-slate-900 text-white p-2">🇬🇧 British</option>
+                        <option value="Hungarian" className="bg-slate-900 text-white p-2">🇭🇺 Hungarian</option>
+                      </select>
+                    </div>
                   </div>
 
                   <Link
