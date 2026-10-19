@@ -24,6 +24,23 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
+const STORAGE_PREFIX = "rabtv_catalog_cache_v2_";
+const INITIAL_TARGET_PAGES = 10; // Guarantees 10 pages * 20 items = 200 titles per category/genre initially
+const ITEMS_PER_PAGE = 20;
+
+// Rate limiter to keep requests well under TMDB limits (<40 requests / 10s)
+let lastRequestTimestamp = 0;
+const MIN_REQUEST_INTERVAL_MS = 250;
+
+async function throttleRequest() {
+  const now = Date.now();
+  const timeSinceLast = now - lastRequestTimestamp;
+  if (timeSinceLast < MIN_REQUEST_INTERVAL_MS) {
+    const delay = MIN_REQUEST_INTERVAL_MS - timeSinceLast;
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+  lastRequestTimestamp = Date.now();
+}
 
 const genreMap: Record<number, string> = {
   28: "Action",
@@ -119,8 +136,9 @@ function mapTmdbItemToMediaItem(
 }
 
 async function fetchTmdb(endpoint: string, page = 1, extraParams: Record<string, string> = {}): Promise<Record<string, unknown>> {
-  const url = new URL(endpoint, TMDB_BASE_URL);
+  await throttleRequest();
 
+  const url = new URL(endpoint, TMDB_BASE_URL);
   if (TMDB_API_KEY) {
     url.searchParams.set("api_key", TMDB_API_KEY);
   }
@@ -139,113 +157,158 @@ async function fetchTmdb(endpoint: string, page = 1, extraParams: Record<string,
 }
 
 export async function scrapeTrendingContent(page = 1): Promise<ScrapeResult> {
-  return scrapeCategoryContent("Home", page);
+  return scrapeCategoryContent("Home", page, "Trending");
 }
 
 export async function scrapeCategoryContent(
   category: "Home" | "Series" | "Movies" | "Live" | "My List",
   page = 1,
-  genreFilter?: string
+  genreFilter = "Trending"
 ): Promise<ScrapeResult> {
   try {
-    const ITEMS_PER_PAGE = 20;
-    const globalSeenIds = new Set<string>();
-    const allUniqueCollectedItems: MediaItem[] = [];
+    const storageKey = `${STORAGE_PREFIX}_${category}_${genreFilter}`;
+    const requiredItemsCount = page * ITEMS_PER_PAGE;
 
-    let maxApiPages = 5; // Fetch deep enough to guarantee clean 20-item chunks per UI page
-    let currentApiPage = 1;
-    let totalApiPagesAvailable = 1;
+    let catalogItems: MediaItem[] = [];
+    let maxApiPageReached = 0;
+    let totalAvailablePages = 50;
+    let isFullyLoaded = false;
 
-    // Loop through API pages to aggregate a robust pool of unique items
-    while (currentApiPage <= maxApiPages) {
-      let data: Record<string, unknown>;
-      const batchItems: MediaItem[] = [];
-
-      if (category === "Movies") {
-        if (genreFilter && genreFilter !== "Trending") {
-          const genreId = genreNameToId[genreFilter.toLowerCase()];
-          data = await fetchTmdb("discover/movie", currentApiPage, genreId ? { with_genres: genreId.toString() } : {});
-        } else {
-          data = await fetchTmdb("movie/popular", currentApiPage);
+    // 1. Load existing catalog from device storage
+    if (typeof window !== "undefined") {
+      try {
+        const savedData = localStorage.getItem(storageKey);
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          catalogItems = parsed.items || [];
+          maxApiPageReached = parsed.maxApiPageReached || 0;
+          totalAvailablePages = parsed.totalAvailablePages || 50;
+          isFullyLoaded = parsed.isFullyLoaded || false;
         }
-        totalApiPagesAvailable = (data.total_pages as number) || 1;
-        const results = (data.results as Record<string, unknown>[]) || [];
-        results.forEach((item) => {
-          const mapped = mapTmdbItemToMediaItem(item, "movie");
-          if (mapped) batchItems.push(mapped);
-        });
-      } else if (category === "Series") {
-        if (genreFilter && genreFilter !== "Trending") {
-          const genreId = genreNameToId[genreFilter.toLowerCase()];
-          data = await fetchTmdb("discover/tv", currentApiPage, genreId ? { with_genres: genreId.toString() } : {});
-        } else {
-          data = await fetchTmdb("tv/popular", currentApiPage);
-        }
-        totalApiPagesAvailable = (data.total_pages as number) || 1;
-        const results = (data.results as Record<string, unknown>[]) || [];
-        results.forEach((item) => {
-          const mapped = mapTmdbItemToMediaItem(item, "tv");
-          if (mapped) batchItems.push(mapped);
-        });
-      } else if (category === "Live") {
-        data = await fetchTmdb("tv/on_the_air", currentApiPage);
-        totalApiPagesAvailable = (data.total_pages as number) || 1;
-        const results = (data.results as Record<string, unknown>[]) || [];
-        results.forEach((item) => {
-          const mapped = mapTmdbItemToMediaItem(item, "tv");
-          if (mapped) batchItems.push(mapped);
-        });
-      } else {
-        const movieData = await fetchTmdb("trending/movie/week", currentApiPage);
-        const tvData = await fetchTmdb("trending/tv/week", currentApiPage);
-        
-        totalApiPagesAvailable = Math.max(
-          (movieData.total_pages as number) || 1,
-          (tvData.total_pages as number) || 1
-        );
-
-        const movieResults = (movieData.results as Record<string, unknown>[]) || [];
-        movieResults.forEach((item) => {
-          const mapped = mapTmdbItemToMediaItem(item, "movie");
-          if (mapped) batchItems.push(mapped);
-        });
-
-        const tvResults = (tvData.results as Record<string, unknown>[]) || [];
-        tvResults.forEach((item) => {
-          const mapped = mapTmdbItemToMediaItem(item, "tv");
-          if (mapped) batchItems.push(mapped);
-        });
+      } catch (e) {
+        console.error("Failed to read local catalog cache", e);
       }
-
-      // Deduplicate on the fly into our master collection pool
-      for (const item of batchItems) {
-        if (!globalSeenIds.has(item.id)) {
-          globalSeenIds.add(item.id);
-          allUniqueCollectedItems.push(item);
-        }
-      }
-
-      if (currentApiPage >= totalApiPagesAvailable || allUniqueCollectedItems.length >= page * ITEMS_PER_PAGE + 40) {
-        break;
-      }
-      currentApiPage++;
     }
 
-    // Slice out the exact 20 items requested for the current UI page index
+    const seenIds = new Set(catalogItems.map((i) => i.id));
+
+    // 2. Determine target page threshold: ensure we have at least 10 pages initially, 
+    // or expand by another 10 pages if the user exceeds the current catalog boundary.
+    const targetCatalogSize = Math.max(
+      requiredItemsCount, 
+      Math.ceil((maxApiPageReached || INITIAL_TARGET_PAGES) / INITIAL_TARGET_PAGES) * INITIAL_TARGET_PAGES * ITEMS_PER_PAGE
+    );
+
+    if (catalogItems.length < targetCatalogSize && !isFullyLoaded) {
+      const targetApiPageLimit = Math.min(Math.ceil(targetCatalogSize / ITEMS_PER_PAGE), totalAvailablePages);
+
+      while (catalogItems.length < targetCatalogSize && maxApiPageReached < targetApiPageLimit && maxApiPageReached < totalAvailablePages) {
+        const nextApiPage = maxApiPageReached + 1;
+        let data: Record<string, unknown>;
+        const batch: MediaItem[] = [];
+
+        if (category === "Movies") {
+          if (genreFilter && genreFilter !== "Trending") {
+            const genreId = genreNameToId[genreFilter.toLowerCase()];
+            data = await fetchTmdb("discover/movie", nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
+          } else {
+            data = await fetchTmdb("movie/popular", nextApiPage);
+          }
+          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
+          const results = (data.results as Record<string, unknown>[]) || [];
+          results.forEach((item) => {
+            const mapped = mapTmdbItemToMediaItem(item, "movie");
+            if (mapped) batch.push(mapped);
+          });
+        } else if (category === "Series") {
+          if (genreFilter && genreFilter !== "Trending") {
+            const genreId = genreNameToId[genreFilter.toLowerCase()];
+            data = await fetchTmdb("discover/tv", nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
+          } else {
+            data = await fetchTmdb("tv/popular", nextApiPage);
+          }
+          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
+          const results = (data.results as Record<string, unknown>[]) || [];
+          results.forEach((item) => {
+            const mapped = mapTmdbItemToMediaItem(item, "tv");
+            if (mapped) batch.push(mapped);
+          });
+        } else if (category === "Live") {
+          data = await fetchTmdb("tv/on_the_air", nextApiPage);
+          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
+          const results = (data.results as Record<string, unknown>[]) || [];
+          results.forEach((item) => {
+            const mapped = mapTmdbItemToMediaItem(item, "tv");
+            if (mapped) batch.push(mapped);
+          });
+        } else {
+          const movieData = await fetchTmdb("trending/movie/week", nextApiPage);
+          const tvData = await fetchTmdb("trending/tv/week", nextApiPage);
+
+          totalAvailablePages = Math.min(
+            Math.max((movieData.total_pages as number) || 1, (tvData.total_pages as number) || 1),
+            50
+          );
+
+          const movieResults = (movieData.results as Record<string, unknown>[]) || [];
+          movieResults.forEach((item) => {
+            const mapped = mapTmdbItemToMediaItem(item, "movie");
+            if (mapped) batch.push(mapped);
+          });
+
+          const tvResults = (tvData.results as Record<string, unknown>[]) || [];
+          tvResults.forEach((item) => {
+            const mapped = mapTmdbItemToMediaItem(item, "tv");
+            if (mapped) batch.push(mapped);
+          });
+        }
+
+        maxApiPageReached = nextApiPage;
+
+        if (batch.length === 0 || nextApiPage >= totalAvailablePages) {
+          isFullyLoaded = true;
+        }
+
+        for (const item of batch) {
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            catalogItems.push(item);
+          }
+        }
+      }
+
+      // 3. Save the expanded master catalog permanently to localStorage
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(
+            storageKey,
+            JSON.stringify({
+              items: catalogItems,
+              maxApiPageReached,
+              totalAvailablePages,
+              isFullyLoaded,
+            })
+          );
+        } catch (e) {
+          console.error("Failed to save expanded catalog cache", e);
+        }
+      }
+    }
+
+    // Slice the master catalog into exact 20-item pages for the current view
     const startIndex = (page - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    const pageSlice = allUniqueCollectedItems.slice(startIndex, endIndex);
+    const pageSlice = catalogItems.slice(startIndex, endIndex);
 
-    // Calculate realistic total pages based on our master collected unique pool size
-    const estimatedTotalPages = Math.max(1, Math.ceil(allUniqueCollectedItems.length / ITEMS_PER_PAGE), Math.min(totalApiPagesAvailable, 50));
+    const totalPages = Math.max(1, Math.ceil(catalogItems.length / ITEMS_PER_PAGE));
 
     return {
       source: "TMDB API",
       items: pageSlice,
       fetchedAt: new Date().toISOString(),
-      message: `Fetched ${pageSlice.length} titles for ${category} (Page ${page}).`,
+      message: `Loaded ${pageSlice.length} titles for ${category} / ${genreFilter} (Page ${page}).`,
       page,
-      totalPages: estimatedTotalPages,
+      totalPages: isFullyLoaded ? totalPages : Math.max(totalPages, page + 1),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -253,7 +316,7 @@ export async function scrapeCategoryContent(
       source: "TMDB API",
       items: [],
       fetchedAt: new Date().toISOString(),
-      message: `Could not fetch live data: ${message}`,
+      message: `Could not load catalog: ${message}`,
       page: 1,
       totalPages: 1,
     };
