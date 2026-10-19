@@ -20,8 +20,8 @@ import {
 
 const AUTHORIZATION_CODE = "34688643";
 
-const RABBIT_LOGO_DATA_URL =
-  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%236d28d9'/><text x='50%' y='55%' font-size='50' text-anchor='middle' dominant-baseline='middle'>🐇</text></svg>";
+// Pointing directly to your icon asset in the assets folder
+const BRAND_LOGO_PATH = "/assets/icon.png";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -323,14 +323,14 @@ function RootComponent() {
         <AuthProvider>
           <header className={`sticky top-0 z-40 border-b border-white/10 ${getOuterPanelBackground(appTheme)} backdrop-blur-md transition-colors duration-300`}>
             <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
-              {/* Brand Logo */}
+              {/* Brand Logo with Icon */}
               <Link
                 to="/"
                 className="flex items-center gap-2 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
               >
-                <div className={`flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-white/20 shadow-md transition-transform group-hover:scale-105 ${activeHeader.logoBg}`}>
+                <div className={`flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-white/20 shadow-md transition-transform group-hover:scale-105 shrink-0 ${activeHeader.logoBg}`}>
                   <img
-                    src={RABBIT_LOGO_DATA_URL}
+                    src={BRAND_LOGO_PATH}
                     alt="RABBiT TV"
                     className="h-full w-full object-cover"
                   />
@@ -556,7 +556,7 @@ function RootComponent() {
                 <div className="text-center space-y-2">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-slate-900">
                     <img
-                      src={RABBIT_LOGO_DATA_URL}
+                      src={BRAND_LOGO_PATH}
                       alt="RABBiT TV"
                       className="h-full w-full object-cover"
                     />
