@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import type { MediaItem } from "@/lib/tmdb-scraper";
 import { scrapeCategoryContent } from "@/lib/tmdb-scraper";
 import {
@@ -14,9 +14,11 @@ import {
 import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
 import React from "react";
 
-// Updated navigation tabs including Netflix, Prime, and Disney+
-const navTabs = ["Home", "TV Shows", "Movies", "Netflix", "Prime", "Disney+", "My List"] as const;
+const navTabs = ["Home", "TV Shows", "Movies", "Netflix", "Prime", "Disney+", "Global Feeds", "My List"] as const;
 type NavTab = (typeof navTabs)[number];
+
+const globalFeedOptions = ["Russian", "British", "Hungarian"] as const;
+type GlobalFeedOption = (typeof globalFeedOptions)[number];
 
 const genreCategories = [
   "Trending",
@@ -154,7 +156,6 @@ export function MediaCard({ item }: { item: MediaItem }) {
   );
 }
 
-/** MEMOIZED WRAPPER FOR 2GB DEVICE PERFORMANCE */
 const MemoizedMediaCard = React.memo(
   function MemoizedMediaCard({ item }: { item: MediaItem }) {
     return <MediaCard item={item} />;
@@ -170,6 +171,10 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const [activeTab, setActiveTab] = useState<NavTab>("Home");
+  const [selectedGlobalFeed, setSelectedGlobalFeed] = useState<GlobalFeedOption>("Russian");
+  const [isFeedDropdownOpen, setIsFeedDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [selectedGenre, setSelectedGenre] = useState<string>("Trending");
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -186,6 +191,17 @@ function Home() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [cardSize, setCardSize] = useState<CardSize>("large");
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsFeedDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const loadSavedListsAndTheme = () => {
     try {
@@ -243,7 +259,7 @@ function Home() {
 
   useEffect(() => {
     setPage(1);
-  }, [activeTab, selectedGenre]);
+  }, [activeTab, selectedGlobalFeed, selectedGenre]);
 
   useEffect(() => {
     let active = true;
@@ -260,11 +276,15 @@ function Home() {
         return;
       }
 
-      // Map "TV Shows" display tab to "Series" scraper category correctly
       const scraperCategory = activeTab === "TV Shows" ? "Series" : activeTab;
 
       try {
-        const result = await scrapeCategoryContent(scraperCategory, page, selectedGenre);
+        const result = await scrapeCategoryContent(
+          scraperCategory, 
+          page, 
+          selectedGenre, 
+          activeTab === "Global Feeds" ? selectedGlobalFeed : undefined
+        );
         if (!active) return;
 
         if (result?.items?.length) {
@@ -290,7 +310,7 @@ function Home() {
     return () => {
       active = false;
     };
-  }, [activeTab, page, selectedGenre]);
+  }, [activeTab, selectedGlobalFeed, page, selectedGenre]);
 
   useEffect(() => {
     let active = true;
@@ -483,7 +503,7 @@ function Home() {
         appTheme === "cyan" ? "bg-cyan-950/80" :
         "bg-purple-950/80"
       }`}>
-        <div className="mx-auto flex max-w-7xl items-center justify-center">
+        <div className="mx-auto flex max-w-7xl items-center justify-center relative">
           <div className={`flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto rounded-2xl border p-1.5 shadow-lg backdrop-blur-md scrollbar-none transition-colors duration-300 ${
             appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
             appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
@@ -492,26 +512,81 @@ function Home() {
             appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
             "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
           }`}>
-            {navTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
-                  activeTab === tab
-                    ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
-                    : "text-slate-300 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+            {navTabs.map((tab) => {
+              if (tab === "Global Feeds") {
+                return (
+                  <div key={tab} className="relative shrink-0" ref={dropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab(tab);
+                        setIsFeedDropdownOpen(!isFeedDropdownOpen);
+                      }}
+                      className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition flex items-center gap-1.5 focus:outline-none ${
+                        activeTab === tab
+                          ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
+                          : "text-slate-300 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <span>🌍 Global Feeds ({selectedGlobalFeed})</span>
+                      <span className="text-[10px]">▼</span>
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {isFeedDropdownOpen && (
+                      <div className="absolute left-0 mt-2 w-44 rounded-xl bg-black/90 border border-white/20 shadow-2xl backdrop-blur-xl py-1.5 z-50">
+                        <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-slate-400 border-b border-white/10 font-bold">
+                          Select Region
+                        </div>
+                        {globalFeedOptions.map((feed) => (
+                          <button
+                            key={feed}
+                            type="button"
+                            onClick={() => {
+                              setSelectedGlobalFeed(feed);
+                              setActiveTab("Global Feeds");
+                              setIsFeedDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition flex items-center justify-between ${
+                              selectedGlobalFeed === feed
+                                ? "bg-white/20 text-white"
+                                : "text-slate-300 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <span>{feed === "Russian" ? "🇷🇺 Russian" : feed === "British" ? "🇬🇧 British" : "🇭🇺 Hungarian"}</span>
+                            {selectedGlobalFeed === feed && <span className="text-[10px]">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab);
+                    setIsFeedDropdownOpen(false);
+                  }}
+                  className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
+                    activeTab === tab
+                      ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 overflow-x-hidden">
-        {/* Featured Hero Banner with Transparent Theme Integration */}
+        {/* Featured Hero Banner */}
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
             <>
@@ -571,7 +646,7 @@ function Home() {
           ) : (
             <div className="flex h-full items-center justify-center text-slate-300 z-10">
               {loading
-                ? `Loading ${activeTab}...`
+                ? `Loading ${activeTab === "Global Feeds" ? `${selectedGlobalFeed} Feed` : activeTab}...`
                 : error ?? "No media found in this section."}
             </div>
           )}
@@ -663,7 +738,11 @@ function Home() {
         <section className="mb-6 px-1">
           <div className="mb-3 flex items-center justify-between px-1">
             <h3 className="text-lg font-bold text-white">
-              {activeTab === "My List" ? "Saved Catalog" : `${activeTab} Catalog`}
+              {activeTab === "My List"
+                ? "Saved Catalog"
+                : activeTab === "Global Feeds"
+                ? `${selectedGlobalFeed} Feed Catalog (${selectedGenre})`
+                : `${activeTab} Catalog`}
             </h3>
             <span className={`text-xs font-medium ${themeStyles.accentText}`}>
               {filteredItems.length} titles available
@@ -682,7 +761,7 @@ function Home() {
                 {activeTab === "My List"
                   ? "No saved titles in this section yet. Open any movie or show to save it!"
                   : loading
-                  ? `Loading ${activeTab} content...`
+                  ? `Loading ${activeTab === "Global Feeds" ? `${selectedGlobalFeed} Feed` : activeTab} content...`
                   : error ?? "No titles available in this view."}
               </p>
             </div>
