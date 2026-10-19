@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
+import { AppTheme, getSavedTheme } from "@/lib/settings";
 import {
   getWatchHistory,
   markEpisodeCompleted,
@@ -21,19 +22,23 @@ function WatchHistoryComponent() {
   const [historyMap, setHistoryMap] = useState<Record<string, ShowWatchHistory>>({});
   const [dislikedTitles, setDislikedTitles] = useState<DislikedTitle[]>([]);
   const [verifyingTarget, setVerifyingTarget] = useState<{ showId: string; episodeId: string; title: string } | null>(null);
+  const [appTheme, setAppTheme] = useState<AppTheme>("violet");
 
   const refreshData = () => {
     setHistoryMap(getWatchHistory());
     setDislikedTitles(getDislikedTitles());
+    setAppTheme(getSavedTheme());
   };
 
   useEffect(() => {
     refreshData();
     window.addEventListener("rabtv_watch_history_updated", refreshData);
     window.addEventListener("rabtv_disliked_updated", refreshData);
+    window.addEventListener("rabtv_settings_updated", refreshData as any);
     return () => {
       window.removeEventListener("rabtv_watch_history_updated", refreshData);
       window.removeEventListener("rabtv_disliked_updated", refreshData);
+      window.removeEventListener("rabtv_settings_updated", refreshData as any);
     };
   }, []);
 
@@ -54,9 +59,62 @@ function WatchHistoryComponent() {
     }
   };
 
+  const getPageBackground = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-gradient-to-br from-zinc-950 via-red-950/40 to-black";
+      case "midnight":
+        return "bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950";
+      case "emerald":
+        return "bg-gradient-to-br from-slate-950 via-emerald-950/40 to-slate-950";
+      case "amber":
+        return "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950";
+      case "cyan":
+        return "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950";
+      case "violet":
+      default:
+        return "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950";
+    }
+  };
+
+  const getPrimaryAccentColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "text-red-400 border-red-500";
+      case "midnight":
+        return "text-blue-400 border-blue-500";
+      case "emerald":
+        return "text-emerald-300 border-emerald-500";
+      case "amber":
+        return "text-amber-300 border-amber-500";
+      case "cyan":
+        return "text-cyan-300 border-cyan-500";
+      case "violet":
+      default:
+        return "text-violet-400 border-violet-500";
+    }
+  };
+
+  const getPrimaryBgColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30";
+      case "midnight":
+        return "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30";
+      case "emerald":
+        return "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30";
+      case "amber":
+        return "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30";
+      case "cyan":
+        return "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30";
+      case "violet":
+      default:
+        return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
+    }
+  };
+
   const allEntries = Object.values(historyMap);
 
-  // Robust TV show vs Movie separation using mediaType flag or episode counts
   const tvShows = allEntries.filter(
     (item) => item.mediaType === "tv" || item.media_type === "tv" || item.totalEpisodes > 1
   );
@@ -69,7 +127,7 @@ function WatchHistoryComponent() {
   const completedShows = tvShows.filter((s) => calculateSeriesProgress(s) === 100);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 text-white space-y-8">
+    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-4 md:p-12 text-white space-y-8 transition-colors duration-300`}>
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
         <h1 className="text-xl font-bold tracking-wide flex items-center gap-2">
           <span>🕒</span> Watch History & Activity
@@ -80,7 +138,7 @@ function WatchHistoryComponent() {
       </div>
 
       {allEntries.length === 0 && dislikedTitles.length === 0 ? (
-        <div className="rounded-xl border border-white/10 bg-slate-900/50 p-8 text-center text-slate-400">
+        <div className="rounded-xl border border-white/10 bg-black/40 p-8 text-center text-slate-400 backdrop-blur-md">
           <p className="text-sm font-bold">No watch history recorded yet.</p>
           <p className="text-xs mt-1">Start watching movies or shows to automatically populate your history.</p>
         </div>
@@ -89,7 +147,7 @@ function WatchHistoryComponent() {
           {/* SECTION: IN PROGRESS (MOVIES) */}
           {inProgressMovies.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-sm font-bold text-slate-200 border-l-4 border-violet-500 pl-3 uppercase tracking-wider">
+              <h2 className={`text-sm font-bold text-slate-200 border-l-4 pl-3 uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
                 Movies - In Progress
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
@@ -97,6 +155,7 @@ function WatchHistoryComponent() {
                   <MovieCard
                     key={movie.showId}
                     movie={movie}
+                    appTheme={appTheme}
                     onEyeballClick={handleEyeballClick}
                     onRemove={() => {
                       removeFromWatchHistory(movie.showId);
@@ -119,6 +178,7 @@ function WatchHistoryComponent() {
                   <TvShowCard
                     key={show.showId}
                     show={show}
+                    appTheme={appTheme}
                     onEyeballClick={handleEyeballClick}
                     onRemove={() => {
                       removeFromWatchHistory(show.showId);
@@ -141,6 +201,7 @@ function WatchHistoryComponent() {
                   <MovieCard
                     key={movie.showId}
                     movie={movie}
+                    appTheme={appTheme}
                     onEyeballClick={handleEyeballClick}
                     onRemove={() => {
                       removeFromWatchHistory(movie.showId);
@@ -152,6 +213,7 @@ function WatchHistoryComponent() {
                   <TvShowCard
                     key={show.showId}
                     show={show}
+                    appTheme={appTheme}
                     onEyeballClick={handleEyeballClick}
                     onRemove={() => {
                       removeFromWatchHistory(show.showId);
@@ -173,7 +235,7 @@ function WatchHistoryComponent() {
                 {dislikedTitles.map((item) => (
                   <div
                     key={item.id}
-                    className="group relative rounded-xl border border-red-500/20 bg-slate-900/90 overflow-hidden shadow-md flex flex-col justify-between p-3"
+                    className="group relative rounded-xl border border-red-500/20 bg-black/60 backdrop-blur-md overflow-hidden shadow-md flex flex-col justify-between p-3"
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -235,13 +297,15 @@ function WatchHistoryComponent() {
   );
 }
 
-/** STREAMLINED MOVIE CARD (Navigates to query parameters) */
+/** STREAMLINED MOVIE CARD */
 function MovieCard({
   movie,
+  appTheme,
   onEyeballClick,
   onRemove,
 }: {
   movie: ShowWatchHistory;
+  appTheme: AppTheme;
   onEyeballClick: (showId: string, episodeId: string, episodeTitle: string, isCompleted: boolean) => void;
   onRemove: () => void;
 }) {
@@ -249,10 +313,28 @@ function MovieCard({
   const singleEp = Object.values(movie.episodes)[0] || { episodeId: "default", title: movie.title, confirmedCompleted: false };
   const isCompleted = singleEp.confirmedCompleted;
 
+  const getCardThemeStyles = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-gradient-to-b from-red-950/70 via-zinc-900 to-black border-red-500/30";
+      case "midnight":
+        return "bg-gradient-to-b from-blue-950/70 via-slate-900 to-slate-950 border-blue-500/30";
+      case "emerald":
+        return "bg-gradient-to-b from-emerald-950/70 via-slate-900 to-slate-950 border-emerald-500/30";
+      case "amber":
+        return "bg-gradient-to-b from-yellow-950/70 via-stone-900 to-stone-950 border-amber-500/30";
+      case "cyan":
+        return "bg-gradient-to-b from-cyan-950/70 via-slate-900 to-slate-950 border-cyan-500/30";
+      case "violet":
+      default:
+        return "bg-gradient-to-b from-purple-950/70 via-slate-900 to-slate-950 border-violet-500/30";
+    }
+  };
+
   return (
     <div
       onClick={() => navigate({ to: "/details", search: { id: movie.showId, type: "movie" } })}
-      className="group relative rounded-xl border border-white/10 bg-slate-900/90 overflow-hidden shadow-md flex flex-col justify-between transition hover:border-violet-500/50 cursor-pointer"
+      className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)}`}
     >
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
         {movie.posterPath ? (
@@ -298,13 +380,15 @@ function MovieCard({
   );
 }
 
-/** TV SHOW CARD (Navigates to query parameters) */
+/** TV SHOW CARD */
 function TvShowCard({
   show,
+  appTheme,
   onEyeballClick,
   onRemove,
 }: {
   show: ShowWatchHistory;
+  appTheme: AppTheme;
   onEyeballClick: (showId: string, episodeId: string, episodeTitle: string, isCompleted: boolean) => void;
   onRemove: () => void;
 }) {
@@ -312,10 +396,28 @@ function TvShowCard({
   const progress = calculateSeriesProgress(show);
   const episodesList = Object.values(show.episodes);
 
+  const getCardThemeStyles = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-gradient-to-b from-red-950/70 via-zinc-900 to-black border-red-500/30";
+      case "midnight":
+        return "bg-gradient-to-b from-blue-950/70 via-slate-900 to-slate-950 border-blue-500/30";
+      case "emerald":
+        return "bg-gradient-to-b from-emerald-950/70 via-slate-900 to-slate-950 border-emerald-500/30";
+      case "amber":
+        return "bg-gradient-to-b from-yellow-950/70 via-stone-900 to-stone-950 border-amber-500/30";
+      case "cyan":
+        return "bg-gradient-to-b from-cyan-950/70 via-slate-900 to-slate-950 border-cyan-500/30";
+      case "violet":
+      default:
+        return "bg-gradient-to-b from-purple-950/70 via-slate-900 to-slate-950 border-violet-500/30";
+    }
+  };
+
   return (
     <div
       onClick={() => navigate({ to: "/details", search: { id: show.showId, type: "tv" } })}
-      className="group relative rounded-xl border border-white/10 bg-slate-900/90 overflow-hidden shadow-md flex flex-col justify-between transition hover:border-violet-500/50 cursor-pointer"
+      className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)}`}
     >
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
         {show.posterPath ? (
@@ -356,7 +458,7 @@ function TvShowCard({
           <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden border border-white/5">
             <div
               className={`h-full transition-all duration-300 ${
-                progress === 100 ? "bg-emerald-500" : "bg-violet-500"
+                progress === 100 ? "bg-emerald-500" : "bg-amber-500"
               }`}
               style={{ width: `${progress}%` }}
             />
