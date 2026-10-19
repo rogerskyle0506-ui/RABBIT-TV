@@ -46,6 +46,7 @@ export interface DislikedTitle {
   title?: string;
   name?: string;
   mediaType?: string;
+  posterPath?: string | null;
 }
 
 const WATCH_HISTORY_KEY = "rabtv_watch_history";
@@ -246,12 +247,50 @@ export function getDislikedTitles(): DislikedTitle[] {
   }
 }
 
+/** Global check helper to see if a media ID is excluded/disliked from the catalog */
+export function isTitleDisliked(id: string | number): boolean {
+  if (!id) return false;
+  const cleanId = String(id).replace(/^(movie|tv)-/, "");
+  const disliked = getDislikedTitles();
+  return disliked.some((item) => String(item.id).replace(/^(movie|tv)-/, "") === cleanId);
+}
+
+/** Dislikes a title: removes it from watch history and adds it to the global catalog exclusion registry */
+export function dislikeTitle(item: { id: string | number; title?: string; name?: string; mediaType?: string; posterPath?: string | null }): void {
+  if (typeof window === "undefined") return;
+  
+  const cleanId = String(item.id).replace(/^(movie|tv)-/, "");
+  
+  // Purge from watch history and active trackers
+  removeFromWatchHistory(cleanId);
+
+  // Add to disliked registry
+  const disliked = getDislikedTitles();
+  const exists = disliked.some((d) => String(d.id).replace(/^(movie|tv)-/, "") === cleanId);
+  
+  if (!exists) {
+    disliked.unshift({
+      id: cleanId,
+      title: item.title ?? item.name ?? "Unknown Title",
+      mediaType: item.mediaType ?? "movie",
+      posterPath: item.posterPath ?? null,
+    });
+    localStorage.setItem(DISLIKED_TITLES_KEY, JSON.stringify(disliked));
+  }
+
+  window.dispatchEvent(new Event("rabtv_watch_history_updated"));
+  window.dispatchEvent(new Event("rabtv_disliked_updated"));
+}
+
 export function removeDislikedTitle(id: number | string): void {
   if (typeof window === "undefined") return;
   try {
-    const disliked = getDislikedTitles().filter((item) => String(item.id) !== String(id));
+    const cleanId = String(id).replace(/^(movie|tv)-/, "");
+    const disliked = getDislikedTitles().filter((item) => String(item.id).replace(/^(movie|tv)-/, "") !== cleanId);
     localStorage.setItem(DISLIKED_TITLES_KEY, JSON.stringify(disliked));
+    
     window.dispatchEvent(new Event("rabtv_watch_history_updated"));
+    window.dispatchEvent(new Event("rabtv_disliked_updated"));
   } catch (e) {
     console.error('Failed to remove disliked title:', e);
   }
