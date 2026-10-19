@@ -47,7 +47,6 @@ export function MediaCard({ item }: { item: MediaItem }) {
       window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
   }, []);
 
-  // Theme-matched card background gradients to eliminate slate-blue clashes
   const cardThemeStyles = useMemo(() => {
     switch (appTheme) {
       case "red":
@@ -289,7 +288,6 @@ function Home() {
     };
   }, [activeTab, page]);
 
-  // Load smart suggestions for My List (Updated to 12 titles with age filtering)
   useEffect(() => {
     let active = true;
     async function fetchSuggestions() {
@@ -320,7 +318,7 @@ function Home() {
           const cleanId = String(candidate.id).replace(/^(movie|tv)-/, "");
           if (watchedIds.has(cleanId) || isTitleDisliked(candidate.id)) continue;
           
-          if (!isAllowedForAge((candidate as any).certification || candidate.genre, userAge)) continue;
+          if (!isAllowedForAge((candidate as any).certification, candidate.genre, userAge)) continue;
 
           const matchesGenre = seedCountHasGenre(seedItems, candidate.genre);
           if (matchesGenre || Number(candidate.rating ?? 0) >= 6.5) {
@@ -364,7 +362,7 @@ function Home() {
     const map = new Map<string, MediaItem>();
     for (const item of rawList) {
       if (isTitleDisliked(item.id)) continue;
-      if (!isAllowedForAge((item as any).certification || item.genre, userAge)) continue;
+      if (!isAllowedForAge((item as any).certification, item.genre, userAge)) continue;
 
       const normalizedTitle = (item.title ?? "").trim().toLowerCase();
       const uniqueKey = normalizedTitle || String(item.id);
@@ -376,13 +374,12 @@ function Home() {
     return Array.from(map.values());
   }, [myListSubTab, savedMyList, savedFavorites, inProgressHistory, userAge]);
 
-  /** FILTER CATALOG DYNAMICALLY BY SAVED USER AGE TIER */
   const filteredItems = useMemo(() => {
     const baseList = activeTab === "My List" ? savedCatalogItems : items;
     
     const catalogFiltered = baseList.filter((item) => {
       if (isTitleDisliked(item.id)) return false;
-      return isAllowedForAge((item as any).certification || item.genre, userAge);
+      return isAllowedForAge((item as any).certification, item.genre, userAge);
     });
 
     if (activeTab === "My List") return catalogFiltered;
@@ -457,7 +454,6 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs Sticky Wrapper with 20% Transparency */}
       <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-3 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
         appTheme === "red" ? "bg-red-950/80" :
         appTheme === "midnight" ? "bg-blue-950/80" :
@@ -672,7 +668,7 @@ function Home() {
           )}
         </section>
 
-        {/* Suggested For You Section (Only on My List Tab, Up to 12 Titles) */}
+        {/* Suggested For You Section */}
         {activeTab === "My List" && suggestedItems.length > 0 && (
           <section className="mb-8 px-1 pt-4 border-t border-white/10">
             <div className="mb-3 flex items-center justify-between px-1">
