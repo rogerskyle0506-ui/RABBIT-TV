@@ -100,10 +100,10 @@ export function MediaCard({ item }: { item: MediaItem }) {
         <img
           src={item.image}
           alt={item.title}
-          className="h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-center"
           loading="lazy"
         />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-1.5 text-center">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-1.5 text-center z-10">
           <p className="text-[10px] font-bold text-white truncate px-1 rounded bg-black/60 backdrop-blur-sm border border-white/10">
             {item.title}
           </p>
@@ -116,14 +116,14 @@ export function MediaCard({ item }: { item: MediaItem }) {
     <div
       className={`group relative flex w-full flex-col overflow-hidden rounded-2xl ${cardThemeStyles.bg} border ${cardThemeStyles.border} shadow-xl transition hover:-translate-y-1 ${cardThemeStyles.ring} ${dimensions.card}`}
     >
-      <Link className="block relative overflow-hidden flex-1 focus:outline-none" to={item.href}>
+      <Link className="block relative overflow-hidden flex-1 focus:outline-none w-full h-full" to={item.href}>
         <img
           src={item.image}
           alt={item.title}
-          className="h-full w-full object-cover transition group-hover:scale-105"
+          className="absolute inset-0 h-full w-full object-cover object-center transition group-hover:scale-105"
           loading="lazy"
         />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2.5">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2.5 z-10">
           <div className="flex items-center justify-between mb-1">
             <span className="rounded-full bg-black/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-slate-200 truncate max-w-[70%] backdrop-blur-sm border border-white/10">
               {item.genre ?? "TV"}
@@ -141,7 +141,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
         </div>
       </Link>
 
-      <div className="p-2 bg-black/80 border-t border-white/10 flex items-center justify-between">
+      <div className="p-2 bg-black/90 border-t border-white/10 flex items-center justify-between z-20">
         <Link
           to={item.href}
           className={`w-full text-center rounded-full bg-gradient-to-r from-black/80 via-black to-black/80 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 ${cardThemeStyles.ring}`}
@@ -490,20 +490,20 @@ function Home() {
       </div>
 
       <div className="mx-auto max-w-full px-2 sm:px-4 overflow-x-hidden">
-        {/* Featured Hero Banner */}
+        {/* Featured Hero Banner - Fully Bounded & Centered to Prevent Clipping */}
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
             <>
-              <div className="absolute inset-x-0 top-0 h-[75%] w-full overflow-hidden bg-slate-950 flex items-center justify-center">
+              <div className="absolute inset-0 w-full h-full overflow-hidden bg-slate-950 flex items-center justify-center">
                 <img
                   src={featured.image}
                   alt={featured.title}
-                  className="h-full w-full object-cover opacity-90"
+                  className="absolute inset-0 h-full w-full object-cover object-center opacity-90"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/30 to-transparent"></div>
               </div>
 
-              <div className="absolute inset-x-0 bottom-0 top-[75%] p-3 sm:p-5 flex flex-col justify-end z-10">
+              <div className="absolute inset-x-0 bottom-0 p-3 sm:p-5 flex flex-col justify-end z-10">
                 <div className="bg-black/80 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="space-y-1 flex-1 min-w-0">
                     <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] ${themeStyles.accentText}`}>
@@ -548,7 +548,7 @@ function Home() {
               </div>
             </>
           ) : (
-            <div className="flex h-full items-center justify-center text-slate-300">
+            <div className="flex h-full items-center justify-center text-slate-300 z-10">
               {loading
                 ? `Loading ${activeTab}...`
                 : error ?? "No media found in this section."}
