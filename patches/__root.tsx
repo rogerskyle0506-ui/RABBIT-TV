@@ -590,12 +590,12 @@ function RootComponent() {
                   </h2>
                 </div>
 
-                <div className="space-y-3 text-sm leading-relaxed text-slate-300">
+                <div className="space-y-3 text-sm leading-relaxed text-slate-300 text-center">
                   <p>
-                    This app has been shared by <strong>Rabbit</strong> as a friendly gesture. By entering the personal agreement code below, you confirm strict authorization and agree not to share or distribute this app without consent.
+                    Get all your favorite movies and TV shows right here, streaming smoothly in one place!
                   </p>
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
-                    <strong>⚠️ Device Monitoring Notice:</strong> Unique device IDs running this application are logged for authorization tracking.
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
+                    <strong>🔒 Friendly Request:</strong> Please try not to share this app around too widely for now, so we can keep server payloads manageable and ensure smooth streaming for everyone.
                   </div>
                 </div>
 
@@ -689,20 +689,20 @@ function RootComponent() {
 
                 <div className="space-y-2 border-t border-white/10 pt-3">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Enter Personal Agreement Code:
+                    Enter Personal Passcode:
                   </label>
                   <input
                     type="password"
                     maxLength={10}
                     value={passcodeInput}
                     onChange={(e) => setPasscodeInput(e.target.value)}
-                    placeholder="Enter Code"
+                    placeholder="Enter Passcode"
                     className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
                   />
 
                   {passcodeError && (
                     <p className="text-xs font-semibold text-red-400 text-center">
-                      ⚠️ Invalid Authorization Code. Agreement Not Accepted.
+                      ⚠️ Invalid Passcode. Please try again.
                     </p>
                   )}
                 </div>
@@ -711,7 +711,7 @@ function RootComponent() {
                   type="submit"
                   className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-3.5 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
                 >
-                  Accept Agreement & Launch App
+                  Enter RABBiT TV
                 </button>
               </form>
             </div>
