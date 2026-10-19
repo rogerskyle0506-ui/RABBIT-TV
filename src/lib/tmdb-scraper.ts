@@ -24,8 +24,8 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-const STORAGE_PREFIX = "rabtv_catalog_cache_v9_"; // Incremented version for clean cache
-const INITIAL_TARGET_PAGES = 10;
+const STORAGE_PREFIX = "rabtv_catalog_cache_v10_"; // Incremented version for instant loading cache
+const INITIAL_TARGET_PAGES = 1; // Instant load: 1 page (20 items) per fetch
 const ITEMS_PER_PAGE = 20;
 
 let lastRequestTimestamp = 0;
@@ -93,7 +93,6 @@ const genreNameToId: Record<string, number> = {
   western: 37,
 };
 
-// Official TMDB Watch Provider IDs
 const providerIdMap: Record<string, string> = {
   Netflix: "8",
   Prime: "119",
@@ -199,15 +198,9 @@ export async function scrapeCategoryContent(
     }
 
     const seenIds = new Set(catalogItems.map((i) => i.id));
-    const targetCatalogSize = Math.max(
-      requiredItemsCount, 
-      Math.ceil((maxApiPageReached || INITIAL_TARGET_PAGES) / INITIAL_TARGET_PAGES) * INITIAL_TARGET_PAGES * ITEMS_PER_PAGE
-    );
 
-    if (catalogItems.length < targetCatalogSize && !isFullyLoaded) {
-      const targetApiPageLimit = Math.min(Math.ceil(targetCatalogSize / ITEMS_PER_PAGE), totalAvailablePages);
-
-      while (catalogItems.length < targetCatalogSize && maxApiPageReached < targetApiPageLimit && maxApiPageReached < totalAvailablePages) {
+    if (catalogItems.length < requiredItemsCount && !isFullyLoaded) {
+      while (catalogItems.length < requiredItemsCount && maxApiPageReached < totalAvailablePages) {
         const nextApiPage = maxApiPageReached + 1;
         let data: Record<string, unknown>;
         const batch: MediaItem[] = [];
@@ -215,7 +208,6 @@ export async function scrapeCategoryContent(
         const providerId = providerIdMap[category];
         const genreId = genreFilter && genreFilter !== "Trending" ? genreNameToId[genreFilter.toLowerCase()] : null;
 
-        // Build base discover or standard parameters, incorporating regional subFeed override if active
         const discoverParams: Record<string, string> = {
           sort_by: "popularity.desc",
         };
@@ -302,7 +294,6 @@ export async function scrapeCategoryContent(
         }
       }
 
-      // Fallback buffer: if regional/subFeed filter produced fewer than expected titles, fill with standard items
       if (cleanSubFeed && catalogItems.length < requiredItemsCount && !isFullyLoaded) {
         try {
           const fallbackData = await fetchTmdb(
