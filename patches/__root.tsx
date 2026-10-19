@@ -21,8 +21,8 @@ import {
 } from "@/lib/settings";
 
 const AUTHORIZATION_CODE = "34688643";
-const globalFeedOptions = ["Russian", "British", "Hungarian"] as const;
-type GlobalFeedOption = (typeof globalFeedOptions)[number];
+const globalFeedOptions = ["All (Default)", "Russian", "British", "Hungarian"] as const;
+export type GlobalFeedOption = (typeof globalFeedOptions)[number];
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -55,7 +55,12 @@ function RootComponent() {
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
   // Global Feed Dropdown State in Header
-  const [selectedGlobalFeed, setSelectedGlobalFeed] = useState<GlobalFeedOption>("Russian");
+  const [selectedGlobalFeed, setSelectedGlobalFeed] = useState<GlobalFeedOption>(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("rabtv_global_feed") as GlobalFeedOption) || "All (Default)";
+    }
+    return "All (Default)";
+  });
   const [isFeedDropdownOpen, setIsFeedDropdownOpen] = useState(false);
   const feedDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +73,13 @@ function RootComponent() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleGlobalFeedChange = (feed: GlobalFeedOption) => {
+    setSelectedGlobalFeed(feed);
+    localStorage.setItem("rabtv_global_feed", feed);
+    setIsFeedDropdownOpen(false);
+    window.dispatchEvent(new CustomEvent("rabtv_global_feed_updated", { detail: feed }));
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -273,7 +285,7 @@ function RootComponent() {
         return "bg-cyan-950/80 border-cyan-500/20 shadow-cyan-950/40";
       case "violet":
       default:
-        return "bg-purple-950/80 border-violet-500/20 shadow-purple-950/40";
+        return "bg-purple-950/80 border-violet-500/20 shadow-violet-950/40";
     }
   };
 
@@ -378,30 +390,31 @@ function RootComponent() {
                       onClick={() => setIsFeedDropdownOpen(!isFeedDropdownOpen)}
                       className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 ${activeHeader.btnBg} gap-1.5`}
                     >
-                      <span className="truncate max-w-[120px] sm:max-w-none">🌍 Global ({selectedGlobalFeed})</span>
+                      <span className="truncate max-w-[120px] sm:max-w-none">
+                        🌍 Global: {selectedGlobalFeed}
+                      </span>
                       <span className="text-[10px]">▼</span>
                     </button>
 
                     {isFeedDropdownOpen && (
                       <div className="absolute right-0 mt-2 w-44 rounded-xl bg-black/95 border border-white/20 shadow-2xl backdrop-blur-xl py-1.5 z-50">
                         <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-slate-400 border-b border-white/10 font-bold">
-                          Select Region
+                          Global Feed Override
                         </div>
                         {globalFeedOptions.map((feed) => (
                           <button
                             key={feed}
                             type="button"
-                            onClick={() => {
-                              setSelectedGlobalFeed(feed);
-                              setIsFeedDropdownOpen(false);
-                            }}
+                            onClick={() => handleGlobalFeedChange(feed)}
                             className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition flex items-center justify-between ${
                               selectedGlobalFeed === feed
-                                ? "bg-white/20 text-white"
+                                ? "bg-white/20 text-white font-bold"
                                 : "text-slate-300 hover:bg-white/10 hover:text-white"
                             }`}
                           >
-                            <span>{feed === "Russian" ? "🇷🇺 Russian" : feed === "British" ? "🇬🇧 British" : "🇭🇺 Hungarian"}</span>
+                            <span>
+                              {feed === "Russian" ? "🇷🇺 Russian" : feed === "British" ? "🇬🇧 British" : feed === "Hungarian" ? "🇭🇺 Hungarian" : "🌐 All (Default)"}
+                            </span>
                             {selectedGlobalFeed === feed && <span className="text-[10px]">✓</span>}
                           </button>
                         ))}
@@ -742,7 +755,7 @@ function RootComponent() {
                   </button>
                 </div>
 
-                <div className="space-y-2 border-t border-white/10 pt-3">
+              <div className="space-y-2 border-t border-white/10 pt-3">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Enter Personal Passcode:
                   </label>
