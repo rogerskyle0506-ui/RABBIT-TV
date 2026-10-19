@@ -25,6 +25,9 @@ const TMDB_API_KEY =
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
 
+// Global cache to track rendered item IDs across pagination sessions to prevent duplicates
+const globalSeenIds = new Set<string>();
+
 const genreMap: Record<number, string> = {
   28: "Action",
   12: "Adventure",
@@ -68,6 +71,9 @@ function mapTmdbItemToMediaItem(
   const title = (item.title || item.name) as string | undefined;
   if (!title) return null;
 
+  const tmdbId = item.id;
+  const uniqueId = `${mediaType}-${tmdbId}`;
+
   const releaseDate = (item.release_date || item.first_air_date || "") as string;
   const year = releaseDate.split("-")[0];
   const voteAverage = item.vote_average as number | undefined;
@@ -81,11 +87,11 @@ function mapTmdbItemToMediaItem(
     (item.overview as string) || "Discover this amazing content on RABBITs TV";
 
   return {
-    id: `${mediaType}-${item.id}`,
+    id: uniqueId,
     title,
     description,
     image: imagePath,
-    href: `/details?id=${item.id}&type=${mediaType}`,
+    href: `/details?id=${tmdbId}&type=${mediaType}`,
     genre,
     year: year || undefined,
     rating: rating !== "N/A" ? rating : undefined,
@@ -118,8 +124,13 @@ export async function scrapeCategoryContent(
   page = 1
 ): Promise<ScrapeResult> {
   try {
-    const items: MediaItem[] = [];
+    const rawItems: MediaItem[] = [];
     let totalPages = 1;
+
+    // Reset global cache if user loops back to page 1 to ensure a fresh session sequence
+    if (page === 1) {
+      globalSeenIds.clear();
+    }
 
     if (category === "Movies") {
       const data = await fetchTmdb("movie/popular", page);
@@ -127,7 +138,7 @@ export async function scrapeCategoryContent(
       const results = (data.results as Record<string, unknown>[]) || [];
       results.forEach((item) => {
         const mapped = mapTmdbItemToMediaItem(item, "movie");
-        if (mapped) items.push(mapped);
+        if (mapped) rawItems.push(mapped);
       });
     } else if (category === "Series") {
       const data = await fetchTmdb("tv/popular", page);
@@ -135,7 +146,7 @@ export async function scrapeCategoryContent(
       const results = (data.results as Record<string, unknown>[]) || [];
       results.forEach((item) => {
         const mapped = mapTmdbItemToMediaItem(item, "tv");
-        if (mapped) items.push(mapped);
+        if (mapped) rawItems.push(mapped);
       });
     } else if (category === "Live") {
       const data = await fetchTmdb("tv/on_the_air", page);
@@ -143,33 +154,44 @@ export async function scrapeCategoryContent(
       const results = (data.results as Record<string, unknown>[]) || [];
       results.forEach((item) => {
         const mapped = mapTmdbItemToMediaItem(item, "tv");
-        if (mapped) items.push(mapped);
+        if (mapped) rawItems.push(mapped);
       });
     } else {
+      // For "Home" / Trending, blend movies and TV weekly trends
       const movieData = await fetchTmdb("trending/movie/week", page);
       const movieResults = (movieData.results as Record<string, unknown>[]) || [];
       movieResults.forEach((item) => {
         const mapped = mapTmdbItemToMediaItem(item, "movie");
-        if (mapped) items.push(mapped);
+        if (mapped) rawItems.push(mapped);
       });
 
       const tvData = await fetchTmdb("trending/tv/week", page);
       const tvResults = (tvData.results as Record<string, unknown>[]) || [];
       tvResults.forEach((item) => {
         const mapped = mapTmdbItemToMediaItem(item, "tv");
-        if (mapped) items.push(mapped);
+        if (mapped) rawItems.push(mapped);
       });
+
       totalPages = Math.max(
         (movieData.total_pages as number) || 1,
         (tvData.total_pages as number) || 1
       );
     }
 
+    // Strict cross-page deduplication filter: filter out anything already encountered in past pages
+    const uniquePageItems: MediaItem[] = [];
+    for (const item of rawItems) {
+      if (!globalSeenIds.has(item.id)) {
+        globalSeenIds.add(item.id);
+        uniquePageItems.push(item);
+      }
+    }
+
     return {
       source: "TMDB API",
-      items: items.length > 0 ? items : [],
+      items: uniquePageItems,
       fetchedAt: new Date().toISOString(),
-      message: `Fetched ${items.length} titles for ${category} (Page ${page}).`,
+      message: `Fetched ${uniquePageItems.length} unique titles for ${category} (Page ${page}).`,
       page,
       totalPages,
     };
