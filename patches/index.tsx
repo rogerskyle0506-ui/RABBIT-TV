@@ -167,7 +167,7 @@ function Home() {
   const [savedMyList, setSavedMyList] = useState<MediaItem[]>([]);
   const [savedFavorites, setSavedFavorites] = useState<MediaItem[]>([]);
   const [historyItems, setHistoryItems] = useState<MediaItem[]>([]);
-  const [, setDislikedTick] = useState(0); // forces re-render when disliked updates
+  const [suggestedItems, setSuggestedItems] = useState<MediaItem[]>([]);
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -206,7 +206,6 @@ function Home() {
       setHistoryItems(mappedHistory);
       setAppTheme(getSavedTheme());
       setCardSize(getSavedCardSize());
-      setDislikedTick((prev) => prev + 1);
     } catch (err) {
       console.error("Error reading saved lists/theme", err);
     }
@@ -219,12 +218,10 @@ function Home() {
     };
     window.addEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
     window.addEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
-    window.addEventListener("rabtv_disliked_updated", loadSavedListsAndTheme);
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
     return () => {
       window.removeEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
       window.removeEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
-      window.removeEventListener("rabtv_disliked_updated", loadSavedListsAndTheme);
       window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
     };
   }, []);
@@ -277,6 +274,66 @@ function Home() {
     };
   }, [activeTab, page]);
 
+  // Load smart suggestions for My List based on favorites & completed/watched items
+  useEffect(() => {
+    let active = true;
+    async function fetchSuggestions() {
+      if (activeTab !== "My List") return;
+      try {
+        // Collect seed IDs from favorites and completed items
+        const seedItems = [...savedFavorites, ...historyItems.filter((h: any) => h.confirmedCompleted || (h.progressPercent ?? 0) > 50)];
+        const fetchedPool: MediaItem[] = [];
+
+        // Pull category content to source similar items
+        const trendingRes = await scrapeCategoryContent("Movies", 1);
+        if (trendingRes?.items) {
+          fetchedPool.push(...trendingRes.items);
+        }
+        const popularRes = await scrapeCategoryContent("Series", 1);
+        if (popularRes?.items) {
+          fetchedPool.push(...popularRes.items);
+        }
+
+        if (!active) return;
+
+        // Filter out items already saved, watched, or disliked
+        const watchedIds = new Set([
+          ...historyItems.map((h) => String(h.id).replace(/^(movie|tv)-/, "")),
+          ...savedFavorites.map((f) => String(f.id).replace(/^(movie|tv)-/, "")),
+          ...savedMyList.map((m) => String(m.id).replace(/^(movie|tv)-/, ""))
+        ]);
+
+        const uniqueSuggestions = new Map<string, MediaItem>();
+        for (const candidate of fetchedPool) {
+          const cleanId = String(candidate.id).replace(/^(movie|tv)-/, "");
+          if (watchedIds.has(cleanId) || isTitleDisliked(candidate.id)) continue;
+          
+          // Match similarity based on seed genre or high rating
+          const matchesGenre = seedCountHasGenre(seedItems, candidate.genre);
+          if (matchesGenre || Number(candidate.rating ?? 0) >= 6.5) {
+            uniqueSuggestions.set(cleanId, candidate);
+          }
+        }
+
+        const finalSuggestions = Array.from(uniqueSuggestions.values()).slice(0, 10);
+        setSuggestedItems(finalSuggestions);
+      } catch (e) {
+        console.error("Failed to load suggestions", e);
+      }
+    }
+
+    void fetchSuggestions();
+    return () => {
+      active = false;
+    };
+  }, [activeTab, savedFavorites, savedMyList, historyItems]);
+
+  function seedCountHasGenre(seeds: MediaItem[], candidateGenre?: string) {
+    if (!candidateGenre) return true;
+    if (seeds.length === 0) return true;
+    return seeds.some((s) => s.genre && candidateGenre.toLowerCase().includes(s.genre.toLowerCase()));
+  }
+
   const inProgressHistory = useMemo(
     () => historyItems.filter((i: any) => !i.confirmedCompleted && (i.progressPercent ?? 0) < 100),
     [historyItems]
@@ -306,7 +363,6 @@ function Home() {
 
   const filteredItems = useMemo(() => {
     const baseList = activeTab === "My List" ? savedCatalogItems : items;
-    // Apply global dislike exclusion filter
     const catalogFiltered = baseList.filter((item) => !isTitleDisliked(item.id));
 
     if (activeTab === "My List") return catalogFiltered;
@@ -396,7 +452,7 @@ function Home() {
             appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
             appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
             appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
-            appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-yellow-950/50" :
+            appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50" :
             appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
             "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
           }`}>
@@ -596,6 +652,25 @@ function Home() {
             </div>
           )}
         </section>
+
+        {/* Suggested For You Section (Only on My List Tab) */}
+        {activeTab === "My List" && suggestedItems.length > 0 && (
+          <section className="mb-8 px-1 pt-4 border-t border-white/10">
+            <div className="mb-3 flex items-center justify-between px-1">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>✨ Suggested For You</span>
+              </h3>
+              <span className={`text-xs font-medium ${themeStyles.accentText}`}>
+                Curated based on your favorites & history
+              </span>
+            </div>
+            <div className={gridColsClass}>
+              {suggestedItems.map((item) => (
+                <MediaCard item={item} key={`suggested-${item.id}`} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Pagination Controls */}
         {activeTab !== "My List" && totalPages > 1 && (
