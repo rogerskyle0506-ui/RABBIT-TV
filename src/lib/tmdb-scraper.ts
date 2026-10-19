@@ -24,7 +24,7 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-const STORAGE_PREFIX = "rabtv_catalog_cache_v5_";
+const STORAGE_PREFIX = "rabtv_catalog_cache_v6_"; // Incremented version key to clear stale cache
 const INITIAL_TARGET_PAGES = 10;
 const ITEMS_PER_PAGE = 20;
 
@@ -93,10 +93,10 @@ const genreNameToId: Record<string, number> = {
   western: 37,
 };
 
-// Official TMDB Watch Provider IDs
+// Official TMDB Watch Provider IDs (Prime uses 119 for global streaming catalog)
 const providerIdMap: Record<string, string> = {
   Netflix: "8",
-  Prime: "9",
+  Prime: "119",
   "Disney+": "337",
 };
 
