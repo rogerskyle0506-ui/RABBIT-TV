@@ -20,6 +20,7 @@ export interface WatchHistoryItem {
   episode?: number;
   confirmedCompleted?: boolean;
   completed?: boolean;
+  totalEpisodes?: number;
 }
 
 export interface EpisodeWatchRecord {
@@ -86,7 +87,7 @@ export function getWatchHistory(): Record<string, ShowWatchHistory> {
   const map: Record<string, ShowWatchHistory> = {};
 
   for (const item of rawItems) {
-    const showId = String(item.mediaId ?? item.id ?? "unknown");
+    const showId = String(item.mediaId ?? item.id ?? "unknown").replace(/^(movie|tv)-/, "");
     const title = item.title ?? item.name ?? "Unknown Title";
     const mediaType = item.mediaType ?? item.media_type ?? "movie";
     const posterPath = item.posterPath ?? item.poster_path ?? item.image;
@@ -101,24 +102,22 @@ export function getWatchHistory(): Record<string, ShowWatchHistory> {
         mediaType,
         posterPath,
         backdropPath: item.backdropPath ?? item.backdrop_path,
-        totalEpisodes: mediaType === "movie" ? 1 : 0,
+        totalEpisodes: item.totalEpisodes && item.totalEpisodes > 1 ? item.totalEpisodes : (mediaType === "movie" ? 1 : 24),
         episodes: {},
       };
+    }
+
+    if (item.totalEpisodes && item.totalEpisodes > map[showId].totalEpisodes) {
+      map[showId].totalEpisodes = item.totalEpisodes;
     }
 
     map[showId].episodes[episodeId] = {
       episodeId,
       seasonNumber: seasonNum,
       episodeNumber: episodeNum,
-      title: title,
+      title: item.title ?? title,
       confirmedCompleted: item.confirmedCompleted ?? false,
     };
-
-    if (mediaType === "tv") {
-      map[showId].totalEpisodes = Object.keys(map[showId].episodes).length;
-    } else {
-      map[showId].totalEpisodes = 1;
-    }
   }
 
   return map;
@@ -171,24 +170,29 @@ export function markAsConfirmedCompleted(id: string, completed: boolean): void {
 export function markEpisodeCompleted(showId: string, episodeId: string, completed: boolean): void {
   if (typeof window === "undefined") return;
   const history = getRawWatchHistory();
-  const item = history.find((h) => String(h.id) === String(episodeId) || String(h.mediaId) === String(showId) || String(h.id) === String(showId));
-  if (item) {
-    item.confirmedCompleted = completed;
-    item.completed = completed;
-    if (completed) item.progressPercent = 100;
-    localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
+  const cleanShowId = String(showId).replace(/^(movie|tv)-/, "");
+  
+  const existingIndex = history.findIndex(
+    (h) => String(h.id) === String(episodeId) || (String(h.mediaId) === cleanShowId && String(h.id) === String(episodeId))
+  );
+
+  if (existingIndex >= 0) {
+    history[existingIndex].confirmedCompleted = completed;
+    history[existingIndex].completed = completed;
+    history[existingIndex].progressPercent = completed ? 100 : 0;
   } else {
-    // If not found in history yet, insert it
     history.unshift({
       id: episodeId,
-      mediaId: showId,
-      title: "Title",
+      mediaId: cleanShowId,
+      mediaType: "tv",
+      title: "Episode",
       progressPercent: completed ? 100 : 0,
       confirmedCompleted: completed,
       completed,
       lastWatchedAt: new Date().toISOString()
     });
   }
+  
   localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
   window.dispatchEvent(new Event("rabtv_watch_history_updated"));
 }
@@ -203,9 +207,11 @@ export function removeFromWatchHistory(id: string): void {
 export function calculateSeriesProgress(show: ShowWatchHistory | string | number): number {
   if (typeof show === "object" && show !== null && "episodes" in show) {
     const eps = Object.values(show.episodes);
-    if (eps.length === 0) return 0;
+    if (eps.length === 0 || show.totalEpisodes === 0) return 0;
+    
     const completedCount = eps.filter((e) => e.confirmedCompleted).length;
-    return Math.round((completedCount / eps.length) * 100);
+    const percentage = Math.round((completedCount / show.totalEpisodes) * 100);
+    return Math.min(100, percentage);
   }
 
   const history = getRawWatchHistory();
