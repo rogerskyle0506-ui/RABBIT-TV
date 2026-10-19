@@ -205,6 +205,24 @@ function RootComponent() {
     }
   };
 
+  const getOuterPanelBackground = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "bg-zinc-950/80 border-red-500/20 shadow-red-950/40";
+      case "midnight":
+        return "bg-slate-950/80 border-blue-500/20 shadow-blue-950/40";
+      case "emerald":
+        return "bg-slate-950/80 border-emerald-500/20 shadow-emerald-950/40";
+      case "amber":
+        return "bg-stone-950/80 border-amber-500/20 shadow-amber-950/40";
+      case "cyan":
+        return "bg-slate-950/80 border-cyan-500/20 shadow-cyan-950/40";
+      case "violet":
+      default:
+        return "bg-slate-950/80 border-violet-500/20 shadow-violet-950/40";
+    }
+  };
+
   const getPrimaryAccentColor = (theme: AppTheme) => {
     switch (theme) {
       case "red":
@@ -265,7 +283,7 @@ function RootComponent() {
       <body className={`min-h-screen max-w-full overflow-x-hidden ${getBodyBackground(appTheme)} text-slate-100 antialiased transition-colors duration-300`}>
         <PreviewHostBridge />
         <AuthProvider>
-          <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/95 backdrop-blur-md">
+          <header className={`sticky top-0 z-40 border-b border-white/10 ${getOuterPanelBackground(appTheme)} backdrop-blur-md transition-colors duration-300`}>
             <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
               {/* Brand Logo */}
               <Link
