@@ -304,6 +304,18 @@ function RootComponent() {
     }
   };
 
+  const getSubtlePillBg = (theme: AppTheme) => {
+    switch (theme) {
+      case "red": return "bg-red-950/50 border-red-500/30 text-red-200 hover:bg-red-900/60";
+      case "midnight": return "bg-blue-950/50 border-blue-500/30 text-blue-200 hover:bg-blue-900/60";
+      case "emerald": return "bg-emerald-950/50 border-emerald-500/30 text-emerald-200 hover:bg-emerald-900/60";
+      case "amber": return "bg-yellow-950/50 border-amber-500/30 text-amber-200 hover:bg-yellow-900/60";
+      case "cyan": return "bg-cyan-950/50 border-cyan-500/30 text-cyan-200 hover:bg-cyan-900/60";
+      case "violet":
+      default: return "bg-purple-950/50 border-violet-500/30 text-purple-200 hover:bg-purple-900/60";
+    }
+  };
+
   const allThemesList: { id: AppTheme; label: string }[] = [
     { id: "violet", label: "🟣 Violet / Neon" },
     { id: "red", label: "🔴 Red & Black" },
@@ -371,7 +383,7 @@ function RootComponent() {
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "theme"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          : `${getSubtlePillBg(appTheme)}`
                       }`}
                     >
                       Theme
@@ -382,7 +394,7 @@ function RootComponent() {
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "scale"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          : `${getSubtlePillBg(appTheme)}`
                       }`}
                     >
                       Scale
@@ -393,7 +405,7 @@ function RootComponent() {
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "mouse"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          : `${getSubtlePillBg(appTheme)}`
                       }`}
                     >
                       XL Mouse
@@ -404,7 +416,7 @@ function RootComponent() {
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "age"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          : `${getSubtlePillBg(appTheme)}`
                       }`}
                     >
                       Profile Age
@@ -415,7 +427,7 @@ function RootComponent() {
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "backup"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                          : `${getSubtlePillBg(appTheme)}`
                       }`}
                     >
                       Backup
@@ -434,7 +446,7 @@ function RootComponent() {
                             className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                               appTheme === t.id
                                 ? `${getPrimaryBgColor(t.id)} text-white shadow-md`
-                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                                : `${getSubtlePillBg(appTheme)}`
                             }`}
                           >
                             {t.label}
@@ -454,7 +466,7 @@ function RootComponent() {
                             className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
                               cardSize === size
                                 ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                                : `${getSubtlePillBg(appTheme)}`
                             }`}
                           >
                             {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
@@ -473,7 +485,7 @@ function RootComponent() {
                           type="button"
                           onClick={() => handleMouseToggle(!helpfulMouse)}
                           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            helpfulMouse ? "bg-violet-600" : "bg-slate-700"
+                            helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
                           }`}
                         >
                           <span
@@ -530,12 +542,12 @@ function RootComponent() {
                         <button
                           type="button"
                           onClick={handleSaveBackup}
-                          className="rounded-lg bg-slate-800 border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700"
+                          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}
                         >
                           💾 Export Backup File
                         </button>
 
-                        <label className="cursor-pointer rounded-lg bg-slate-800 border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-700">
+                        <label className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}>
                           🔄 Restore Profile File
                           <input
                             type="file"
