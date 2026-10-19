@@ -14,7 +14,7 @@ import {
 import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
 import React from "react";
 
-// Standard navigation tabs (Global Feeds moved to root header)
+// Standard navigation tabs (Global Feeds override handled globally in root header)
 const navTabs = ["Home", "TV Shows", "Movies", "Netflix", "Prime", "Disney+", "My List"] as const;
 type NavTab = (typeof navTabs)[number];
 
@@ -170,6 +170,13 @@ export const Route = createFileRoute("/")({
 function Home() {
   const [activeTab, setActiveTab] = useState<NavTab>("Home");
   const [selectedGenre, setSelectedGenre] = useState<string>("Trending");
+  const [globalFeedOverride, setGlobalFeedOverride] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("rabtv_global_feed") || "All (Default)";
+    }
+    return "All (Default)";
+  });
+
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -230,19 +237,30 @@ function Home() {
     const handleSettingsUpdate = () => {
       loadSavedListsAndTheme();
     };
+
+    const handleGlobalFeedUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setGlobalFeedOverride(customEvent.detail);
+      }
+    };
+
     window.addEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
     window.addEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
+    window.addEventListener("rabtv_global_feed_updated", handleGlobalFeedUpdate as EventListener);
+
     return () => {
       window.removeEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
       window.removeEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
       window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
+      window.removeEventListener("rabtv_global_feed_updated", handleGlobalFeedUpdate as EventListener);
     };
   }, []);
 
   useEffect(() => {
     setPage(1);
-  }, [activeTab, selectedGenre]);
+  }, [activeTab, selectedGenre, globalFeedOverride]);
 
   useEffect(() => {
     let active = true;
@@ -260,9 +278,10 @@ function Home() {
       }
 
       const scraperCategory = activeTab === "TV Shows" ? "Series" : activeTab;
+      const activeSubFeed = globalFeedOverride && globalFeedOverride !== "All (Default)" ? globalFeedOverride : undefined;
 
       try {
-        const result = await scrapeCategoryContent(scraperCategory, page, selectedGenre);
+        const result = await scrapeCategoryContent(scraperCategory, page, selectedGenre, activeSubFeed);
         if (!active) return;
 
         if (result?.items?.length) {
@@ -288,7 +307,7 @@ function Home() {
     return () => {
       active = false;
     };
-  }, [activeTab, page, selectedGenre]);
+  }, [activeTab, page, selectedGenre, globalFeedOverride]);
 
   useEffect(() => {
     let active = true;
