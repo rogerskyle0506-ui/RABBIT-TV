@@ -25,9 +25,6 @@ const TMDB_API_KEY =
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
 
-// Global cache to track rendered item IDs across pagination sessions to prevent duplicates
-const globalSeenIds = new Set<string>();
-
 const genreMap: Record<number, string> = {
   28: "Action",
   12: "Adventure",
@@ -56,6 +53,28 @@ const genreMap: Record<number, string> = {
   10766: "Soap",
   10767: "Talk",
   10768: "War & Politics",
+};
+
+const genreNameToId: Record<string, number> = {
+  action: 28,
+  adventure: 12,
+  animation: 16,
+  comedy: 35,
+  crime: 80,
+  documentary: 99,
+  drama: 18,
+  family: 10751,
+  fantasy: 14,
+  history: 36,
+  horror: 27,
+  music: 10402,
+  mystery: 9648,
+  romance: 10749,
+  "sci-fi": 878,
+  "sci-fi & fantasy": 10765,
+  thriller: 53,
+  war: 10752,
+  western: 37,
 };
 
 function getGenreName(genreIds: number[]): string {
@@ -99,13 +118,17 @@ function mapTmdbItemToMediaItem(
   };
 }
 
-async function fetchTmdb(endpoint: string, page = 1): Promise<Record<string, unknown>> {
+async function fetchTmdb(endpoint: string, page = 1, extraParams: Record<string, string> = {}): Promise<Record<string, unknown>> {
   const url = new URL(endpoint, TMDB_BASE_URL);
 
   if (TMDB_API_KEY) {
     url.searchParams.set("api_key", TMDB_API_KEY);
   }
   url.searchParams.set("page", page.toString());
+
+  for (const [key, value] of Object.entries(extraParams)) {
+    url.searchParams.set(key, value);
+  }
 
   const response = await fetch(url.toString());
   if (!response.ok) {
@@ -121,79 +144,108 @@ export async function scrapeTrendingContent(page = 1): Promise<ScrapeResult> {
 
 export async function scrapeCategoryContent(
   category: "Home" | "Series" | "Movies" | "Live" | "My List",
-  page = 1
+  page = 1,
+  genreFilter?: string
 ): Promise<ScrapeResult> {
   try {
-    const rawItems: MediaItem[] = [];
-    let totalPages = 1;
+    const ITEMS_PER_PAGE = 20;
+    const globalSeenIds = new Set<string>();
+    const allUniqueCollectedItems: MediaItem[] = [];
 
-    // Reset global cache if user loops back to page 1 to ensure a fresh session sequence
-    if (page === 1) {
-      globalSeenIds.clear();
-    }
+    let maxApiPages = 5; // Fetch deep enough to guarantee clean 20-item chunks per UI page
+    let currentApiPage = 1;
+    let totalApiPagesAvailable = 1;
 
-    if (category === "Movies") {
-      const data = await fetchTmdb("movie/popular", page);
-      totalPages = (data.total_pages as number) || 1;
-      const results = (data.results as Record<string, unknown>[]) || [];
-      results.forEach((item) => {
-        const mapped = mapTmdbItemToMediaItem(item, "movie");
-        if (mapped) rawItems.push(mapped);
-      });
-    } else if (category === "Series") {
-      const data = await fetchTmdb("tv/popular", page);
-      totalPages = (data.total_pages as number) || 1;
-      const results = (data.results as Record<string, unknown>[]) || [];
-      results.forEach((item) => {
-        const mapped = mapTmdbItemToMediaItem(item, "tv");
-        if (mapped) rawItems.push(mapped);
-      });
-    } else if (category === "Live") {
-      const data = await fetchTmdb("tv/on_the_air", page);
-      totalPages = (data.total_pages as number) || 1;
-      const results = (data.results as Record<string, unknown>[]) || [];
-      results.forEach((item) => {
-        const mapped = mapTmdbItemToMediaItem(item, "tv");
-        if (mapped) rawItems.push(mapped);
-      });
-    } else {
-      // For "Home" / Trending, blend movies and TV weekly trends
-      const movieData = await fetchTmdb("trending/movie/week", page);
-      const movieResults = (movieData.results as Record<string, unknown>[]) || [];
-      movieResults.forEach((item) => {
-        const mapped = mapTmdbItemToMediaItem(item, "movie");
-        if (mapped) rawItems.push(mapped);
-      });
+    // Loop through API pages to aggregate a robust pool of unique items
+    while (currentApiPage <= maxApiPages) {
+      let data: Record<string, unknown>;
+      const batchItems: MediaItem[] = [];
 
-      const tvData = await fetchTmdb("trending/tv/week", page);
-      const tvResults = (tvData.results as Record<string, unknown>[]) || [];
-      tvResults.forEach((item) => {
-        const mapped = mapTmdbItemToMediaItem(item, "tv");
-        if (mapped) rawItems.push(mapped);
-      });
+      if (category === "Movies") {
+        if (genreFilter && genreFilter !== "Trending") {
+          const genreId = genreNameToId[genreFilter.toLowerCase()];
+          data = await fetchTmdb("discover/movie", currentApiPage, genreId ? { with_genres: genreId.toString() } : {});
+        } else {
+          data = await fetchTmdb("movie/popular", currentApiPage);
+        }
+        totalApiPagesAvailable = (data.total_pages as number) || 1;
+        const results = (data.results as Record<string, unknown>[]) || [];
+        results.forEach((item) => {
+          const mapped = mapTmdbItemToMediaItem(item, "movie");
+          if (mapped) batchItems.push(mapped);
+        });
+      } else if (category === "Series") {
+        if (genreFilter && genreFilter !== "Trending") {
+          const genreId = genreNameToId[genreFilter.toLowerCase()];
+          data = await fetchTmdb("discover/tv", currentApiPage, genreId ? { with_genres: genreId.toString() } : {});
+        } else {
+          data = await fetchTmdb("tv/popular", currentApiPage);
+        }
+        totalApiPagesAvailable = (data.total_pages as number) || 1;
+        const results = (data.results as Record<string, unknown>[]) || [];
+        results.forEach((item) => {
+          const mapped = mapTmdbItemToMediaItem(item, "tv");
+          if (mapped) batchItems.push(mapped);
+        });
+      } else if (category === "Live") {
+        data = await fetchTmdb("tv/on_the_air", currentApiPage);
+        totalApiPagesAvailable = (data.total_pages as number) || 1;
+        const results = (data.results as Record<string, unknown>[]) || [];
+        results.forEach((item) => {
+          const mapped = mapTmdbItemToMediaItem(item, "tv");
+          if (mapped) batchItems.push(mapped);
+        });
+      } else {
+        const movieData = await fetchTmdb("trending/movie/week", currentApiPage);
+        const tvData = await fetchTmdb("trending/tv/week", currentApiPage);
+        
+        totalApiPagesAvailable = Math.max(
+          (movieData.total_pages as number) || 1,
+          (tvData.total_pages as number) || 1
+        );
 
-      totalPages = Math.max(
-        (movieData.total_pages as number) || 1,
-        (tvData.total_pages as number) || 1
-      );
-    }
+        const movieResults = (movieData.results as Record<string, unknown>[]) || [];
+        movieResults.forEach((item) => {
+          const mapped = mapTmdbItemToMediaItem(item, "movie");
+          if (mapped) batchItems.push(mapped);
+        });
 
-    // Strict cross-page deduplication filter: filter out anything already encountered in past pages
-    const uniquePageItems: MediaItem[] = [];
-    for (const item of rawItems) {
-      if (!globalSeenIds.has(item.id)) {
-        globalSeenIds.add(item.id);
-        uniquePageItems.push(item);
+        const tvResults = (tvData.results as Record<string, unknown>[]) || [];
+        tvResults.forEach((item) => {
+          const mapped = mapTmdbItemToMediaItem(item, "tv");
+          if (mapped) batchItems.push(mapped);
+        });
       }
+
+      // Deduplicate on the fly into our master collection pool
+      for (const item of batchItems) {
+        if (!globalSeenIds.has(item.id)) {
+          globalSeenIds.add(item.id);
+          allUniqueCollectedItems.push(item);
+        }
+      }
+
+      if (currentApiPage >= totalApiPagesAvailable || allUniqueCollectedItems.length >= page * ITEMS_PER_PAGE + 40) {
+        break;
+      }
+      currentApiPage++;
     }
+
+    // Slice out the exact 20 items requested for the current UI page index
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const pageSlice = allUniqueCollectedItems.slice(startIndex, endIndex);
+
+    // Calculate realistic total pages based on our master collected unique pool size
+    const estimatedTotalPages = Math.max(1, Math.ceil(allUniqueCollectedItems.length / ITEMS_PER_PAGE), Math.min(totalApiPagesAvailable, 50));
 
     return {
       source: "TMDB API",
-      items: uniquePageItems,
+      items: pageSlice,
       fetchedAt: new Date().toISOString(),
-      message: `Fetched ${uniquePageItems.length} unique titles for ${category} (Page ${page}).`,
+      message: `Fetched ${pageSlice.length} titles for ${category} (Page ${page}).`,
       page,
-      totalPages,
+      totalPages: estimatedTotalPages,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
