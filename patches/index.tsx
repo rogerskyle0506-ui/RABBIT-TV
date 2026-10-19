@@ -10,6 +10,7 @@ import {
   getPosterDimensions,
 } from "@/lib/settings";
 import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
+import React from "react";
 
 const navTabs = ["Home", "Series", "Movies", "Live", "My List"] as const;
 type NavTab = (typeof navTabs)[number];
@@ -150,6 +151,16 @@ export function MediaCard({ item }: { item: MediaItem }) {
     </div>
   );
 }
+
+/** MEMOIZED WRAPPER FOR 2GB DEVICE PERFORMANCE */
+const MemoizedMediaCard = React.memo(
+  function MemoizedMediaCard({ item }: { item: MediaItem }) {
+    return <MediaCard item={item} />;
+  },
+  (prevProps, nextProps) => prevProps.item.id === nextProps.item.id
+);
+
+MemoizedMediaCard.displayName = "MemoizedMediaCard";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -311,7 +322,6 @@ function Home() {
           }
         }
 
-        // Slice to 12 items for clean grid math across all breakpoints
         const finalSuggestions = Array.from(uniqueSuggestions.values()).slice(0, 12);
         setSuggestedItems(finalSuggestions);
       } catch (e) {
@@ -381,7 +391,6 @@ function Home() {
     return "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4";
   }, [cardSize]);
 
-  // Full 6-Theme Multi-Stop Gradient Dictionary
   const themeStyles = {
     violet: {
       bg: "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950",
@@ -449,7 +458,7 @@ function Home() {
             appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
             appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
             appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
-            appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50" :
+            appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-yellow-950/50" :
             appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
             "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
           }`}>
@@ -545,7 +554,7 @@ function Home() {
               appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
               appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
               appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
-              appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50" :
+              appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-yellow-950/50" :
               appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
               "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
             }`}>
@@ -634,7 +643,7 @@ function Home() {
           {filteredItems.length > 0 ? (
             <div className={gridColsClass}>
               {filteredItems.slice(activeTab === "My List" ? 0 : 1).map((item) => (
-                <MediaCard item={item} key={item.id} />
+                <MemoizedMediaCard item={item} key={item.id} />
               ))}
             </div>
           ) : (
@@ -663,7 +672,7 @@ function Home() {
             </div>
             <div className={gridColsClass}>
               {suggestedItems.map((item) => (
-                <MediaCard item={item} key={`suggested-${item.id}`} />
+                <MemoizedMediaCard item={item} key={`suggested-${item.id}`} />
               ))}
             </div>
           </section>
