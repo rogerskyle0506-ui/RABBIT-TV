@@ -16,6 +16,8 @@ import {
   saveTheme,
   getHelpfulMouse,
   setHelpfulMouse,
+  getSavedUserAge,
+  saveUserAge,
 } from "@/lib/settings";
 
 const AUTHORIZATION_CODE = "34688643";
@@ -37,12 +39,16 @@ function RootComponent() {
   const [passcodeError, setPasscodeError] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "quality" | "mouse" | "backup">("theme");
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "quality" | "mouse" | "age" | "backup">("theme");
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
   const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [helpfulMouse, setHelpfulMouseState] = useState(false);
+  const [userAgeInput, setUserAgeInput] = useState<string>("18");
+  const [settingsAgeCodeInput, setSettingsAgeCodeInput] = useState<string>("");
+  const [settingsAgeError, setSettingsAgeError] = useState<boolean>(false);
+  const [settingsAgeSuccess, setSettingsAgeSuccess] = useState<boolean>(false);
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,12 +68,14 @@ function RootComponent() {
     setStreamQuality(getSavedStreamQuality());
     setAppTheme(getSavedTheme());
     setHelpfulMouseState(getHelpfulMouse());
+    setUserAgeInput(String(getSavedUserAge()));
 
     const handleSettingsUpdate = () => {
       setCardSize(getSavedCardSize());
       setStreamQuality(getSavedStreamQuality());
       setAppTheme(getSavedTheme());
       setHelpfulMouseState(getHelpfulMouse());
+      setUserAgeInput(String(getSavedUserAge()));
     };
 
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
@@ -85,6 +93,10 @@ function RootComponent() {
       saveStreamQuality(streamQuality);
       saveTheme(appTheme);
       setHelpfulMouse(helpfulMouse);
+
+      const parsedAge = parseInt(userAgeInput, 10);
+      saveUserAge(isNaN(parsedAge) ? 18 : parsedAge);
+
       setShowFirstStartModal(false);
       setPasscodeError(false);
       window.dispatchEvent(new Event("rabtv_settings_updated"));
@@ -117,12 +129,28 @@ function RootComponent() {
     setHelpfulMouseState(enabled);
   };
 
+  const handleUpdateAgeInSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (settingsAgeCodeInput.trim() === AUTHORIZATION_CODE) {
+      const parsedAge = parseInt(userAgeInput, 10);
+      saveUserAge(isNaN(parsedAge) ? 18 : parsedAge);
+      setSettingsAgeError(false);
+      setSettingsAgeSuccess(true);
+      setSettingsAgeCodeInput("");
+      setTimeout(() => setSettingsAgeSuccess(false), 3000);
+    } else {
+      setSettingsAgeError(true);
+      setSettingsAgeCodeInput("");
+    }
+  };
+
   const handleSaveBackup = () => {
     const backupData = {
       cardSize,
       streamQuality,
       appTheme,
       helpfulMouse,
+      userAge: getSavedUserAge(),
       myList: localStorage.getItem("rabtv_my_list"),
       favorites: localStorage.getItem("rabtv_favorites"),
       backedUpAt: new Date().toISOString(),
@@ -152,6 +180,7 @@ function RootComponent() {
         if (data.streamQuality) saveStreamQuality(data.streamQuality);
         if (data.appTheme) saveTheme(data.appTheme);
         if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
+        if (data.userAge) saveUserAge(data.userAge);
         if (data.myList) localStorage.setItem("rabtv_my_list", data.myList);
         if (data.favorites) localStorage.setItem("rabtv_favorites", data.favorites);
 
@@ -398,6 +427,17 @@ function RootComponent() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => setActiveSettingsTab("age")}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                        activeSettingsTab === "age"
+                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      }`}
+                    >
+                      Profile Age
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setActiveSettingsTab("backup")}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
                         activeSettingsTab === "backup"
@@ -497,6 +537,46 @@ function RootComponent() {
                       </div>
                     )}
 
+                    {activeSettingsTab === "age" && (
+                      <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col sm:flex-row items-center justify-center gap-2 max-w-lg w-full">
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <span className="text-xs font-semibold text-slate-300 shrink-0">Age:</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={120}
+                            value={userAgeInput}
+                            onChange={(e) => setUserAgeInput(e.target.value)}
+                            className="w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-xs font-bold text-white focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                          <input
+                            type="password"
+                            maxLength={10}
+                            placeholder="Passcode Required"
+                            value={settingsAgeCodeInput}
+                            onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
+                            className="w-36 rounded-lg border border-white/10 bg-slate-800 px-3 py-1 text-center text-xs font-bold text-white focus:outline-none"
+                          />
+                          <button
+                            type="submit"
+                            className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-3 py-1 text-xs font-bold whitespace-nowrap shadow`}
+                          >
+                            Update
+                          </button>
+                        </div>
+
+                        {settingsAgeError && (
+                          <span className="text-xs font-semibold text-red-400">⚠️ Invalid Code</span>
+                        )}
+                        {settingsAgeSuccess && (
+                          <span className="text-xs font-semibold text-emerald-400">✓ Age Updated!</span>
+                        )}
+                      </form>
+                    )}
+
                     {activeSettingsTab === "backup" && (
                       <div className="flex flex-wrap items-center justify-center gap-2">
                         <button
@@ -534,11 +614,12 @@ function RootComponent() {
             <Outlet />
           </main>
 
+          {/* Startup Modal with Friendly Age Question */}
           {showFirstStartModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
               <form
                 onSubmit={handleFirstTimeAuthorize}
-                className={`my-auto w-full max-w-xl space-y-6 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
+                className={`my-auto w-full max-w-xl space-y-5 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
               >
                 <div className="text-center space-y-2">
                   <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 text-xl shadow-lg">
@@ -549,26 +630,42 @@ function RootComponent() {
                   </h2>
                 </div>
 
-                <div className="space-y-4 text-sm leading-relaxed text-slate-300">
+                <div className="space-y-3 text-sm leading-relaxed text-slate-300">
                   <p>
                     This app has been shared by <strong>Rabbit</strong> as a friendly gesture. By entering the personal agreement code below, you confirm strict authorization and agree not to share or distribute this app without consent.
                   </p>
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-300">
-                    <strong>⚠️ Device Monitoring Notice:</strong> Unique device IDs running this application are logged for authorization tracking. Unauthorized installations or unapproved sharing can be detected immediately.
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-300">
+                    <strong>⚠️ Device Monitoring Notice:</strong> Unique device IDs running this application are logged for authorization tracking.
                   </div>
                 </div>
 
+                {/* Friendly Age Prompt */}
                 <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                    How old are you? <span className="text-slate-400 font-normal lowercase">(So we can streamline your experience!)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={userAgeInput}
+                    onChange={(e) => setUserAgeInput(e.target.value)}
+                    placeholder="Enter Age"
+                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-2.5 text-center text-base font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
+                  />
+                </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-3">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Select Startup Theme:
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {allThemesList.map((t) => (
                       <button
                         key={t.id}
                         type="button"
                         onClick={() => handleThemeChange(t.id)}
-                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                        className={`rounded-xl border py-2.5 text-xs font-bold transition focus:outline-none focus:ring-4 ${
                           appTheme === t.id
                             ? `border-white/30 ${getPrimaryBgColor(t.id)} text-white shadow-lg`
                             : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -580,18 +677,18 @@ function RootComponent() {
                   </div>
                 </div>
 
-                <div className="space-y-2 border-t border-white/10 pt-4">
+                <div className="space-y-2 border-t border-white/10 pt-3">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Select Display Size (Adjustable anytime in settings):
                   </label>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {(["small", "medium", "large"] as CardSize[]).map((size) => (
                       <button
                         key={size}
                         type="button"
                         onClick={() => handleSizeChange(size)}
-                        className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                        className={`rounded-xl border py-2.5 text-xs font-bold transition focus:outline-none focus:ring-4 ${
                           cardSize === size
                             ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
                             : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
@@ -603,7 +700,7 @@ function RootComponent() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-white/10 pt-4">
+                <div className="flex items-center justify-between border-t border-white/10 pt-3">
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                       XL Mouse Pointer
@@ -625,7 +722,7 @@ function RootComponent() {
                   </button>
                 </div>
 
-                <div className="space-y-2 border-t border-white/10 pt-4">
+                <div className="space-y-2 border-t border-white/10 pt-3">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
                     Enter Personal Agreement Code:
                   </label>
@@ -647,7 +744,7 @@ function RootComponent() {
 
                 <button
                   type="submit"
-                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-4 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
+                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-3.5 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
                 >
                   Accept Agreement & Launch App
                 </button>
