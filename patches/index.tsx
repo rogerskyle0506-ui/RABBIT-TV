@@ -454,7 +454,8 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-3 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
+      {/* Navigation Bar Tabs Sticky Wrapper with Clean Padding & Constraints */}
+      <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-4 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
         appTheme === "red" ? "bg-red-950/80" :
         appTheme === "midnight" ? "bg-blue-950/80" :
         appTheme === "emerald" ? "bg-emerald-950/80" :
@@ -462,8 +463,8 @@ function Home() {
         appTheme === "cyan" ? "bg-cyan-950/80" :
         "bg-purple-950/80"
       }`}>
-        <div className="mx-auto flex max-w-full items-center justify-center px-1">
-          <div className={`flex w-full max-w-full items-center justify-between gap-1 overflow-x-auto rounded-2xl border p-1.5 shadow-lg backdrop-blur-md scrollbar-none transition-colors duration-300 ${
+        <div className="mx-auto flex max-w-7xl items-center justify-center">
+          <div className={`flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto rounded-2xl border p-1.5 shadow-lg backdrop-blur-md scrollbar-none transition-colors duration-300 ${
             appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
             appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
             appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
@@ -476,7 +477,7 @@ function Home() {
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-semibold transition focus:outline-none ${
+                className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
                   activeTab === tab
                     ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
                     : "text-slate-300 hover:bg-white/10 hover:text-white"
@@ -489,7 +490,7 @@ function Home() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-full px-2 sm:px-4 overflow-x-hidden">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 overflow-x-hidden">
         {/* Featured Hero Banner - Fully Bounded & Centered to Prevent Clipping */}
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
@@ -585,25 +586,25 @@ function Home() {
           </section>
         )}
 
-        {/* My List Sub-category Selector */}
+        {/* My List Sub-category Selector - Wrapped & Padded to Prevent Edge Clipping */}
         {activeTab === "My List" && (
-          <section className="mb-4 flex flex-wrap items-center gap-2 border-b border-white/10 pb-3 px-2">
+          <section className="mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 border-b border-white/10 pb-3 px-2">
             <button
               type="button"
               onClick={() => setMyListSubTab("all")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition border shrink-0 ${
                 myListSubTab === "all"
                   ? themeStyles.btnActive
                   : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
               }`}
             >
-              All Saved ({savedMyList.length + savedFavorites.length + inProgressHistory.length})
+              All ({savedMyList.length + savedFavorites.length + inProgressHistory.length})
             </button>
 
             <button
               type="button"
               onClick={() => setMyListSubTab("in_progress")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition border shrink-0 ${
                 myListSubTab === "in_progress"
                   ? "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-cyan-600/30 border-cyan-400/30"
                   : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
@@ -615,7 +616,7 @@ function Home() {
             <button
               type="button"
               onClick={() => setMyListSubTab("mylist")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition border shrink-0 ${
                 myListSubTab === "mylist"
                   ? themeStyles.btnActive
                   : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
@@ -627,7 +628,7 @@ function Home() {
             <button
               type="button"
               onClick={() => setMyListSubTab("favorites")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
+              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition border shrink-0 ${
                 myListSubTab === "favorites"
                   ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30 border-amber-400/30"
                   : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
