@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { AppTheme, getSavedTheme } from "@/lib/settings";
+import { isTitleDisliked } from "@/lib/watch-history";
+import type { MediaItem } from "@/lib/tmdb-scraper";
 
 const WATCH_HISTORY_STORAGE_KEY = "rabtv_watch_history";
 const MY_LIST_STORAGE_KEY = "rabtv_my_list";
@@ -18,6 +20,7 @@ export function DetailsPage() {
   const [mediaType, setMediaType] = useState<string>(search?.type || "movie");
 
   const [mediaDetails, setMediaDetails] = useState<any>(null);
+  const [similarItems, setSimilarItems] = useState<MediaItem[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -96,6 +99,47 @@ export function DetailsPage() {
     fetchSeasonEpisodes();
   }, [season, mediaId, mediaType]);
 
+  // Fetch similar recommendations from TMDB
+  useEffect(() => {
+    async function fetchSimilarContent() {
+      if (!mediaId) return;
+      try {
+        const apiKey =
+          (import.meta.env.VITE_TMDB_API_KEY as string) || "9619884fc9c0e58b374a661ab2a692cd";
+        const endpointType = mediaType === "tv" ? "tv" : "movie";
+        const res = await fetch(
+          `https://api.themoviedb.org/3/${endpointType}/${mediaId}/similar?api_key=${apiKey}`
+        );
+        const data = await res.json();
+
+        if (data?.results) {
+          const mapped: MediaItem[] = data.results
+            .filter((item: any) => !isTitleDisliked(item.id))
+            .slice(0, 6)
+            .map((item: any) => ({
+              id: String(item.id),
+              title: item.title || item.name || "Untitled",
+              description: item.overview || "",
+              image: item.poster_path
+                ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+                : "",
+              href: `/details?id=${item.id}&type=${endpointType}`,
+              year: (item.release_date || item.first_air_date || "").split("-")[0],
+              rating: item.vote_average ? item.vote_average.toFixed(1) : undefined,
+              mediaType: endpointType as "movie" | "tv",
+            }));
+          setSimilarItems(mapped);
+        } else {
+          setSimilarItems([]);
+        }
+      } catch (err) {
+        console.error("Failed to load similar recommendations", err);
+        setSimilarItems([]);
+      }
+    }
+    fetchSimilarContent();
+  }, [mediaId, mediaType]);
+
   // Full 6-Theme Background & Card Helpers matching index.tsx
   const getPageBackground = (theme: AppTheme) => {
     switch (theme) {
@@ -124,7 +168,7 @@ export function DetailsPage() {
       case "emerald":
         return "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50";
       case "amber":
-        return "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50";
+        return "bg-yellow-950/60 border-amber-500/30 shadow-yellow-950/50";
       case "cyan":
         return "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50";
       case "violet":
@@ -301,12 +345,10 @@ export function DetailsPage() {
 
       if (!match) return "none";
 
-      // 1. If explicitly marked completed
       if (match.confirmedCompleted || (match.progressPercent ?? 0) >= 100) {
         return "completed";
       }
 
-      // 2. Since it's in watch history and not completed, it's In Progress!
       return "in_progress";
     } catch (err) {
       console.error("Error reading watch status", err);
@@ -582,175 +624,219 @@ export function DetailsPage() {
         </div>
       ) : (
         /* Overview Card with Custom Theme-Aware Dropdown Pickers */
-        <div className="mx-auto flex max-w-5xl flex-col gap-8 md:flex-row md:items-start">
+        <div className="mx-auto flex max-w-5xl flex-col gap-8">
           
-          {/* Movie Poster Cover Art with Watch Status Badge Overlay */}
-          <div className="relative h-[450px] w-[300px] self-center md:self-start shrink-0">
-            {watchStatus === "completed" && (
-              <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md border border-emerald-400/30">
-                <span>✓</span>
-                <span>Watched</span>
-              </div>
-            )}
-            {watchStatus === "in_progress" && (
-              <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-full bg-cyan-500/90 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md border border-cyan-400/30">
-                <span>⏳</span>
-                <span>In Progress</span>
-              </div>
-            )}
-            <img
-              src={poster}
-              alt={title}
-              className="h-full w-full rounded-2xl object-cover shadow-2xl shadow-black/40 border border-white/10"
-            />
-          </div>
-
-          <div className="flex flex-col justify-center gap-4">
-            <span className={`w-fit rounded-full border ${activeTheme.border}/30 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider ${activeTheme.text}`}>
-              {genres}
-            </span>
-
-            <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">
-              {title}
-            </h1>
-
-            <div className="flex items-center gap-4 text-sm text-slate-300">
-              {rating !== "N/A" && (
-                <span className="flex items-center gap-1 font-bold text-yellow-300">
-                  ⭐ {rating}
-                </span>
+          <div className="flex flex-col gap-8 md:flex-row md:items-start">
+            {/* Movie Poster Cover Art with Watch Status Badge Overlay */}
+            <div className="relative h-[450px] w-[300px] self-center md:self-start shrink-0">
+              {watchStatus === "completed" && (
+                <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md border border-emerald-400/30">
+                  <span>✓</span>
+                  <span>Watched</span>
+                </div>
               )}
-              {releaseYear && <span>{releaseYear}</span>}
-              <span className="uppercase rounded-md bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300 border border-white/10">
-                {inferredMediaType}
-              </span>
+              {watchStatus === "in_progress" && (
+                <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-full bg-cyan-500/90 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md border border-cyan-400/30">
+                  <span>⏳</span>
+                  <span>In Progress</span>
+                </div>
+              )}
+              <img
+                src={poster}
+                alt={title}
+                className="h-full w-full rounded-2xl object-cover shadow-2xl shadow-black/40 border border-white/10"
+              />
             </div>
 
-            <p className="max-w-2xl text-base leading-relaxed text-slate-300">
-              {overview}
-            </p>
+            <div className="flex flex-col justify-center gap-4">
+              <span className={`w-fit rounded-full border ${activeTheme.border}/30 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-wider ${activeTheme.text}`}>
+                {genres}
+              </span>
 
-            {/* Custom Theme-Aware Season & Episode Dropdown Pickers for TV Series */}
-            {inferredMediaType === "tv" && mediaDetails?.seasons && (
-              <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2 transition-colors duration-300`}>
-                
-                {/* Custom Season Dropdown */}
-                <div className="relative" ref={seasonRef}>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Season</label>
-                  <button
-                    type="button"
-                    onClick={() => setIsSeasonOpen(!isSeasonOpen)}
-                    className={`flex items-center justify-between gap-6 rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-4 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
-                  >
-                    <span>{currentSeasonObj ? `${currentSeasonObj.name} (${currentSeasonObj.episode_count} Episodes)` : `Season ${season}`}</span>
-                    <span>▾</span>
-                  </button>
+              <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">
+                {title}
+              </h1>
 
-                  {isSeasonOpen && (
-                    <div className={`absolute left-0 mt-2 z-50 max-h-65 w-72 overflow-y-auto rounded-xl border border-white/20 ${getCardBackground(appTheme)} shadow-2xl backdrop-blur p-1`}>
-                      {mediaDetails.seasons
-                        .filter((s: any) => s.season_number > 0)
-                        .map((s: any) => (
-                          <button
-                            key={s.id}
-                            type="button"
-                            onClick={() => {
-                              setSeason(s.season_number);
-                              setEpisode(1);
-                              setIsSeasonOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 text-sm rounded-lg transition ${
-                              season === s.season_number ? `${activeTheme.bg} text-white font-bold` : "text-slate-200 hover:bg-white/10"
-                            }`}
-                          >
-                            {s.name} ({s.episode_count} Episodes)
-                          </button>
-                        ))}
-                    </div>
-                  )}
+              <div className="flex items-center gap-4 text-sm text-slate-300">
+                {rating !== "N/A" && (
+                  <span className="flex items-center gap-1 font-bold text-yellow-300">
+                    ⭐ {rating}
+                  </span>
+                )}
+                {releaseYear && <span>{releaseYear}</span>}
+                <span className="uppercase rounded-md bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300 border border-white/10">
+                  {inferredMediaType}
+                </span>
+              </div>
+
+              <p className="max-w-2xl text-base leading-relaxed text-slate-300">
+                {overview}
+              </p>
+
+              {/* Custom Theme-Aware Season & Episode Dropdown Pickers for TV Series */}
+              {inferredMediaType === "tv" && mediaDetails?.seasons && (
+                <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2 transition-colors duration-300`}>
+                  
+                  {/* Custom Season Dropdown */}
+                  <div className="relative" ref={seasonRef}>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Season</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsSeasonOpen(!isSeasonOpen)}
+                      className={`flex items-center justify-between gap-6 rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-4 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+                    >
+                      <span>{currentSeasonObj ? `${currentSeasonObj.name} (${currentSeasonObj.episode_count} Episodes)` : `Season ${season}`}</span>
+                      <span>▾</span>
+                    </button>
+
+                    {isSeasonOpen && (
+                      <div className={`absolute left-0 mt-2 z-50 max-h-65 w-72 overflow-y-auto rounded-xl border border-white/20 ${getCardBackground(appTheme)} shadow-2xl backdrop-blur p-1`}>
+                        {mediaDetails.seasons
+                          .filter((s: any) => s.season_number > 0)
+                          .map((s: any) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => {
+                                setSeason(s.season_number);
+                                setEpisode(1);
+                                setIsSeasonOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm rounded-lg transition ${
+                                season === s.season_number ? `${activeTheme.bg} text-white font-bold` : "text-slate-200 hover:bg-white/10"
+                              }`}
+                            >
+                              {s.name} ({s.episode_count} Episodes)
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Custom Episode Dropdown */}
+                  <div className="relative" ref={episodeRef}>
+                    <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Episode</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsEpisodeOpen(!isEpisodeOpen)}
+                      className={`flex items-center justify-between gap-6 rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-4 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+                    >
+                      <span>{currentEpisodeObj ? `Ep ${currentEpisodeObj.episode_number}: ${currentEpisodeObj.name}` : `Episode ${episode}`}</span>
+                      <span>▾</span>
+                    </button>
+
+                    {isEpisodeOpen && (
+                      <div className={`absolute left-0 mt-2 z-50 max-h-65 w-80 overflow-y-auto rounded-xl border border-white/20 ${getCardBackground(appTheme)} shadow-2xl backdrop-blur p-1`}>
+                        {seasonEpisodes.length > 0 ? (
+                          seasonEpisodes.map((ep: any) => (
+                            <button
+                              key={ep.id}
+                              type="button"
+                              onClick={() => {
+                                setEpisode(ep.episode_number);
+                                setIsEpisodeOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm rounded-lg transition ${
+                                episode === ep.episode_number ? `${activeTheme.bg} text-white font-bold` : "text-slate-200 hover:bg-white/10"
+                              }`}
+                            >
+                              Ep {ep.episode_number}: {ep.name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-slate-400">Loading episodes...</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                 </div>
+              )}
 
-                {/* Custom Episode Dropdown */}
-                <div className="relative" ref={episodeRef}>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Episode</label>
-                  <button
-                    type="button"
-                    onClick={() => setIsEpisodeOpen(!isEpisodeOpen)}
-                    className={`flex items-center justify-between gap-6 rounded-xl border border-white/20 ${getCardBackground(appTheme)} px-4 py-2.5 text-sm font-medium text-white shadow-lg focus:outline-none focus:ring-4 ${activeTheme.ring}`}
+              {/* Action Bar */}
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handlePlay}
+                  className={`flex items-center gap-2 rounded-full ${activeTheme.bg} px-8 py-4 text-lg font-bold text-white shadow-lg ${activeTheme.shadow} transition ${activeTheme.hoverBg} active:scale-95 focus:outline-none focus:ring-4 ${activeTheme.ring} focus:scale-105`}
+                >
+                  ▶ Play {inferredMediaType === "tv" ? `S${season}:E${episode}` : "Movie"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleMyList}
+                  className={`flex items-center gap-2 rounded-full border px-6 py-4 text-sm font-bold transition focus:outline-none focus:ring-4 ${activeTheme.ring} ${
+                    inMyList
+                      ? `${activeTheme.border} bg-white/10${activeTheme.text}`
+                      : "border-white/20 bg-slate-800/80 text-slate-200 hover:bg-slate-700"
+                  }`}
+                >
+                  {inMyList ? "✓ In My List" : "🔖 + Save to My List"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={toggleFavorites}
+                  className={`flex items-center gap-2 rounded-full border px-6 py-4 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-amber-400 ${
+                    inFavorites
+                      ? "border-amber-500 bg-amber-950/80 text-amber-300 shadow-lg shadow-amber-500/20"
+                      : "border-white/20 bg-slate-800/80 text-slate-200 hover:bg-slate-700"
+                  }`}
+                >
+                  {inFavorites ? "★ In Favorites" : "⭐ Add Favorite"}
+                </button>
+              </div>
+
+              {actionFeedback && (
+                <p className={`text-xs font-semibold ${activeTheme.text} transition animate-fade-in`}>
+                  {actionFeedback}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Similar Titles Shelf (Placed Directly Below Movie Text Details Box) */}
+          {similarItems.length > 0 && (
+            <div className="mt-10 pt-8 border-t border-white/10 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>✨ Similar Titles You May Like</span>
+                </h3>
+                <span className={`text-xs font-medium ${activeTheme.text}`}>
+                  {similarItems.length} recommendations available
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {similarItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    to={item.href}
+                    className={`group relative flex flex-col overflow-hidden rounded-xl border ${getCardBackground(appTheme)} shadow-xl transition hover:-translate-y-1 hover:brightness-110`}
                   >
-                    <span>{currentEpisodeObj ? `Ep ${currentEpisodeObj.episode_number}: ${currentEpisodeObj.name}` : `Episode ${episode}`}</span>
-                    <span>▾</span>
-                  </button>
-
-                  {isEpisodeOpen && (
-                    <div className={`absolute left-0 mt-2 z-50 max-h-65 w-80 overflow-y-auto rounded-xl border border-white/20 ${getCardBackground(appTheme)} shadow-2xl backdrop-blur p-1`}>
-                      {seasonEpisodes.length > 0 ? (
-                        seasonEpisodes.map((ep: any) => (
-                          <button
-                            key={ep.id}
-                            type="button"
-                            onClick={() => {
-                              setEpisode(ep.episode_number);
-                              setIsEpisodeOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 text-sm rounded-lg transition ${
-                              episode === ep.episode_number ? `${activeTheme.bg} text-white font-bold` : "text-slate-200 hover:bg-white/10"
-                            }`}
-                          >
-                            Ep {ep.episode_number}: {ep.name}
-                          </button>
-                        ))
-                      ) : (
-                        <div className="px-3 py-2 text-sm text-slate-400">Loading episodes...</div>
+                    <div className="aspect-[2/3] w-full overflow-hidden bg-slate-950">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="h-full w-full object-cover transition group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="p-2.5 bg-black/80 flex flex-col justify-between flex-1">
+                      <h4 className="font-bold text-white text-xs truncate" title={item.title}>
+                        {item.title}
+                      </h4>
+                      {item.rating && (
+                        <p className="mt-0.5 text-[10px] text-yellow-300 font-semibold">⭐ {item.rating}</p>
                       )}
                     </div>
-                  )}
-                </div>
-
+                  </Link>
+                ))}
               </div>
-            )}
-
-            {/* Action Bar */}
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={handlePlay}
-                className={`flex items-center gap-2 rounded-full ${activeTheme.bg} px-8 py-4 text-lg font-bold text-white shadow-lg ${activeTheme.shadow} transition ${activeTheme.hoverBg} active:scale-95 focus:outline-none focus:ring-4 ${activeTheme.ring} focus:scale-105`}
-              >
-                ▶ Play {inferredMediaType === "tv" ? `S${season}:E${episode}` : "Movie"}
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleMyList}
-                className={`flex items-center gap-2 rounded-full border px-6 py-4 text-sm font-bold transition focus:outline-none focus:ring-4 ${activeTheme.ring} ${
-                  inMyList
-                    ? `${activeTheme.border} bg-white/10${activeTheme.text}`
-                    : "border-white/20 bg-slate-800/80 text-slate-200 hover:bg-slate-700"
-                }`}
-              >
-                {inMyList ? "✓ In My List" : "🔖 + Save to My List"}
-              </button>
-
-              <button
-                type="button"
-                onClick={toggleFavorites}
-                className={`flex items-center gap-2 rounded-full border px-6 py-4 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-amber-400 ${
-                  inFavorites
-                    ? "border-amber-500 bg-amber-950/80 text-amber-300 shadow-lg shadow-amber-500/20"
-                    : "border-white/20 bg-slate-800/80 text-slate-200 hover:bg-slate-700"
-                }`}
-              >
-                {inFavorites ? "★ In Favorites" : "⭐ Add Favorite"}
-              </button>
             </div>
+          )}
 
-            {actionFeedback && (
-              <p className={`text-xs font-semibold ${activeTheme.text} transition animate-fade-in`}>
-                {actionFeedback}
-              </p>
-            )}
-          </div>
         </div>
       )}
     </div>
