@@ -327,8 +327,15 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs */}
-      <div className="sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 bg-slate-950/80 px-3 py-2.5 backdrop-blur-md shadow-md">
+      {/* Navigation Bar Tabs Sticky Wrapper */}
+      <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-3 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
+        appTheme === "red" ? "bg-red-950/80" :
+        appTheme === "midnight" ? "bg-blue-950/80" :
+        appTheme === "emerald" ? "bg-emerald-950/80" :
+        appTheme === "amber" ? "bg-yellow-950/80" :
+        appTheme === "cyan" ? "bg-cyan-950/80" :
+        "bg-purple-950/80"
+      }`}>
         <div className="mx-auto flex max-w-full items-center justify-center px-1">
           <div className={`flex w-full max-w-full items-center justify-between gap-1 overflow-x-auto rounded-2xl border p-1.5 shadow-lg backdrop-blur-md scrollbar-none transition-colors duration-300 ${
             appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
