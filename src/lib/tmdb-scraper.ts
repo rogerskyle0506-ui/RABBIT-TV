@@ -24,11 +24,10 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-const STORAGE_PREFIX = "rabtv_catalog_cache_v2_";
-const INITIAL_TARGET_PAGES = 10; // Guarantees 10 pages * 20 items = 200 titles per category/genre initially
+const STORAGE_PREFIX = "rabtv_catalog_cache_v4_";
+const INITIAL_TARGET_PAGES = 10;
 const ITEMS_PER_PAGE = 20;
 
-// Rate limiter to keep requests well under TMDB limits (<40 requests / 10s)
 let lastRequestTimestamp = 0;
 const MIN_REQUEST_INTERVAL_MS = 250;
 
@@ -174,7 +173,6 @@ export async function scrapeCategoryContent(
     let totalAvailablePages = 50;
     let isFullyLoaded = false;
 
-    // 1. Load existing catalog from device storage
     if (typeof window !== "undefined") {
       try {
         const savedData = localStorage.getItem(storageKey);
@@ -191,9 +189,6 @@ export async function scrapeCategoryContent(
     }
 
     const seenIds = new Set(catalogItems.map((i) => i.id));
-
-    // 2. Determine target page threshold: ensure we have at least 10 pages initially, 
-    // or expand by another 10 pages if the user exceeds the current catalog boundary.
     const targetCatalogSize = Math.max(
       requiredItemsCount, 
       Math.ceil((maxApiPageReached || INITIAL_TARGET_PAGES) / INITIAL_TARGET_PAGES) * INITIAL_TARGET_PAGES * ITEMS_PER_PAGE
@@ -207,41 +202,8 @@ export async function scrapeCategoryContent(
         let data: Record<string, unknown>;
         const batch: MediaItem[] = [];
 
-        if (category === "Movies") {
-          if (genreFilter && genreFilter !== "Trending") {
-            const genreId = genreNameToId[genreFilter.toLowerCase()];
-            data = await fetchTmdb("discover/movie", nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
-          } else {
-            data = await fetchTmdb("movie/popular", nextApiPage);
-          }
-          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
-          const results = (data.results as Record<string, unknown>[]) || [];
-          results.forEach((item) => {
-            const mapped = mapTmdbItemToMediaItem(item, "movie");
-            if (mapped) batch.push(mapped);
-          });
-        } else if (category === "Series") {
-          if (genreFilter && genreFilter !== "Trending") {
-            const genreId = genreNameToId[genreFilter.toLowerCase()];
-            data = await fetchTmdb("discover/tv", nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
-          } else {
-            data = await fetchTmdb("tv/popular", nextApiPage);
-          }
-          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
-          const results = (data.results as Record<string, unknown>[]) || [];
-          results.forEach((item) => {
-            const mapped = mapTmdbItemToMediaItem(item, "tv");
-            if (mapped) batch.push(mapped);
-          });
-        } else if (category === "Live") {
-          data = await fetchTmdb("tv/on_the_air", nextApiPage);
-          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
-          const results = (data.results as Record<string, unknown>[]) || [];
-          results.forEach((item) => {
-            const mapped = mapTmdbItemToMediaItem(item, "tv");
-            if (mapped) batch.push(mapped);
-          });
-        } else {
+        // 1. If we are on Home and "Trending" (Featured) is selected, pull the mixed trending feed
+        if (category === "Home" && (!genreFilter || genreFilter === "Trending")) {
           const movieData = await fetchTmdb("trending/movie/week", nextApiPage);
           const tvData = await fetchTmdb("trending/tv/week", nextApiPage);
 
@@ -261,6 +223,29 @@ export async function scrapeCategoryContent(
             const mapped = mapTmdbItemToMediaItem(item, "tv");
             if (mapped) batch.push(mapped);
           });
+        } 
+        // 2. Otherwise (Movies, Series, or Home with a specific genre filter like Horror/Comedy), discover by genre
+        else {
+          const genreId = genreFilter && genreFilter !== "Trending" ? genreNameToId[genreFilter.toLowerCase()] : null;
+          
+          if (category === "Series") {
+            data = await fetchTmdb("tv/popular", nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
+          } else if (category === "Movies") {
+            data = await fetchTmdb("movie/popular", nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
+          } else if (category === "Live") {
+            data = await fetchTmdb("tv/on_the_air", nextApiPage);
+          } else {
+            // Home with a specific genre selected -> discover movies matching that genre
+            data = await fetchTmdb("discover/movie", nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
+          }
+
+          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
+          const results = (data.results as Record<string, unknown>[]) || [];
+          const mediaType = category === "Series" ? "tv" : "movie";
+          results.forEach((item) => {
+            const mapped = mapTmdbItemToMediaItem(item, mediaType);
+            if (mapped) batch.push(mapped);
+          });
         }
 
         maxApiPageReached = nextApiPage;
@@ -277,7 +262,6 @@ export async function scrapeCategoryContent(
         }
       }
 
-      // 3. Save the expanded master catalog permanently to localStorage
       if (typeof window !== "undefined") {
         try {
           localStorage.setItem(
@@ -295,7 +279,6 @@ export async function scrapeCategoryContent(
       }
     }
 
-    // Slice the master catalog into exact 20-item pages for the current view
     const startIndex = (page - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const pageSlice = catalogItems.slice(startIndex, endIndex);
