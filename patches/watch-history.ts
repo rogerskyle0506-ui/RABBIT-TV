@@ -61,7 +61,8 @@ export function getRawWatchHistory(): WatchHistoryItem[] {
     return items.map((item: any) => {
       const resolvedId = String(item.mediaId ?? item.id ?? "");
       const cleanId = resolvedId.replace(/^(movie|tv)-/, "");
-      const mediaType = item.mediaType ?? item.media_type ?? (String(item.id).startsWith("tv") ? "tv" : "movie");
+      const rawType = item.mediaType ?? item.media_type;
+      const mediaType = rawType === "tv" || String(item.id).startsWith("tv-") ? "tv" : "movie";
       
       return {
         ...item,
@@ -90,7 +91,7 @@ export function getWatchHistory(): Record<string, ShowWatchHistory> {
   for (const item of rawItems) {
     const showId = String(item.mediaId ?? item.id ?? "unknown").replace(/^(movie|tv)-/, "");
     const title = item.title ?? item.name ?? "Unknown Title";
-    const mediaType = item.mediaType ?? item.media_type ?? "movie";
+    const mediaType = (item.mediaType ?? item.media_type) === "tv" ? "tv" : "movie";
     const posterPath = item.posterPath ?? item.poster_path ?? item.image;
     const seasonNum = item.seasonNumber ?? item.season ?? 1;
     const episodeNum = item.episodeNumber ?? item.episode ?? 1;
@@ -115,11 +116,11 @@ export function getWatchHistory(): Record<string, ShowWatchHistory> {
       }
     }
 
-    if (item.totalEpisodes && item.totalEpisodes > map[showId].totalEpisodes) {
+    if (mediaType === "tv" && item.totalEpisodes && item.totalEpisodes > map[showId].totalEpisodes) {
       map[showId].totalEpisodes = item.totalEpisodes;
     }
 
-    if (mediaType === "tv" || item.seasonNumber || item.episodeNumber) {
+    if (mediaType === "tv") {
       map[showId].episodes[episodeId] = {
         episodeId,
         seasonNumber: seasonNum,
@@ -141,10 +142,14 @@ export function saveWatchProgress(item: Omit<WatchHistoryItem, "lastWatchedAt">)
   const progressVal = item.progressPercent ?? item.progress ?? 0;
   const existingConfirmed = existingIndex >= 0 ? history[existingIndex].confirmedCompleted ?? false : false;
 
+  const rawType = item.mediaType ?? item.media_type;
+  const resolvedType = rawType === "tv" || String(item.id).startsWith("tv-") ? "tv" : "movie";
+
   const updatedItem: WatchHistoryItem = {
     ...item,
     mediaId: String(item.mediaId ?? item.id).replace(/^(movie|tv)-/, ""),
-    mediaType: item.mediaType ?? item.media_type ?? "movie",
+    mediaType: resolvedType,
+    media_type: resolvedType,
     posterPath: item.posterPath ?? item.poster_path ?? item.image,
     backdropPath: item.backdropPath ?? item.backdrop_path,
     image: item.image ?? item.posterPath ?? item.poster_path,
@@ -221,6 +226,10 @@ export function removeFromWatchHistory(id: string): void {
 
 export function calculateSeriesProgress(show: ShowWatchHistory | string | number): number {
   if (typeof show === "object" && show !== null && "episodes" in show) {
+    if (show.mediaType === "movie") {
+      const singleEp = Object.values(show.episodes)[0];
+      return singleEp?.confirmedCompleted ? 100 : 0;
+    }
     const eps = Object.values(show.episodes);
     if (eps.length === 0 || show.totalEpisodes === 0) return 0;
     
