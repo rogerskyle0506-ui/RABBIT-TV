@@ -477,7 +477,7 @@ function Home() {
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
       {/* Navigation Bar Tabs Sticky Wrapper */}
-      <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-3 sm:px-4 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
+      <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-3 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
         appTheme === "red" ? "bg-red-950/80" :
         appTheme === "midnight" ? "bg-blue-950/80" :
         appTheme === "emerald" ? "bg-emerald-950/80" :
@@ -486,7 +486,7 @@ function Home() {
         "bg-purple-950/80"
       }`}>
         <div className="mx-auto flex max-w-7xl items-center justify-center">
-          <div className={`flex w-full flex-wrap items-center justify-center gap-1.5 rounded-2xl border p-2 shadow-lg backdrop-blur-md transition-colors duration-300 ${
+          <div className={`flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto rounded-2xl border p-1.5 shadow-lg backdrop-blur-md scrollbar-none transition-colors duration-300 ${
             appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
             appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
             appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
@@ -499,7 +499,7 @@ function Home() {
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`rounded-xl px-4 py-1.5 text-xs font-semibold transition focus:outline-none ${
+                className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
                   activeTab === tab
                     ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
                     : "text-slate-300 hover:bg-white/10 hover:text-white"
