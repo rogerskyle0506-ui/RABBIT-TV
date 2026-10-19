@@ -24,7 +24,7 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-const STORAGE_PREFIX = "rabtv_catalog_cache_v13_"; // Incremented version to flush empty cache
+const STORAGE_PREFIX = "rabtv_catalog_cache_v14_"; // Incremented cache version
 const ITEMS_PER_PAGE = 20;
 
 let lastRequestTimestamp = 0;
@@ -219,6 +219,9 @@ export async function scrapeCategoryContent(
             discoverParams.with_origin_country = "GB";
           } else if (cleanSubFeed === "Hungarian") {
             discoverParams.with_original_language = "hu";
+          } else if (cleanSubFeed === "German") {
+            discoverParams.with_original_language = "de";
+            discoverParams.with_origin_country = "DE";
           }
         }
 
@@ -237,7 +240,6 @@ export async function scrapeCategoryContent(
           let data = await fetchTmdb(endpoint, nextApiPage, discoverParams);
           let results = (data.results as Record<string, unknown>[]) || [];
 
-          // Fallback if specific genre + regional filter returns empty: drop genre filter and fetch regional general
           if (results.length === 0 && genreId && cleanSubFeed) {
             delete discoverParams.with_genres;
             data = await fetchTmdb(endpoint, nextApiPage, discoverParams);
@@ -250,7 +252,6 @@ export async function scrapeCategoryContent(
             if (mapped) batch.push(mapped);
           });
 
-          // If Home tab with regional feed, mix in TV shows as well
           if (category === "Home" && !isTvTab) {
             const tvData = await fetchTmdb("discover/tv", nextApiPage, discoverParams);
             const tvResults = (tvData.results as Record<string, unknown>[]) || [];
@@ -310,7 +311,6 @@ export async function scrapeCategoryContent(
         }
       }
 
-      // Final absolute fallback buffer to guarantee items are never 0
       if (catalogItems.length < requiredItemsCount) {
         try {
           const fallbackEndpoint = isTvTab ? "tv/popular" : "movie/popular";
