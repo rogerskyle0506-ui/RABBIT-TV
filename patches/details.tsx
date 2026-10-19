@@ -261,12 +261,14 @@ export function DetailsPage() {
       });
 
       if (!match) return "none";
+
+      // 1. If explicitly marked completed
       if (match.confirmedCompleted || (match.progressPercent ?? 0) >= 100) {
         return "completed";
       }
-      if ((match.progressPercent ?? 0) > 0) {
-        return "in_progress";
-      }
+
+      // 2. Since it's in watch history and not completed, it's In Progress!
+      return "in_progress";
     } catch (err) {
       console.error("Error reading watch status", err);
     }
