@@ -1,4 +1,4 @@
-name: Build Global Android APK
+Name: Build Global Android APK
 
 on:
   push:
@@ -86,7 +86,16 @@ jobs:
             echo "Warning: patches/watch-history.tsx not found!"
           fi
 
-          # 3. Copy main catalog & My List UI to src/routes/index.tsx
+          # 3. Copy details route UI to src/routes/details.tsx
+          if [ -f patches/details.tsx ]; then
+            cp patches/details.tsx src/routes/details.tsx
+            echo "Successfully patched src/routes/details.tsx"
+          else
+            echo "Error: patches/details.tsx not found!"
+            exit 1
+          fi
+
+          # 4. Copy main catalog & My List UI to src/routes/index.tsx
           if [ -f patches/index.tsx ]; then
             cp patches/index.tsx src/routes/index.tsx
             echo "Successfully patched src/routes/index.tsx"
@@ -94,7 +103,7 @@ jobs:
             echo "Warning: patches/index.tsx not found!"
           fi
 
-          # 4. Copy root UI (settings & tabs) to src/routes/__root.tsx
+          # 5. Copy root UI (settings & tabs) to src/routes/__root.tsx
           if [ -f patches/__root.tsx ]; then
             cp patches/__root.tsx src/routes/__root.tsx
             echo "Successfully patched src/routes/__root.tsx"
