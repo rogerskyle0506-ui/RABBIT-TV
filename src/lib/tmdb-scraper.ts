@@ -24,7 +24,7 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-const STORAGE_PREFIX = "rabtv_catalog_cache_v8_"; // Incremented version for clean cache
+const STORAGE_PREFIX = "rabtv_catalog_cache_v9_"; // Incremented version for clean cache
 const INITIAL_TARGET_PAGES = 10;
 const ITEMS_PER_PAGE = 20;
 
@@ -126,7 +126,7 @@ function mapTmdbItemToMediaItem(
     : "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80";
   const genre = getGenreName((item.genre_ids as number[]) || []);
   const description =
-    (item.overview as string) || "Discover this amazing content on RABBITs TV";
+    (item.overview as string) || "Discover this amazing content on RABBiT TV";
 
   return {
     id: uniqueId,
@@ -173,7 +173,8 @@ export async function scrapeCategoryContent(
   subFeed?: string
 ): Promise<ScrapeResult> {
   try {
-    const feedKey = subFeed ? `_${subFeed}` : "";
+    const cleanSubFeed = subFeed && subFeed !== "All (Default)" ? subFeed : undefined;
+    const feedKey = cleanSubFeed ? `_${cleanSubFeed}` : "";
     const storageKey = `${STORAGE_PREFIX}_${category}${feedKey}_${genreFilter}`;
     const requiredItemsCount = page * ITEMS_PER_PAGE;
 
@@ -214,44 +215,33 @@ export async function scrapeCategoryContent(
         const providerId = providerIdMap[category];
         const genreId = genreFilter && genreFilter !== "Trending" ? genreNameToId[genreFilter.toLowerCase()] : null;
 
-        if (category === "Global Feeds" && subFeed) {
-          // Discover params for customized regional feeds + genre indexing
-          const params: Record<string, string> = {
-            sort_by: "popularity.desc",
-          };
+        // Build base discover or standard parameters, incorporating regional subFeed override if active
+        const discoverParams: Record<string, string> = {
+          sort_by: "popularity.desc",
+        };
 
-          if (subFeed === "Russian") {
-            params.with_original_language = "ru";
-          } else if (subFeed === "British") {
-            params.with_original_language = "en";
-            params.with_origin_country = "GB";
-          } else if (subFeed === "Hungarian") {
-            params.with_original_language = "hu";
+        if (cleanSubFeed) {
+          if (cleanSubFeed === "Russian") {
+            discoverParams.with_original_language = "ru";
+          } else if (cleanSubFeed === "British") {
+            discoverParams.with_original_language = "en";
+            discoverParams.with_origin_country = "GB";
+          } else if (cleanSubFeed === "Hungarian") {
+            discoverParams.with_original_language = "hu";
           }
+        }
 
-          if (genreId) {
-            params.with_genres = genreId.toString();
-          }
+        if (genreId) {
+          discoverParams.with_genres = genreId.toString();
+        }
 
-          data = await fetchTmdb("discover/movie", nextApiPage, params);
-          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
-          const results = (data.results as Record<string, unknown>[]) || [];
-          results.forEach((item) => {
-            const mapped = mapTmdbItemToMediaItem(item, "movie");
-            if (mapped) batch.push(mapped);
-          });
-        } else if (providerId) {
-          // Streaming provider tab (Netflix, Prime, Disney+) + Optional Genre Filter
-          const params: Record<string, string> = {
-            with_watch_providers: providerId,
-            watch_region: "CA",
-            sort_by: "popularity.desc",
-          };
-          if (genreId) {
-            params.with_genres = genreId.toString();
-          }
+        if (providerId) {
+          discoverParams.with_watch_providers = providerId;
+          discoverParams.watch_region = "CA";
+        }
 
-          data = await fetchTmdb("discover/movie", nextApiPage, params);
+        if (providerId || cleanSubFeed || (category === "Home" && genreFilter !== "Trending")) {
+          data = await fetchTmdb("discover/movie", nextApiPage, discoverParams);
           totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
           const results = (data.results as Record<string, unknown>[]) || [];
           results.forEach((item) => {
@@ -286,7 +276,6 @@ export async function scrapeCategoryContent(
           } else if (category === "Live") {
             data = await fetchTmdb("tv/on_the_air", nextApiPage);
           } else {
-            // Home with a specific genre selected
             data = await fetchTmdb("discover/movie", nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
           }
 
@@ -310,6 +299,27 @@ export async function scrapeCategoryContent(
             seenIds.add(item.id);
             catalogItems.push(item);
           }
+        }
+      }
+
+      // Fallback buffer: if regional/subFeed filter produced fewer than expected titles, fill with standard items
+      if (cleanSubFeed && catalogItems.length < requiredItemsCount && !isFullyLoaded) {
+        try {
+          const fallbackData = await fetchTmdb(
+            providerIdMap[category] ? "discover/movie" : category === "Series" ? "tv/popular" : "movie/popular",
+            Math.ceil(catalogItems.length / ITEMS_PER_PAGE) + 1,
+            providerIdMap[category] ? { with_watch_providers: providerIdMap[category], watch_region: "CA" } : {}
+          );
+          const fallbackResults = (fallbackData.results as Record<string, unknown>[]) || [];
+          fallbackResults.forEach((item) => {
+            const mapped = mapTmdbItemToMediaItem(item, category === "Series" ? "tv" : "movie");
+            if (mapped && !seenIds.has(mapped.id)) {
+              seenIds.add(mapped.id);
+              catalogItems.push(mapped);
+            }
+          });
+        } catch (e) {
+          console.error("Failed to load fallback buffer", e);
         }
       }
 
@@ -340,7 +350,7 @@ export async function scrapeCategoryContent(
       source: "TMDB API",
       items: pageSlice,
       fetchedAt: new Date().toISOString(),
-      message: `Loaded ${pageSlice.length} titles for ${category}${subFeed ? ` (${subFeed})` : ""} / ${genreFilter} (Page ${page}).`,
+      message: `Loaded ${pageSlice.length} titles for ${category}${cleanSubFeed ? ` (${cleanSubFeed})` : ""} / ${genreFilter} (Page ${page}).`,
       page,
       totalPages: isFullyLoaded ? totalPages : Math.max(totalPages, page + 1),
     };
