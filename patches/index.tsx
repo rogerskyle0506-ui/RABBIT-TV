@@ -281,7 +281,6 @@ function Home() {
       btnActive: "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30",
       accentText: "text-violet-300",
       borderGlow: "border-violet-500/30",
-      panelBg: "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50",
     },
     red: {
       bg: "bg-gradient-to-br from-zinc-950 via-red-950/40 to-black",
@@ -289,7 +288,6 @@ function Home() {
       btnActive: "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30",
       accentText: "text-red-400",
       borderGlow: "border-red-500/30",
-      panelBg: "bg-red-950/60 border-red-500/30 shadow-red-950/50",
     },
     midnight: {
       bg: "bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950",
@@ -297,7 +295,6 @@ function Home() {
       btnActive: "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30",
       accentText: "text-sky-300",
       borderGlow: "border-sky-500/30",
-      panelBg: "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50",
     },
     emerald: {
       bg: "bg-gradient-to-br from-slate-950 via-emerald-950/40 to-slate-950",
@@ -305,7 +302,6 @@ function Home() {
       btnActive: "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30",
       accentText: "text-emerald-300",
       borderGlow: "border-emerald-500/30",
-      panelBg: "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50",
     },
     amber: {
       bg: "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950",
@@ -313,7 +309,6 @@ function Home() {
       btnActive: "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30",
       accentText: "text-amber-300",
       borderGlow: "border-amber-500/30",
-      panelBg: "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50",
     },
     cyan: {
       bg: "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950",
@@ -321,7 +316,6 @@ function Home() {
       btnActive: "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30",
       accentText: "text-cyan-300",
       borderGlow: "border-cyan-500/30",
-      panelBg: "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50",
     },
   }[appTheme] ?? {
     bg: "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950",
@@ -329,7 +323,6 @@ function Home() {
     btnActive: "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30",
     accentText: "text-violet-300",
     borderGlow: "border-violet-500/30",
-    panelBg: "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50",
   };
 
   return (
@@ -337,7 +330,14 @@ function Home() {
       {/* Navigation Bar Tabs */}
       <div className="sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 bg-slate-950/80 px-3 py-2.5 backdrop-blur-md shadow-md">
         <div className="mx-auto flex max-w-full items-center justify-center px-1">
-          <div className={`flex w-full max-w-full items-center justify-between gap-1 overflow-x-auto rounded-2xl border ${themeStyles.panelBg} p-1.5 shadow-lg backdrop-blur-md scrollbar-none transition-colors duration-300`}>
+          <div className={`flex w-full max-w-full items-center justify-between gap-1 overflow-x-auto rounded-2xl border p-1.5 shadow-lg backdrop-blur-md scrollbar-none transition-colors duration-300 ${
+            appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
+            appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
+            appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
+            appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50" :
+            appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
+            "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
+          }`}>
             {navTabs.map((tab) => (
               <button
                 key={tab}
@@ -426,7 +426,14 @@ function Home() {
         {/* Genre Filters */}
         {activeTab !== "My List" && (
           <section className="mb-4 flex justify-center">
-            <div className={`flex flex-wrap items-center justify-center gap-1.5 p-2 rounded-full border ${themeStyles.panelBg} shadow-lg backdrop-blur-md max-w-full transition-colors duration-300`}>
+            <div className={`flex flex-wrap items-center justify-center gap-1.5 p-2 rounded-full border shadow-lg backdrop-blur-md max-w-full transition-colors duration-300 ${
+              appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
+              appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
+              appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
+              appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50" :
+              appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
+              "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
+            }`}>
               {genreCategories.map((genre) => (
                 <button
                   key={genre}
