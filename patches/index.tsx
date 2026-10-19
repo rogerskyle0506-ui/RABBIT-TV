@@ -96,12 +96,12 @@ export function MediaCard({ item }: { item: MediaItem }) {
     return (
       <Link
         to={item.href}
-        className={`group flex ${dimensions.card} ${cardThemeStyles.bg} border ${cardThemeStyles.border} focus:outline-none focus:ring-4 ${cardThemeStyles.ring} hover:scale-105 overflow-hidden relative rounded-xl transition w-full shadow-lg`}
+        className={`group flex ${dimensions.card} ${cardThemeStyles.bg} border ${cardThemeStyles.border} focus:outline-none focus:ring-4 ${cardThemeStyles.ring} hover:scale-105 overflow-hidden relative rounded-xl transition w-full shadow-lg bg-black`}
       >
         <img
           src={item.image}
           alt={item.title}
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          className="absolute inset-0 h-full w-full object-contain object-center"
           loading="lazy"
         />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-1.5 text-center z-10">
@@ -117,11 +117,11 @@ export function MediaCard({ item }: { item: MediaItem }) {
     <div
       className={`group relative flex w-full flex-col overflow-hidden rounded-2xl ${cardThemeStyles.bg} border ${cardThemeStyles.border} shadow-xl transition hover:-translate-y-1 ${cardThemeStyles.ring} ${dimensions.card}`}
     >
-      <Link className="block relative overflow-hidden flex-1 focus:outline-none w-full h-full" to={item.href}>
+      <Link className="block relative overflow-hidden flex-1 focus:outline-none w-full h-full bg-black flex items-center justify-center" to={item.href}>
         <img
           src={item.image}
           alt={item.title}
-          className="absolute inset-0 h-full w-full object-cover object-center transition group-hover:scale-105"
+          className="absolute inset-0 h-full w-full object-contain object-center transition group-hover:scale-105"
           loading="lazy"
         />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2.5 z-10">
@@ -511,17 +511,17 @@ function Home() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 overflow-x-hidden">
-        {/* Featured Hero Banner with Strict Text Constraints */}
+        {/* Featured Hero Banner with 100% Fit & Proportion Control */}
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
             <>
-              <div className="absolute inset-0 w-full h-full overflow-hidden bg-slate-950 flex items-center justify-center">
+              <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
                 <img
                   src={featured.image}
                   alt={featured.title}
-                  className="absolute inset-0 h-full w-full object-cover object-center opacity-90"
+                  className="absolute inset-0 h-full w-full object-contain object-center opacity-90"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/30 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/20 to-transparent"></div>
               </div>
 
               <div className="absolute inset-x-0 bottom-0 p-3 sm:p-5 flex flex-col justify-end z-10">
