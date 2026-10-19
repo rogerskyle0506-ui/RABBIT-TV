@@ -567,7 +567,7 @@ function RootComponent() {
                       <button
                         key={t.id}
                         type="button"
-                        onClick={() => setAppTheme(t.id)}
+                        onClick={() => handleThemeChange(t.id)}
                         className={`rounded-xl border py-3 text-xs font-bold transition focus:outline-none focus:ring-4 ${
                           appTheme === t.id
                             ? `border-white/30 ${getPrimaryBgColor(t.id)} text-white shadow-lg`
