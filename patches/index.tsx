@@ -378,20 +378,15 @@ function Home() {
     return Array.from(map.values());
   }, [myListSubTab, savedMyList, savedFavorites, inProgressHistory, userAge]);
 
+  // Scraper handles genre filtering directly, so we pass items straight through with safety checks
   const filteredItems = useMemo(() => {
     const baseList = activeTab === "My List" ? savedCatalogItems : items;
     
-    const catalogFiltered = baseList.filter((item) => {
+    return baseList.filter((item) => {
       if (isTitleDisliked(item.id)) return false;
       return isAllowedForAge((item as any).certification, item.genre, userAge);
     });
-
-    if (activeTab === "My List") return catalogFiltered;
-    if (selectedGenre === "Trending") return catalogFiltered;
-    return catalogFiltered.filter((item) =>
-      item.genre?.toLowerCase().includes(selectedGenre.toLowerCase())
-    );
-  }, [items, selectedGenre, activeTab, savedCatalogItems, userAge]);
+  }, [items, activeTab, savedCatalogItems, userAge]);
 
   const completedIdsOrTitles = useMemo(() => {
     const set = new Set<string>();
