@@ -14,8 +14,8 @@ import {
 import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
 import React from "react";
 
-// Renamed display tab while keeping scraping routes intact
-const navTabs = ["Home", "TV Shows", "Movies", "My List"] as const;
+// Updated navigation tabs including Netflix, Prime, and Disney+
+const navTabs = ["Home", "TV Shows", "Movies", "Netflix", "Prime", "Disney+", "My List"] as const;
 type NavTab = (typeof navTabs)[number];
 
 const genreCategories = [
@@ -260,7 +260,7 @@ function Home() {
         return;
       }
 
-      // Map "TV Shows" display tab to the "Series" scraper category correctly
+      // Map "TV Shows" display tab to "Series" scraper category correctly
       const scraperCategory = activeTab === "TV Shows" ? "Series" : activeTab;
 
       try {
@@ -378,7 +378,6 @@ function Home() {
     return Array.from(map.values());
   }, [myListSubTab, savedMyList, savedFavorites, inProgressHistory, userAge]);
 
-  // Scraper handles genre filtering directly, so we pass items straight through with safety checks
   const filteredItems = useMemo(() => {
     const baseList = activeTab === "My List" ? savedCatalogItems : items;
     
@@ -578,7 +577,7 @@ function Home() {
           )}
         </section>
 
-        {/* Genre Filters */}
+        {/* Genre Filters (Hidden on My List) */}
         {activeTab !== "My List" && (
           <section className="mb-4 flex justify-center">
             <div className={`flex flex-wrap items-center justify-center gap-1.5 p-2 rounded-full border shadow-lg backdrop-blur-md max-w-full transition-colors duration-300 ${
