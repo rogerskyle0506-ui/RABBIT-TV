@@ -78,22 +78,26 @@ export function sanitizeTMDBId(rawId: string | number): string {
   return String(rawId).replace(/^(movie|tv)-/, "").trim();
 }
 
-export function isAllowedForAge(rating?: string | null, userAge: number = getSavedUserAge()): boolean {
+export function isAllowedForAge(rating?: string | null, genre?: string | null, userAge: number = getSavedUserAge()): boolean {
   // Ages 16+ have full unlocked access to all media including Rated R
   if (userAge >= 16) return true;
 
-  const cleanRating = (rating || "UNRATED").trim().toUpperCase();
+  const cleanRating = (rating || "").trim().toUpperCase();
+  const cleanGenre = (genre || "").trim().toLowerCase();
 
-  // Fail-Closed Security: Unrated, empty, missing, R, NC-17, or TV-MA strictly require age 16+
-  if (
-    !cleanRating ||
-    cleanRating === "UNRATED" ||
-    cleanRating === "NR" ||
-    cleanRating === "R" ||
-    cleanRating === "NC-17" ||
-    cleanRating === "TV-MA"
-  ) {
+  // Explicit adult ratings are strictly blocked for under 16
+  if (["R", "NC-17", "TV-MA", "UNRATED", "NR"].includes(cleanRating)) {
     return false;
+  }
+
+  // If list summary lacks explicit MPAA rating, fallback to safe genre checks for kids
+  if (!cleanRating) {
+    if (userAge < 9) {
+      return cleanGenre.includes("animation") || cleanGenre.includes("family") || cleanGenre.includes("kids");
+    }
+    if (userAge < 13) {
+      return !cleanGenre.includes("horror") && !cleanGenre.includes("thriller") && !cleanGenre.includes("crime");
+    }
   }
 
   // Tier 1: Ages 0 - 8 (G, TV-Y, TV-G)
@@ -121,7 +125,7 @@ export function getPosterDimensions(size: CardSize) {
       return {
         card: "w-[85px] min-w-[85px] h-[125px]",
         image: "w-full h-full object-cover",
-        isSmall: true, // Hides inline text/badges for clean poster view
+        isSmall: true,
       };
     case "medium":
       return {
