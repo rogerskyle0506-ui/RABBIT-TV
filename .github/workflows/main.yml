@@ -1,4 +1,4 @@
-Name: Build Global Android APK
+name: Build Global Android APK
 
 on:
   push:
