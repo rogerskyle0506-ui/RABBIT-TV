@@ -1,761 +1,736 @@
-import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
-import { AuthProvider } from "@/components/auth-provider";
-import { PreviewHostBridge } from "@/components/preview-host-bridge";
-import "@/styles.css";
-import { useState, useEffect } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import type { MediaItem } from "@/lib/tmdb-scraper";
+import { scrapeCategoryContent } from "@/lib/tmdb-scraper";
 import {
   CardSize,
-  StreamQuality,
   AppTheme,
-  DISCLAIMER_ACCEPTED_KEY,
   getSavedCardSize,
-  saveCardSize,
-  getSavedStreamQuality,
-  saveStreamQuality,
   getSavedTheme,
-  saveTheme,
-  getHelpfulMouse,
-  setHelpfulMouse,
   getSavedUserAge,
-  saveUserAge,
+  isAllowedForAge,
+  getPosterDimensions,
 } from "@/lib/settings";
+import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
+import React from "react";
 
-const AUTHORIZATION_CODE = "34688643";
-const globalFeedOptions = ["All (Default)", "Russian", "British", "Hungarian"] as const;
-export type GlobalFeedOption = (typeof globalFeedOptions)[number];
+// Standard navigation tabs (Global Feeds override handled globally in root header)
+const navTabs = ["Home", "TV Shows", "Movies", "Netflix", "Prime", "Disney+", "My List"] as const;
+type NavTab = (typeof navTabs)[number];
 
-export const Route = createRootRoute({
-  component: RootComponent,
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-    ],
-    title: "RABTV - Stream Your Favorite Shows",
-  }),
+const genreCategories = [
+  "Trending",
+  "Action",
+  "Drama",
+  "Comedy",
+  "Sci-Fi",
+  "Horror",
+];
+
+const MY_LIST_STORAGE_KEY = "rabtv_my_list";
+const FAVORITES_STORAGE_KEY = "rabtv_favorites";
+
+export function MediaCard({ item }: { item: MediaItem }) {
+  const [cardSize, setCardSize] = useState<CardSize>("large");
+  const [appTheme, setAppTheme] = useState<AppTheme>("violet");
+
+  useEffect(() => {
+    setCardSize(getSavedCardSize());
+    setAppTheme(getSavedTheme());
+
+    const handleSettingsUpdate = () => {
+      setCardSize(getSavedCardSize());
+      setAppTheme(getSavedTheme());
+    };
+
+    window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
+    return () =>
+      window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
+  }, []);
+
+  const cardThemeStyles = useMemo(() => {
+    switch (appTheme) {
+      case "red":
+        return {
+          bg: "bg-gradient-to-b from-red-950/70 via-zinc-900 to-black",
+          border: "border-red-500/30",
+          ring: "focus-within:ring-red-400 focus:ring-red-400",
+        };
+      case "midnight":
+        return {
+          bg: "bg-gradient-to-b from-blue-950/70 via-slate-900 to-slate-950",
+          border: "border-blue-500/30",
+          ring: "focus-within:ring-blue-400 focus:ring-blue-400",
+        };
+      case "emerald":
+        return {
+          bg: "bg-gradient-to-b from-emerald-950/70 via-slate-900 to-slate-950",
+          border: "border-emerald-500/30",
+          ring: "focus-within:ring-emerald-400 focus:ring-emerald-400",
+        };
+      case "amber":
+        return {
+          bg: "bg-gradient-to-b from-yellow-950/70 via-stone-900 to-stone-950",
+          border: "border-amber-500/30",
+          ring: "focus-within:ring-amber-400 focus:ring-amber-400",
+        };
+      case "cyan":
+        return {
+          bg: "bg-gradient-to-b from-cyan-950/70 via-slate-900 to-slate-950",
+          border: "border-cyan-500/30",
+          ring: "focus-within:ring-cyan-400 focus:ring-cyan-400",
+        };
+      case "violet":
+      default:
+        return {
+          bg: "bg-gradient-to-b from-purple-950/70 via-slate-900 to-slate-950",
+          border: "border-violet-500/30",
+          ring: "focus-within:ring-violet-400 focus:ring-violet-400",
+        };
+    }
+  }, [appTheme]);
+
+  const dimensions = getPosterDimensions(cardSize);
+
+  if (cardSize === "small") {
+    return (
+      <Link
+        to={item.href}
+        className={`group flex ${dimensions.card} ${cardThemeStyles.bg} border ${cardThemeStyles.border} focus:outline-none focus:ring-4 ${cardThemeStyles.ring} hover:scale-105 overflow-hidden relative rounded-xl transition w-full shadow-lg bg-transparent`}
+      >
+        <img
+          src={item.image}
+          alt={item.title}
+          className="absolute inset-0 h-full w-full object-contain object-center"
+          loading="lazy"
+        />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-1.5 text-center z-10">
+          <p className="text-[10px] font-bold text-white truncate px-1 rounded bg-black/60 backdrop-blur-sm border border-white/10">
+            {item.title}
+          </p>
+        </div>
+      </Link>
+    );
+  }
+
+  return (
+    <div
+      className={`group relative flex w-full flex-col overflow-hidden rounded-2xl ${cardThemeStyles.bg} border ${cardThemeStyles.border} shadow-xl transition hover:-translate-y-1 ${cardThemeStyles.ring} ${dimensions.card}`}
+    >
+      <Link className="block relative overflow-hidden flex-1 focus:outline-none w-full h-full bg-transparent flex items-center justify-center" to={item.href}>
+        <img
+          src={item.image}
+          alt={item.title}
+          className="absolute inset-0 h-full w-full object-contain object-center transition group-hover:scale-105"
+          loading="lazy"
+        />
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2.5 z-10">
+          <div className="flex items-center justify-between mb-1">
+            <span className="rounded-full bg-black/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-slate-200 truncate max-w-[70%] backdrop-blur-sm border border-white/10">
+              {item.genre ?? "TV"}
+            </span>
+            {item.year ? (
+              <span className="text-[10px] text-slate-300 font-medium">{item.year}</span>
+            ) : null}
+          </div>
+          <h4 className={`font-bold text-white drop-shadow truncate ${dimensions.text}`}>
+            {item.title}
+          </h4>
+          {item.rating && (
+            <p className="mt-0.5 text-xs text-yellow-300 font-semibold drop-shadow">⭐ {item.rating}</p>
+          )}
+        </div>
+      </Link>
+
+      <div className="p-2 bg-black/90 border-t border-white/10 flex items-center justify-between z-20">
+        <Link
+          to={item.href}
+          className={`w-full text-center rounded-full bg-gradient-to-r from-black/80 via-black to-black/80 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 ${cardThemeStyles.ring}`}
+        >
+          WATCH →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+const MemoizedMediaCard = React.memo(
+  function MemoizedMediaCard({ item }: { item: MediaItem }) {
+    return <MediaCard item={item} />;
+  },
+  (prevProps, nextProps) => prevProps.item.id === nextProps.item.id
+);
+
+MemoizedMediaCard.displayName = "MemoizedMediaCard";
+
+export const Route = createFileRoute("/")({
+  component: Home,
 });
 
-function RootComponent() {
-  const [showFirstStartModal, setShowFirstStartModal] = useState(false);
-  const [passcodeInput, setPasscodeInput] = useState("");
-  const [passcodeError, setPasscodeError] = useState(false);
-  const [ageErrorNotice, setAgeErrorNotice] = useState(false);
-
-  const [showSettings, setShowSettings] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "mouse" | "age" | "backup">("theme");
-
-  const [cardSize, setCardSize] = useState<CardSize>("large");
-  const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
-  const [appTheme, setAppTheme] = useState<AppTheme>("violet");
-  const [helpfulMouse, setHelpfulMouseState] = useState(false);
-  const [userAgeInput, setUserAgeInput] = useState<string>("");
-  const [settingsAgeCodeInput, setSettingsAgeCodeInput] = useState<string>("");
-  const [settingsAgeError, setSettingsAgeError] = useState<boolean>(false);
-  const [settingsAgeSuccess, setSettingsAgeSuccess] = useState<boolean>(false);
-  const [backupStatus, setBackupStatus] = useState<string | null>(null);
-
-  // Global Feed Dropdown State in Header
-  const [selectedGlobalFeed, setSelectedGlobalFeed] = useState<GlobalFeedOption>(() => {
+function Home() {
+  const [activeTab, setActiveTab] = useState<NavTab>("Home");
+  const [selectedGenre, setSelectedGenre] = useState<string>("Trending");
+  const [globalFeedOverride, setGlobalFeedOverride] = useState<string>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("rabtv_global_feed") as GlobalFeedOption) || "All (Default)";
+      return localStorage.getItem("rabtv_global_feed") || "All (Default)";
     }
     return "All (Default)";
   });
 
-  const handleGlobalFeedChange = (feed: GlobalFeedOption) => {
-    setSelectedGlobalFeed(feed);
-    localStorage.setItem("rabtv_global_feed", feed);
-    window.dispatchEvent(new CustomEvent("rabtv_global_feed_updated", { detail: feed }));
+  const [items, setItems] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [appTheme, setAppTheme] = useState<AppTheme>("violet");
+  const [userAge, setUserAge] = useState<number>(18);
+  const [myListSubTab, setMyListSubTab] = useState<"all" | "in_progress" | "mylist" | "favorites">("all");
+  const [savedMyList, setSavedMyList] = useState<MediaItem[]>([]);
+  const [savedFavorites, setSavedFavorites] = useState<MediaItem[]>([]);
+  const [historyItems, setHistoryItems] = useState<MediaItem[]>([]);
+  const [suggestedItems, setSuggestedItems] = useState<MediaItem[]>([]);
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [cardSize, setCardSize] = useState<CardSize>("large");
+
+  const loadSavedListsAndTheme = () => {
+    try {
+      const listData = JSON.parse(localStorage.getItem(MY_LIST_STORAGE_KEY) || "[]");
+      const favData = JSON.parse(localStorage.getItem(FAVORITES_STORAGE_KEY) || "[]");
+      
+      const rawHistory = getRawWatchHistory();
+      const mappedHistory: MediaItem[] = rawHistory.map((h) => {
+        const type = h.mediaType ?? h.media_type ?? (h.id?.startsWith("tv-") ? "tv" : "movie");
+        const cleanId = String(h.mediaId ?? h.id).replace(/^(movie|tv)-/, "");
+        const imagePath = h.posterPath ?? h.poster_path ?? h.image;
+        const imageUrl = imagePath?.startsWith("http")
+          ? imagePath
+          : imagePath
+          ? `https://image.tmdb.org/t/p/w500${imagePath}`
+          : "/placeholder.png";
+
+        return {
+          id: String(h.id),
+          title: h.title ?? "Unknown Title",
+          image: imageUrl,
+          href: `/details?id=${cleanId}&type=${type}`,
+          genre: type.toUpperCase(),
+          mediaType: type as "movie" | "tv",
+          progressPercent: h.progressPercent ?? (h.confirmedCompleted ? 100 : 0),
+          confirmedCompleted: h.confirmedCompleted ?? false,
+        } as MediaItem & { progressPercent?: number; confirmedCompleted?: boolean; mediaType?: "movie" | "tv" };
+      });
+
+      setSavedMyList(listData);
+      setSavedFavorites(favData);
+      setHistoryItems(mappedHistory);
+      setAppTheme(getSavedTheme());
+      setCardSize(getSavedCardSize());
+      setUserAge(getSavedUserAge());
+    } catch (err) {
+      console.error("Error reading saved lists/theme/age", err);
+    }
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const ua = navigator.userAgent.toLowerCase();
-      if (ua.includes('silk') || ua.includes('firetv') || ua.includes('amazon')) {
-        document.documentElement.classList.add('fire-os');
-      }
-    }
-
-    const authorized = localStorage.getItem(DISCLAIMER_ACCEPTED_KEY);
-    if (!authorized) {
-      setShowFirstStartModal(true);
-    }
-
-    setCardSize(getSavedCardSize());
-    setStreamQuality(getSavedStreamQuality());
-    setAppTheme(getSavedTheme());
-    setHelpfulMouseState(getHelpfulMouse());
-    
-    const existingAge = localStorage.getItem("rabtv_user_age");
-    if (existingAge) {
-      setUserAgeInput(existingAge);
-    }
-
+    loadSavedListsAndTheme();
     const handleSettingsUpdate = () => {
-      setCardSize(getSavedCardSize());
-      setStreamQuality(getSavedStreamQuality());
-      setAppTheme(getSavedTheme());
-      setHelpfulMouseState(getHelpfulMouse());
+      loadSavedListsAndTheme();
     };
 
+    const handleGlobalFeedUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setGlobalFeedOverride(customEvent.detail);
+      }
+    };
+
+    window.addEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
+    window.addEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
+    window.addEventListener("rabtv_global_feed_updated", handleGlobalFeedUpdate as EventListener);
+
     return () => {
+      window.removeEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
+      window.removeEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
       window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
+      window.removeEventListener("rabtv_global_feed_updated", handleGlobalFeedUpdate as EventListener);
     };
   }, []);
 
-  const handleFirstTimeAuthorize = (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, selectedGenre, globalFeedOverride]);
 
-    const trimmedAge = userAgeInput.trim();
-    if (!trimmedAge || isNaN(parseInt(trimmedAge, 10))) {
-      setAgeErrorNotice(true);
-      setPasscodeError(false);
-      return;
-    }
+  useEffect(() => {
+    let active = true;
 
-    if (passcodeInput.trim() === AUTHORIZATION_CODE) {
-      localStorage.setItem(DISCLAIMER_ACCEPTED_KEY, "true");
-      saveCardSize(cardSize);
-      saveStreamQuality(streamQuality);
-      saveTheme(appTheme);
-      setHelpfulMouse(helpfulMouse);
+    async function load() {
+      setLoading(true);
+      setError(null);
 
-      const parsedAge = parseInt(trimmedAge, 10);
-      saveUserAge(parsedAge);
-
-      setShowFirstStartModal(false);
-      setPasscodeError(false);
-      setAgeErrorNotice(false);
-      window.dispatchEvent(new Event("rabtv_settings_updated"));
-    } else {
-      setPasscodeError(true);
-      setAgeErrorNotice(false);
-      setPasscodeInput("");
-    }
-  };
-
-  const handleSizeChange = (newSize: CardSize) => {
-    saveCardSize(newSize);
-    setCardSize(newSize);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
-  };
-
-  const handleThemeChange = (newTheme: AppTheme) => {
-    saveTheme(newTheme);
-    setAppTheme(newTheme);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
-  };
-
-  const handleMouseToggle = (enabled: boolean) => {
-    setHelpfulMouse(enabled);
-    setHelpfulMouseState(enabled);
-  };
-
-  const handleUpdateAgeInSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (settingsAgeCodeInput.trim() === AUTHORIZATION_CODE) {
-      const parsedAge = parseInt(userAgeInput, 10);
-      if (isNaN(parsedAge)) {
-        setSettingsAgeError(true);
+      if (activeTab === "My List") {
+        if (active) {
+          setTotalPages(1);
+          setLoading(false);
+        }
         return;
       }
-      saveUserAge(parsedAge);
-      setSettingsAgeError(false);
-      setSettingsAgeSuccess(true);
-      setSettingsAgeCodeInput("");
-      setTimeout(() => setSettingsAgeSuccess(false), 3000);
-    } else {
-      setSettingsAgeError(true);
-      setSettingsAgeCodeInput("");
-    }
-  };
 
-  const handleSaveBackup = () => {
-    const backupData = {
-      cardSize,
-      streamQuality,
-      appTheme,
-      helpfulMouse,
-      userAge: getSavedUserAge(),
-      myList: localStorage.getItem("rabtv_my_list"),
-      favorites: localStorage.getItem("rabtv_favorites"),
-      backedUpAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "rabtv_profile_backup.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    setBackupStatus("Profile settings backup saved!");
-    setTimeout(() => setBackupStatus(null), 3000);
-  };
+      const scraperCategory = activeTab === "TV Shows" ? "Series" : activeTab;
+      const activeSubFeed = globalFeedOverride && globalFeedOverride !== "All (Default)" ? globalFeedOverride : undefined;
 
-  const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
       try {
-        const data = JSON.parse(event.target?.result as string);
-        if (data.cardSize) saveCardSize(data.cardSize);
-        if (data.streamQuality) saveStreamQuality(data.streamQuality);
-        if (data.appTheme) saveTheme(data.appTheme);
-        if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
-        if (data.userAge) saveUserAge(data.userAge);
-        if (data.myList) localStorage.setItem("rabtv_my_list", data.myList);
-        if (data.favorites) localStorage.setItem("rabtv_favorites", data.favorites);
+        const result = await scrapeCategoryContent(scraperCategory, page, selectedGenre, activeSubFeed);
+        if (!active) return;
 
-        localStorage.removeItem(DISCLAIMER_ACCEPTED_KEY);
-        setShowFirstStartModal(true);
-        setShowSettings(false);
-        setBackupStatus("Settings restored. Please reinstate your passcode agreement.");
-      } catch {
-        setBackupStatus("Failed to restore backup file.");
+        if (result?.items?.length) {
+          setItems(result.items);
+          setTotalPages(result.totalPages || 1);
+        } else {
+          setItems([]);
+          if (result?.message) setError(result.message);
+        }
+      } catch (caught) {
+        if (!active) return;
+        setError(
+          caught instanceof Error ? caught.message : "Failed to load media"
+        );
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
       }
+    }
+
+    void load();
+    return () => {
+      active = false;
     };
-    reader.readAsText(file);
-  };
+  }, [activeTab, page, selectedGenre, globalFeedOverride]);
 
-  const getBodyBackground = (theme: AppTheme) => {
-    switch (theme) {
-      case "red":
-        return "bg-gradient-to-br from-zinc-950 via-red-950/40 to-black";
-      case "midnight":
-        return "bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950";
-      case "emerald":
-        return "bg-gradient-to-br from-slate-950 via-emerald-950/40 to-slate-950";
-      case "amber":
-        return "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950";
-      case "cyan":
-        return "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950";
-      case "violet":
-      default:
-        return "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950";
+  useEffect(() => {
+    let active = true;
+    async function fetchSuggestions() {
+      if (activeTab !== "My List") return;
+      try {
+        const seedItems = [...savedFavorites, ...historyItems.filter((h: any) => h.confirmedCompleted || (h.progressPercent ?? 0) > 50)];
+        const fetchedPool: MediaItem[] = [];
+
+        const trendingRes = await scrapeCategoryContent("Movies", 1);
+        if (trendingRes?.items) {
+          fetchedPool.push(...trendingRes.items);
+        }
+        const popularRes = await scrapeCategoryContent("Series", 1);
+        if (popularRes?.items) {
+          fetchedPool.push(...popularRes.items);
+        }
+
+        if (!active) return;
+
+        const watchedIds = new Set([
+          ...historyItems.map((h) => String(h.id).replace(/^(movie|tv)-/, "")),
+          ...savedFavorites.map((f) => String(f.id).replace(/^(movie|tv)-/, "")),
+          ...savedMyList.map((m) => String(m.id).replace(/^(movie|tv)-/, ""))
+        ]);
+
+        const uniqueSuggestions = new Map<string, MediaItem>();
+        for (const candidate of fetchedPool) {
+          const cleanId = String(candidate.id).replace(/^(movie|tv)-/, "");
+          if (watchedIds.has(cleanId) || isTitleDisliked(candidate.id)) continue;
+          
+          if (!isAllowedForAge((candidate as any).certification, candidate.genre, userAge)) continue;
+
+          const matchesGenre = seedCountHasGenre(seedItems, candidate.genre);
+          if (matchesGenre || Number(candidate.rating ?? 0) >= 6.5) {
+            uniqueSuggestions.set(cleanId, candidate);
+          }
+        }
+
+        const finalSuggestions = Array.from(uniqueSuggestions.values()).slice(0, 12);
+        setSuggestedItems(finalSuggestions);
+      } catch (e) {
+        console.error("Failed to load suggestions", e);
+      }
     }
-  };
 
-  const getCardBackground = (theme: AppTheme) => {
-    switch (theme) {
-      case "red":
-        return "bg-zinc-900/90 border-red-500/20";
-      case "midnight":
-        return "bg-slate-900/90 border-blue-500/20";
-      case "emerald":
-        return "bg-slate-900/90 border-emerald-500/20";
-      case "amber":
-        return "bg-stone-900/90 border-amber-500/20";
-      case "cyan":
-        return "bg-slate-900/90 border-cyan-500/20";
-      case "violet":
-      default:
-        return "bg-slate-900/90 border-violet-500/20";
+    void fetchSuggestions();
+    return () => {
+      active = false;
+    };
+  }, [activeTab, savedFavorites, savedMyList, historyItems, userAge]);
+
+  function seedCountHasGenre(seeds: MediaItem[], candidateGenre?: string) {
+    if (!candidateGenre) return true;
+    if (seeds.length === 0) return true;
+    return seeds.some((s) => s.genre && candidateGenre.toLowerCase().includes(s.genre.toLowerCase()));
+  }
+
+  const inProgressHistory = useMemo(
+    () => historyItems.filter((i: any) => !i.confirmedCompleted && (i.progressPercent ?? 0) < 100),
+    [historyItems]
+  );
+
+  const savedCatalogItems = useMemo(() => {
+    let rawList: MediaItem[] = [];
+    if (myListSubTab === "mylist") rawList = savedMyList;
+    else if (myListSubTab === "favorites") rawList = savedFavorites;
+    else if (myListSubTab === "in_progress") rawList = inProgressHistory;
+    else {
+      rawList = [...savedFavorites, ...savedMyList, ...inProgressHistory];
     }
-  };
 
-  const getOuterPanelBackground = (theme: AppTheme) => {
-    switch (theme) {
-      case "red":
-        return "bg-red-950/80 border-red-500/20 shadow-red-950/40";
-      case "midnight":
-        return "bg-blue-950/80 border-blue-500/20 shadow-blue-950/40";
-      case "emerald":
-        return "bg-emerald-950/80 border-emerald-500/20 shadow-emerald-950/40";
-      case "amber":
-        return "bg-yellow-950/80 border-amber-500/20 shadow-yellow-950/40";
-      case "cyan":
-        return "bg-cyan-950/80 border-cyan-500/20 shadow-cyan-950/40";
-      case "violet":
-      default:
-        return "bg-purple-950/80 border-violet-500/20 shadow-purple-950/40";
+    const map = new Map<string, MediaItem>();
+    for (const item of rawList) {
+      if (isTitleDisliked(item.id)) continue;
+      if (!isAllowedForAge((item as any).certification, item.genre, userAge)) continue;
+
+      const normalizedTitle = (item.title ?? "").trim().toLowerCase();
+      const uniqueKey = normalizedTitle || String(item.id);
+      
+      if (!map.has(uniqueKey)) {
+        map.set(uniqueKey, item);
+      }
     }
-  };
+    return Array.from(map.values());
+  }, [myListSubTab, savedMyList, savedFavorites, inProgressHistory, userAge]);
 
-  const getThemeHeaderStyles = (theme: AppTheme) => {
-    switch (theme) {
-      case "red":
-        return { btnBg: "bg-red-950/70 border-red-500/30 text-red-200 hover:bg-red-900/80" };
-      case "midnight":
-        return { btnBg: "bg-blue-950/70 border-blue-500/30 text-blue-200 hover:bg-blue-900/80" };
-      case "emerald":
-        return { btnBg: "bg-emerald-950/70 border-emerald-500/30 text-emerald-200 hover:bg-emerald-900/80" };
-      case "amber":
-        return { btnBg: "bg-yellow-950/70 border-amber-500/30 text-amber-200 hover:bg-yellow-900/80" };
-      case "cyan":
-        return { btnBg: "bg-cyan-950/70 border-cyan-500/30 text-cyan-200 hover:bg-cyan-900/80" };
-      case "violet":
-      default:
-        return { btnBg: "bg-purple-950/70 border-violet-500/30 text-purple-200 hover:bg-purple-900/80" };
+  const filteredItems = useMemo(() => {
+    const baseList = activeTab === "My List" ? savedCatalogItems : items;
+    
+    return baseList.filter((item) => {
+      if (isTitleDisliked(item.id)) return false;
+      return isAllowedForAge((item as any).certification, item.genre, userAge);
+    });
+  }, [items, activeTab, savedCatalogItems, userAge]);
+
+  const completedIdsOrTitles = useMemo(() => {
+    const set = new Set<string>();
+    const raw = getRawWatchHistory();
+    for (const h of raw) {
+      if (h.confirmedCompleted || (h.progressPercent ?? 0) >= 100) {
+        if (h.mediaId) set.add(String(h.mediaId).replace(/^(movie|tv)-/, ""));
+        if (h.id) set.add(String(h.id).replace(/^(movie|tv)-/, ""));
+        if (h.title) set.add(h.title.trim().toLowerCase());
+      }
     }
-  };
+    return set;
+  }, [historyItems]);
 
-  const activeHeader = getThemeHeaderStyles(appTheme);
-
-  const getPrimaryAccentColor = (theme: AppTheme) => {
-    switch (theme) {
-      case "red": return "text-red-400";
-      case "midnight": return "text-blue-400";
-      case "emerald": return "text-emerald-300";
-      case "amber": return "text-amber-300";
-      case "cyan": return "text-cyan-300";
-      case "violet":
-      default: return "text-violet-400";
+  const featured = useMemo(() => {
+    for (const item of filteredItems) {
+      const cleanId = String(item.id).replace(/^(movie|tv)-/, "");
+      const cleanTitle = (item.title ?? "").trim().toLowerCase();
+      if (!completedIdsOrTitles.has(cleanId) && !completedIdsOrTitles.has(cleanTitle)) {
+        return item;
+      }
     }
-  };
+    return filteredItems[0] ?? null;
+  }, [filteredItems, completedIdsOrTitles]);
 
-  const getPrimaryBgColor = (theme: AppTheme) => {
-    switch (theme) {
-      case "red": return "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30";
-      case "midnight": return "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30";
-      case "emerald": return "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30";
-      case "amber": return "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30";
-      case "cyan": return "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30";
-      case "violet":
-      default: return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
+  const gridColsClass = useMemo(() => {
+    if (cardSize === "small") {
+      return "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3";
     }
-  };
-
-  const getSubtlePillBg = (theme: AppTheme) => {
-    switch (theme) {
-      case "red": return "bg-red-950/50 border-red-500/30 text-red-200 hover:bg-red-900/60";
-      case "midnight": return "bg-blue-950/50 border-blue-500/30 text-blue-200 hover:bg-blue-900/60";
-      case "emerald": return "bg-emerald-950/50 border-emerald-500/30 text-emerald-200 hover:bg-emerald-900/60";
-      case "amber": return "bg-yellow-950/50 border-amber-500/30 text-amber-200 hover:bg-yellow-900/60";
-      case "cyan": return "bg-cyan-950/50 border-cyan-500/30 text-cyan-200 hover:bg-cyan-900/60";
-      case "violet":
-      default: return "bg-purple-950/50 border-violet-500/30 text-purple-200 hover:bg-purple-900/60";
+    if (cardSize === "medium") {
+      return "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4";
     }
-  };
+    return "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4";
+  }, [cardSize]);
 
-  const allThemesList: { id: AppTheme; label: string }[] = [
-    { id: "violet", label: "🟣 Violet / Neon" },
-    { id: "red", label: "🔴 Red & Black" },
-    { id: "midnight", label: "🔵 Midnight & Black" },
-    { id: "emerald", label: "🟢 Emerald / Teal" },
-    { id: "amber", label: "🟠 Amber / Gold" },
-    { id: "cyan", label: "🔷 Cyan / Sky" },
-  ];
+  const themeStyles = {
+    violet: {
+      bg: "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950",
+      cardGradient: "from-purple-950/80 via-slate-900 to-indigo-950/80",
+      btnActive: "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30",
+      accentText: "text-violet-300",
+      borderGlow: "border-violet-500/30",
+    },
+    red: {
+      bg: "bg-gradient-to-br from-zinc-950 via-red-950/40 to-black",
+      cardGradient: "from-red-950/80 via-zinc-900 to-neutral-950",
+      btnActive: "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30",
+      accentText: "text-red-400",
+      borderGlow: "border-red-500/30",
+    },
+    midnight: {
+      bg: "bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950",
+      cardGradient: "from-blue-950/80 via-slate-900 to-sky-950/80",
+      btnActive: "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30",
+      accentText: "text-sky-300",
+      borderGlow: "border-sky-500/30",
+    },
+    emerald: {
+      bg: "bg-gradient-to-br from-slate-950 via-emerald-950/40 to-slate-950",
+      cardGradient: "from-emerald-950/80 via-slate-900 to-teal-950/80",
+      btnActive: "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30",
+      accentText: "text-emerald-300",
+      borderGlow: "border-emerald-500/30",
+    },
+    amber: {
+      bg: "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950",
+      cardGradient: "from-yellow-950/80 via-stone-900 to-amber-950/80",
+      btnActive: "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30",
+      accentText: "text-amber-300",
+      borderGlow: "border-amber-500/30",
+    },
+    cyan: {
+      bg: "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950",
+      cardGradient: "from-cyan-950/80 via-slate-900 to-blue-950/80",
+      btnActive: "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30",
+      accentText: "text-cyan-300",
+      borderGlow: "border-cyan-500/30",
+    },
+  }[appTheme] ?? {
+    bg: "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950",
+    cardGradient: "from-purple-950/80 via-slate-900 to-indigo-950/80",
+    btnActive: "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30",
+    accentText: "text-violet-300",
+    borderGlow: "border-violet-500/30",
+  };
 
   return (
-    <html lang="en" data-theme={appTheme}>
-      <head>
-        <HeadContent />
-        {helpfulMouse && (
-          <style>{`
-            *, button, a, select, input, [role="button"] {
-              cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 24 24' fill='%23ffffff' stroke='%23000000' stroke-width='2'%3E%3Cpath d='M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z'/%3E%3C/svg%3E"), auto !important;
-            }
-          `}</style>
-        )}
-      </head>
-      <body className={`min-h-screen max-w-full overflow-x-hidden ${getBodyBackground(appTheme)} text-slate-100 antialiased transition-colors duration-300`}>
-        <PreviewHostBridge />
-        <AuthProvider>
-          <header className={`sticky top-0 z-40 border-b border-white/10 ${getOuterPanelBackground(appTheme)} backdrop-blur-md transition-colors duration-300`}>
-            <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 gap-2 overflow-x-auto scrollbar-none">
-              <Link
-                to="/"
-                className="flex items-center gap-2.5 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
+    <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
+      {/* Navigation Bar Tabs (Background wrapper completely removed) */}
+      <div className="sticky top-0 z-30 mb-4 mt-2 px-3 py-2.5">
+        <div className="mx-auto flex max-w-7xl items-center justify-center">
+          <div className="flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto p-1.5 scrollbar-none">
+            {navTabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
+                  activeTab === tab
+                    ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
+                    : "text-slate-300 hover:bg-white/10 hover:text-white"
+                }`}
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-lg transition-transform group-hover:scale-105 shrink-0">
-                  🐰
-                </div>
-                <span className="whitespace-nowrap">RABBiT TV</span>
-              </Link>
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
-              {!showFirstStartModal && (
-                <div className="flex items-center gap-2 shrink-0">
-                  {/* Global Feeds Header Selector Pillbox */}
-                  <div className="relative shrink-0">
-                    <div className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus-within:ring-2 ${activeHeader.btnBg} gap-1.5 relative pointer-events-auto`}>
-                      <span className="whitespace-nowrap pointer-events-none">
-                        🌍 Global: {selectedGlobalFeed}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 overflow-x-hidden">
+        {/* Featured Hero Banner */}
+        <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
+          {featured ? (
+            <>
+              <div className="absolute inset-0 w-full h-full overflow-hidden bg-transparent flex items-center justify-center">
+                <img
+                  src={featured.image}
+                  alt={featured.title}
+                  className="absolute inset-0 h-full w-full object-contain object-center opacity-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/20 to-transparent"></div>
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 p-3 sm:p-5 flex flex-col justify-end z-10">
+                <div className="bg-black/80 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="space-y-1 flex-1 min-w-0 w-full">
+                    <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] ${themeStyles.accentText}`}>
+                      <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5 shrink-0">
+                        Featured
                       </span>
-                      <span className="text-[10px] pointer-events-none">▼</span>
-
-                      <select
-                        value={selectedGlobalFeed}
-                        onChange={(e) => handleGlobalFeedChange(e.target.value as GlobalFeedOption)}
-                        className="absolute inset-0 w-full h-full opacity-0 bg-transparent text-white cursor-pointer z-50 appearance-none"
-                      >
-                        <option value="All (Default)" className="bg-slate-900 text-white p-2">🌐 All (Default)</option>
-                        <option value="Russian" className="bg-slate-900 text-white p-2">🇷🇺 Russian</option>
-                        <option value="British" className="bg-slate-900 text-white p-2">🇬🇧 British</option>
-                        <option value="Hungarian" className="bg-slate-900 text-white p-2">🇭🇺 Hungarian</option>
-                      </select>
+                      <span className="truncate max-w-[140px]">
+                        {featured.genre ?? "Entertainment"}
+                      </span>
                     </div>
+
+                    <div className="flex items-center flex-wrap gap-2 min-w-0">
+                      <h2 className="text-lg sm:text-xl font-black text-white leading-snug truncate max-w-full">
+                        {featured.title}
+                      </h2>
+                      {featured.rating && (
+                        <span className="rounded-full border border-yellow-400/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px] font-semibold shrink-0">
+                          ⭐ {featured.rating}
+                        </span>
+                      )}
+                      {featured.year && (
+                        <span className="text-[11px] text-slate-300 font-medium shrink-0">
+                          {featured.year}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs leading-relaxed text-slate-300 line-clamp-2">
+                      {featured.description}
+                    </p>
                   </div>
 
-                  <Link
-                    to="/watch-history"
-                    className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 shrink-0 ${activeHeader.btnBg}`}
-                  >
-                    🕒 History
-                  </Link>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowSettings((prev) => !prev)}
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl border text-lg shadow-md transition focus:outline-none focus:ring-2 shrink-0 ${activeHeader.btnBg}`}
-                    aria-label="Settings"
-                  >
-                    ⚙️
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {showSettings && !showFirstStartModal && (
-              <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-md shadow-2xl`}>
-                <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-white/10 w-full justify-center">
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab("theme")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        activeSettingsTab === "theme"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
+                  <div className="shrink-0 w-full sm:w-auto">
+                    <Link
+                      to={featured.href}
+                      className={`w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-full shadow-lg text-xs font-bold transition whitespace-nowrap border border-white/10 ${themeStyles.btnActive}`}
                     >
-                      Theme
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab("scale")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        activeSettingsTab === "scale"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
-                    >
-                      Scale
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab("mouse")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        activeSettingsTab === "mouse"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
-                    >
-                      XL Mouse
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab("age")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        activeSettingsTab === "age"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
-                    >
-                      Profile Age
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab("backup")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        activeSettingsTab === "backup"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
-                    >
-                      Backup
-                    </button>
-                  </div>
-
-                  <div className="w-full flex justify-center py-1">
-                    {activeSettingsTab === "theme" && (
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Theme:</span>
-                        {allThemesList.map((t) => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => handleThemeChange(t.id)}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                              appTheme === t.id
-                                ? `${getPrimaryBgColor(t.id)} text-white shadow-md`
-                                : `${getSubtlePillBg(appTheme)}`
-                            }`}
-                          >
-                            {t.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {activeSettingsTab === "scale" && (
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Scale:</span>
-                        {(["small", "medium", "large"] as CardSize[]).map((size) => (
-                          <button
-                            key={size}
-                            type="button"
-                            onClick={() => handleSizeChange(size)}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
-                              cardSize === size
-                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                                : `${getSubtlePillBg(appTheme)}`
-                            }`}
-                          >
-                            {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {activeSettingsTab === "mouse" && (
-                      <div className="flex items-center justify-center gap-4 py-1">
-                        <div className="text-left">
-                          <p className="text-xs font-bold text-white">XL Mouse Pointer (3x Scaled)</p>
-                          <p className="text-[10px] text-slate-400">Enlarges the cursor for improved visibility on TVs and projectors.</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleMouseToggle(!helpfulMouse)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              helpfulMouse ? "translate-x-6" : "translate-x-1"
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    )}
-
-                    {activeSettingsTab === "age" && (
-                      <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col sm:flex-row items-center justify-center gap-2 max-w-lg w-full">
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <span className="text-xs font-semibold text-slate-300 shrink-0">Age:</span>
-                          <input
-                            type="number"
-                            min={1}
-                            max={120}
-                            value={userAgeInput}
-                            onChange={(e) => setUserAgeInput(e.target.value)}
-                            className="w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-xs font-bold text-white focus:outline-none"
-                          />
-                        </div>
-
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <input
-                            type="password"
-                            maxLength={10}
-                            placeholder="Passcode Required"
-                            value={settingsAgeCodeInput}
-                            onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
-                            className="w-36 rounded-lg border border-white/10 bg-slate-800 px-3 py-1 text-center text-xs font-bold text-white focus:outline-none"
-                          />
-                          <button
-                            type="submit"
-                            className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-3 py-1 text-xs font-bold whitespace-nowrap shadow`}
-                          >
-                            Update
-                          </button>
-                        </div>
-
-                        {settingsAgeError && (
-                          <span className="text-xs font-semibold text-red-400">⚠️ Invalid Code or Age</span>
-                        )}
-                        {settingsAgeSuccess && (
-                          <span className="text-xs font-semibold text-emerald-400">✓ Age Updated!</span>
-                        )}
-                      </form>
-                    )}
-
-                    {activeSettingsTab === "backup" && (
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={handleSaveBackup}
-                          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}
-                        >
-                          💾 Export Backup File
-                        </button>
-
-                        <label className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}>
-                          🔄 Restore Profile File
-                          <input
-                            type="file"
-                            accept=".json"
-                            onChange={handleRestoreBackup}
-                            className="hidden"
-                          />
-                        </label>
-
-                        {backupStatus && (
-                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold ml-2`}>
-                            {backupStatus}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                      WATCH NOW
+                    </Link>
                   </div>
                 </div>
               </div>
-            )}
-          </header>
-
-          <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden">
-            <Outlet />
-          </main>
-
-          {/* Startup Modal with Age Validation Check */}
-          {showFirstStartModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
-              <form
-                onSubmit={handleFirstTimeAuthorize}
-                className={`my-auto w-full max-w-xl space-y-5 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
-              >
-                <div className="text-center space-y-2">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 text-xl shadow-lg">
-                    🐰
-                  </div>
-                  <h2 className={`text-2xl font-bold ${getPrimaryAccentColor(appTheme)}`}>
-                    Welcome to RABBiT TV
-                  </h2>
-                </div>
-
-                <div className="space-y-3 text-sm leading-relaxed text-slate-300 text-center">
-                  <p>
-                    Get all your favorite movies and TV shows right here, streaming smoothly in one place!
-                  </p>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
-                    <strong>🔒 Friendly Request:</strong> Please try not to share this app around too widely for now, so we can keep server payloads manageable and ensure smooth streaming for everyone.
-                  </div>
-                </div>
-
-                {/* Friendly Age Prompt (Blank by Default) */}
-                <div className="space-y-2 border-t border-white/10 pt-4">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-                    How old are you? <span className="text-slate-400 font-normal lowercase">(So we can streamline your experience!)</span>
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={120}
-                    value={userAgeInput}
-                    onChange={(e) => setUserAgeInput(e.target.value)}
-                    placeholder="Enter Age"
-                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-2.5 text-center text-base font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
-                  />
-                  {ageErrorNotice && (
-                    <p className="text-xs font-semibold text-red-400 text-center">
-                      ⚠️ Age was not entered! Please enter your age and passcode to proceed.
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2 border-t border-white/10 pt-3">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Select Startup Theme:
-                  </label>
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    {allThemesList.map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => handleThemeChange(t.id)}
-                        className={`rounded-xl border py-2.5 text-xs font-bold transition focus:outline-none focus:ring-4 ${
-                          appTheme === t.id
-                            ? `border-white/30 ${getPrimaryBgColor(t.id)} text-white shadow-lg`
-                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-2 border-t border-white/10 pt-3">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Select Display Size (Adjustable anytime in settings):
-                  </label>
-
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                    {(["small", "medium", "large"] as CardSize[]).map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => handleSizeChange(size)}
-                        className={`rounded-xl border py-2.5 text-xs font-bold transition focus:outline-none focus:ring-4 ${
-                          cardSize === size
-                            ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
-                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
-                        }`}
-                      >
-                        {size === "small" ? "Small (25%)" : size === "medium" ? "Medium (60%)" : "Large (100%)"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-white/10 pt-3">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                      XL Mouse Pointer
-                    </label>
-                    <p className="text-[11px] text-slate-400">Enlarges cursor 3x for easy projector/TV navigation.</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleMouseToggle(!helpfulMouse)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      helpfulMouse ? "bg-violet-600" : "bg-slate-700"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        helpfulMouse ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div className="space-y-2 border-t border-white/10 pt-3">
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
-                    Enter Personal Passcode:
-                  </label>
-                  <input
-                    type="password"
-                    maxLength={10}
-                    value={passcodeInput}
-                    onChange={(e) => setPasscodeInput(e.target.value)}
-                    placeholder="Enter Passcode"
-                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
-                  />
-
-                  {passcodeError && (
-                    <p className="text-xs font-semibold text-red-400 text-center">
-                      ⚠️ Invalid Passcode. Please try again.
-                    </p>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-3.5 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
-                >
-                  Enter RABBiT TV
-                </button>
-              </form>
+            </>
+          ) : (
+            <div className="flex h-full items-center justify-center text-slate-300 z-10">
+              {loading
+                ? `Loading ${activeTab}...`
+                : error ?? "No media found in this section."}
             </div>
           )}
-        </AuthProvider>
-        <Scripts />
-      </body>
-    </html>
+        </section>
+
+        {/* Genre Filters (Background wrapper completely removed) */}
+        {activeTab !== "My List" && (
+          <section className="mb-4 flex justify-center">
+            <div className="flex flex-wrap items-center justify-center gap-1.5 p-2 max-w-full">
+              {genreCategories.map((genre) => (
+                <button
+                  key={genre}
+                  type="button"
+                  onClick={() => setSelectedGenre(genre)}
+                  className={`rounded-full px-3.5 py-1 text-xs font-semibold transition focus:outline-none focus:ring-4 ${
+                    selectedGenre === genre
+                      ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
+                      : "text-slate-300 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {genre}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* My List Sub-category Selector */}
+        {activeTab === "My List" && (
+          <section className="mb-4 flex flex-wrap items-center gap-2 border-b border-white/10 pb-3 px-2">
+            <button
+              type="button"
+              onClick={() => setMyListSubTab("all")}
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
+                myListSubTab === "all"
+                  ? themeStyles.btnActive
+                  : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
+              }`}
+            >
+              All Saved ({savedMyList.length + savedFavorites.length + inProgressHistory.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMyListSubTab("in_progress")}
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
+                myListSubTab === "in_progress"
+                  ? "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-cyan-600/30 border-cyan-400/30"
+                  : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
+              }`}
+            >
+              ⏳ In Progress ({inProgressHistory.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMyListSubTab("mylist")}
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
+                myListSubTab === "mylist"
+                  ? themeStyles.btnActive
+                  : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
+              }`}
+            >
+              🔖 Watch Later ({savedMyList.length})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMyListSubTab("favorites")}
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
+                myListSubTab === "favorites"
+                  ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30 border-amber-400/30"
+                  : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
+              }`}
+            >
+              ⭐ Favorites ({savedFavorites.length})
+            </button>
+          </section>
+        )}
+
+        {/* Content Grid */}
+        <section className="mb-6 px-1">
+          <div className="mb-3 flex items-center justify-between px-1">
+            <h3 className="text-lg font-bold text-white">
+              {activeTab === "My List" ? "Saved Catalog" : `${activeTab} Catalog`}
+            </h3>
+            <span className={`text-xs font-medium ${themeStyles.accentText}`}>
+              {filteredItems.length} titles available
+            </span>
+          </div>
+
+          {filteredItems.length > 0 ? (
+            <div className={gridColsClass}>
+              {filteredItems.slice(activeTab === "My List" ? 0 : 1).map((item) => (
+                <MemoizedMediaCard item={item} key={item.id} />
+              ))}
+            </div>
+          ) : (
+            <div className={`rounded-[20px] bg-gradient-to-r ${themeStyles.cardGradient} border ${themeStyles.borderGlow} p-6 text-center mx-2`}>
+              <p className="text-sm text-slate-300">
+                {activeTab === "My List"
+                  ? "No saved titles in this section yet. Open any movie or show to save it!"
+                  : loading
+                  ? `Loading ${activeTab} content...`
+                  : error ?? "No titles available in this view."}
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* Suggested For You Section */}
+        {activeTab === "My List" && suggestedItems.length > 0 && (
+          <section className="mb-8 px-1 pt-4 border-t border-white/10">
+            <div className="mb-3 flex items-center justify-between px-1">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>✨ Suggested For You</span>
+              </h3>
+              <span className={`text-xs font-medium ${themeStyles.accentText}`}>
+                Curated based on your favorites & history
+              </span>
+            </div>
+            <div className={gridColsClass}>
+              {suggestedItems.map((item) => (
+                <MemoizedMediaCard item={item} key={`suggested-${item.id}`} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Pagination Controls */}
+        {activeTab !== "My List" && totalPages > 1 && (
+          <div className={`mb-6 flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r ${themeStyles.cardGradient} border ${themeStyles.borderGlow} p-3 mx-2`}>
+            <button
+              type="button"
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={page <= 1 || loading}
+              className="rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-40 focus:outline-none focus:ring-4"
+            >
+              ◀ Previous
+            </button>
+
+            <span className={`text-xs font-bold ${themeStyles.accentText}`}>
+              Page {page} of {totalPages}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={page >= totalPages || loading}
+              className={`rounded-xl ${themeStyles.btnActive} px-3 py-2 text-xs font-semibold shadow transition disabled:opacity-40 focus:outline-none focus:ring-4`}
+            >
+              Next ▶
+            </button>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
