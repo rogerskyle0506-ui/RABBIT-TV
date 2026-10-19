@@ -274,17 +274,15 @@ function Home() {
     };
   }, [activeTab, page]);
 
-  // Load smart suggestions for My List based on favorites & completed/watched items
+  // Load smart suggestions for My List (Updated to 12 titles)
   useEffect(() => {
     let active = true;
     async function fetchSuggestions() {
       if (activeTab !== "My List") return;
       try {
-        // Collect seed IDs from favorites and completed items
         const seedItems = [...savedFavorites, ...historyItems.filter((h: any) => h.confirmedCompleted || (h.progressPercent ?? 0) > 50)];
         const fetchedPool: MediaItem[] = [];
 
-        // Pull category content to source similar items
         const trendingRes = await scrapeCategoryContent("Movies", 1);
         if (trendingRes?.items) {
           fetchedPool.push(...trendingRes.items);
@@ -296,7 +294,6 @@ function Home() {
 
         if (!active) return;
 
-        // Filter out items already saved, watched, or disliked
         const watchedIds = new Set([
           ...historyItems.map((h) => String(h.id).replace(/^(movie|tv)-/, "")),
           ...savedFavorites.map((f) => String(f.id).replace(/^(movie|tv)-/, "")),
@@ -308,14 +305,14 @@ function Home() {
           const cleanId = String(candidate.id).replace(/^(movie|tv)-/, "");
           if (watchedIds.has(cleanId) || isTitleDisliked(candidate.id)) continue;
           
-          // Match similarity based on seed genre or high rating
           const matchesGenre = seedCountHasGenre(seedItems, candidate.genre);
           if (matchesGenre || Number(candidate.rating ?? 0) >= 6.5) {
             uniqueSuggestions.set(cleanId, candidate);
           }
         }
 
-        const finalSuggestions = Array.from(uniqueSuggestions.values()).slice(0, 10);
+        // Slice to 12 items for clean grid math across all breakpoints
+        const finalSuggestions = Array.from(uniqueSuggestions.values()).slice(0, 12);
         setSuggestedItems(finalSuggestions);
       } catch (e) {
         console.error("Failed to load suggestions", e);
@@ -548,7 +545,7 @@ function Home() {
               appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
               appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
               appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
-              appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-yellow-950/50" :
+              appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50" :
               appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
               "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
             }`}>
@@ -653,7 +650,7 @@ function Home() {
           )}
         </section>
 
-        {/* Suggested For You Section (Only on My List Tab) */}
+        {/* Suggested For You Section (Only on My List Tab, Up to 12 Titles) */}
         {activeTab === "My List" && suggestedItems.length > 0 && (
           <section className="mb-8 px-1 pt-4 border-t border-white/10">
             <div className="mb-3 flex items-center justify-between px-1">
