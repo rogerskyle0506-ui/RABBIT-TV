@@ -477,7 +477,7 @@ function Home() {
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
       {/* Navigation Bar Tabs Sticky Wrapper */}
-      <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-4 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
+      <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-3 sm:px-4 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
         appTheme === "red" ? "bg-red-950/80" :
         appTheme === "midnight" ? "bg-blue-950/80" :
         appTheme === "emerald" ? "bg-emerald-950/80" :
@@ -486,7 +486,7 @@ function Home() {
         "bg-purple-950/80"
       }`}>
         <div className="mx-auto flex max-w-7xl items-center justify-center">
-          <div className={`flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto rounded-2xl border p-1.5 shadow-lg backdrop-blur-md scrollbar-none transition-colors duration-300 ${
+          <div className={`flex w-full flex-wrap items-center justify-center gap-1.5 rounded-2xl border p-2 shadow-lg backdrop-blur-md transition-colors duration-300 ${
             appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
             appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
             appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
@@ -499,7 +499,7 @@ function Home() {
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`shrink-0 rounded-xl px-4 py-1.5 text-xs font-semibold transition focus:outline-none ${
+                className={`rounded-xl px-4 py-1.5 text-xs font-semibold transition focus:outline-none ${
                   activeTab === tab
                     ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
                     : "text-slate-300 hover:bg-white/10 hover:text-white"
@@ -513,7 +513,7 @@ function Home() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 overflow-x-hidden">
-        {/* Featured Hero Banner */}
+        {/* Featured Hero Banner with Strict Text Constraints */}
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
             <>
@@ -528,9 +528,9 @@ function Home() {
 
               <div className="absolute inset-x-0 bottom-0 p-3 sm:p-5 flex flex-col justify-end z-10">
                 <div className="bg-black/80 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="space-y-1 flex-1 min-w-0">
+                  <div className="space-y-1 flex-1 min-w-0 w-full">
                     <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] ${themeStyles.accentText}`}>
-                      <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5">
+                      <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5 shrink-0">
                         Featured
                       </span>
                       <span className="truncate max-w-[140px]">
@@ -538,17 +538,17 @@ function Home() {
                       </span>
                     </div>
 
-                    <div className="flex items-center flex-wrap gap-2">
-                      <h2 className="text-lg sm:text-xl font-black text-white leading-snug truncate">
+                    <div className="flex items-center flex-wrap gap-2 min-w-0">
+                      <h2 className="text-lg sm:text-xl font-black text-white leading-snug truncate max-w-full">
                         {featured.title}
                       </h2>
                       {featured.rating && (
-                        <span className="rounded-full border border-yellow-400/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px] font-semibold">
+                        <span className="rounded-full border border-yellow-400/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px] font-semibold shrink-0">
                           ⭐ {featured.rating}
                         </span>
                       )}
                       {featured.year && (
-                        <span className="text-[11px] text-slate-300 font-medium">
+                        <span className="text-[11px] text-slate-300 font-medium shrink-0">
                           {featured.year}
                         </span>
                       )}
