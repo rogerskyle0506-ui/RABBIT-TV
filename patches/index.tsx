@@ -96,7 +96,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
     return (
       <Link
         to={item.href}
-        className={`group flex ${dimensions.card} ${cardThemeStyles.bg} border ${cardThemeStyles.border} focus:outline-none focus:ring-4 ${cardThemeStyles.ring} hover:scale-105 overflow-hidden relative rounded-xl transition w-full shadow-lg bg-black`}
+        className={`group flex ${dimensions.card} ${cardThemeStyles.bg} border ${cardThemeStyles.border} focus:outline-none focus:ring-4 ${cardThemeStyles.ring} hover:scale-105 overflow-hidden relative rounded-xl transition w-full shadow-lg bg-transparent`}
       >
         <img
           src={item.image}
@@ -117,7 +117,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
     <div
       className={`group relative flex w-full flex-col overflow-hidden rounded-2xl ${cardThemeStyles.bg} border ${cardThemeStyles.border} shadow-xl transition hover:-translate-y-1 ${cardThemeStyles.ring} ${dimensions.card}`}
     >
-      <Link className="block relative overflow-hidden flex-1 focus:outline-none w-full h-full bg-black flex items-center justify-center" to={item.href}>
+      <Link className="block relative overflow-hidden flex-1 focus:outline-none w-full h-full bg-transparent flex items-center justify-center" to={item.href}>
         <img
           src={item.image}
           alt={item.title}
@@ -511,11 +511,11 @@ function Home() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 overflow-x-hidden">
-        {/* Featured Hero Banner with 100% Fit & Proportion Control */}
+        {/* Featured Hero Banner with Transparent Theme Integration */}
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
             <>
-              <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
+              <div className="absolute inset-0 w-full h-full overflow-hidden bg-transparent flex items-center justify-center">
                 <img
                   src={featured.image}
                   alt={featured.title}
