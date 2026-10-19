@@ -7,6 +7,8 @@ import {
   AppTheme,
   getSavedCardSize,
   getSavedTheme,
+  getSavedUserAge,
+  isAllowedForAge,
   getPosterDimensions,
 } from "@/lib/settings";
 import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
@@ -174,6 +176,7 @@ function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
+  const [userAge, setUserAge] = useState<number>(18);
   const [myListSubTab, setMyListSubTab] = useState<"all" | "in_progress" | "mylist" | "favorites">("all");
   const [savedMyList, setSavedMyList] = useState<MediaItem[]>([]);
   const [savedFavorites, setSavedFavorites] = useState<MediaItem[]>([]);
@@ -217,8 +220,9 @@ function Home() {
       setHistoryItems(mappedHistory);
       setAppTheme(getSavedTheme());
       setCardSize(getSavedCardSize());
+      setUserAge(getSavedUserAge());
     } catch (err) {
-      console.error("Error reading saved lists/theme", err);
+      console.error("Error reading saved lists/theme/age", err);
     }
   };
 
@@ -285,7 +289,7 @@ function Home() {
     };
   }, [activeTab, page]);
 
-  // Load smart suggestions for My List (Updated to 12 titles)
+  // Load smart suggestions for My List (Updated to 12 titles with age filtering)
   useEffect(() => {
     let active = true;
     async function fetchSuggestions() {
@@ -316,6 +320,8 @@ function Home() {
           const cleanId = String(candidate.id).replace(/^(movie|tv)-/, "");
           if (watchedIds.has(cleanId) || isTitleDisliked(candidate.id)) continue;
           
+          if (!isAllowedForAge((candidate as any).certification || candidate.genre, userAge)) continue;
+
           const matchesGenre = seedCountHasGenre(seedItems, candidate.genre);
           if (matchesGenre || Number(candidate.rating ?? 0) >= 6.5) {
             uniqueSuggestions.set(cleanId, candidate);
@@ -333,7 +339,7 @@ function Home() {
     return () => {
       active = false;
     };
-  }, [activeTab, savedFavorites, savedMyList, historyItems]);
+  }, [activeTab, savedFavorites, savedMyList, historyItems, userAge]);
 
   function seedCountHasGenre(seeds: MediaItem[], candidateGenre?: string) {
     if (!candidateGenre) return true;
@@ -358,6 +364,8 @@ function Home() {
     const map = new Map<string, MediaItem>();
     for (const item of rawList) {
       if (isTitleDisliked(item.id)) continue;
+      if (!isAllowedForAge((item as any).certification || item.genre, userAge)) continue;
+
       const normalizedTitle = (item.title ?? "").trim().toLowerCase();
       const uniqueKey = normalizedTitle || String(item.id);
       
@@ -366,18 +374,23 @@ function Home() {
       }
     }
     return Array.from(map.values());
-  }, [myListSubTab, savedMyList, savedFavorites, inProgressHistory]);
+  }, [myListSubTab, savedMyList, savedFavorites, inProgressHistory, userAge]);
 
+  /** FILTER CATALOG DYNAMICALLY BY SAVED USER AGE TIER */
   const filteredItems = useMemo(() => {
     const baseList = activeTab === "My List" ? savedCatalogItems : items;
-    const catalogFiltered = baseList.filter((item) => !isTitleDisliked(item.id));
+    
+    const catalogFiltered = baseList.filter((item) => {
+      if (isTitleDisliked(item.id)) return false;
+      return isAllowedForAge((item as any).certification || item.genre, userAge);
+    });
 
     if (activeTab === "My List") return catalogFiltered;
     if (selectedGenre === "Trending") return catalogFiltered;
     return catalogFiltered.filter((item) =>
       item.genre?.toLowerCase().includes(selectedGenre.toLowerCase())
     );
-  }, [items, selectedGenre, activeTab, savedCatalogItems]);
+  }, [items, selectedGenre, activeTab, savedCatalogItems, userAge]);
 
   const featured = useMemo(() => filteredItems[0] ?? null, [filteredItems]);
 
