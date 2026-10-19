@@ -2,7 +2,7 @@ import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/r
 import { AuthProvider } from "@/components/auth-provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import "@/styles.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   CardSize,
   StreamQuality,
@@ -21,6 +21,8 @@ import {
 } from "@/lib/settings";
 
 const AUTHORIZATION_CODE = "34688643";
+const globalFeedOptions = ["Russian", "British", "Hungarian"] as const;
+type GlobalFeedOption = (typeof globalFeedOptions)[number];
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -51,6 +53,21 @@ function RootComponent() {
   const [settingsAgeError, setSettingsAgeError] = useState<boolean>(false);
   const [settingsAgeSuccess, setSettingsAgeSuccess] = useState<boolean>(false);
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
+
+  // Global Feed Dropdown State in Header
+  const [selectedGlobalFeed, setSelectedGlobalFeed] = useState<GlobalFeedOption>("Russian");
+  const [isFeedDropdownOpen, setIsFeedDropdownOpen] = useState(false);
+  const feedDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (feedDropdownRef.current && !feedDropdownRef.current.contains(event.target as Node)) {
+        setIsFeedDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -341,7 +358,7 @@ function RootComponent() {
         <PreviewHostBridge />
         <AuthProvider>
           <header className={`sticky top-0 z-40 border-b border-white/10 ${getOuterPanelBackground(appTheme)} backdrop-blur-md transition-colors duration-300`}>
-            <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
+            <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 gap-2 overflow-x-auto scrollbar-none">
               <Link
                 to="/"
                 className="flex items-center gap-2.5 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
@@ -353,18 +370,56 @@ function RootComponent() {
               </Link>
 
               {!showFirstStartModal && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Global Feeds Header Dropdown Pillbox */}
+                  <div className="relative shrink-0" ref={feedDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setIsFeedDropdownOpen(!isFeedDropdownOpen)}
+                      className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 ${activeHeader.btnBg} gap-1.5`}
+                    >
+                      <span className="truncate max-w-[120px] sm:max-w-none">🌍 Global ({selectedGlobalFeed})</span>
+                      <span className="text-[10px]">▼</span>
+                    </button>
+
+                    {isFeedDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-44 rounded-xl bg-black/95 border border-white/20 shadow-2xl backdrop-blur-xl py-1.5 z-50">
+                        <div className="px-3 py-1 text-[10px] uppercase tracking-wider text-slate-400 border-b border-white/10 font-bold">
+                          Select Region
+                        </div>
+                        {globalFeedOptions.map((feed) => (
+                          <button
+                            key={feed}
+                            type="button"
+                            onClick={() => {
+                              setSelectedGlobalFeed(feed);
+                              setIsFeedDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition flex items-center justify-between ${
+                              selectedGlobalFeed === feed
+                                ? "bg-white/20 text-white"
+                                : "text-slate-300 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <span>{feed === "Russian" ? "🇷🇺 Russian" : feed === "British" ? "🇬🇧 British" : "🇭🇺 Hungarian"}</span>
+                            {selectedGlobalFeed === feed && <span className="text-[10px]">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <Link
                     to="/watch-history"
-                    className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 ${activeHeader.btnBg}`}
+                    className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 shrink-0 ${activeHeader.btnBg}`}
                   >
-                    🕒 Watch History
+                    🕒 History
                   </Link>
 
                   <button
                     type="button"
                     onClick={() => setShowSettings((prev) => !prev)}
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl border text-lg shadow-md transition focus:outline-none focus:ring-2 ${activeHeader.btnBg}`}
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl border text-lg shadow-md transition focus:outline-none focus:ring-2 shrink-0 ${activeHeader.btnBg}`}
                     aria-label="Settings"
                   >
                     ⚙️
