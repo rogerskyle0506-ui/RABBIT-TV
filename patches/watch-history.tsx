@@ -113,10 +113,9 @@ function WatchHistoryComponent() {
   const gridColsClass = getGridColsClass(cardSize);
   const allEntries = Object.values(historyMap);
 
-  const tvShows = allEntries.filter(
-    (item) => item.mediaType === "tv" || item.media_type === "tv" || item.totalEpisodes > 1
-  );
-  const movies = allEntries.filter((item) => !tvShows.includes(item));
+  // Strict check on mediaType to prevent movies from falling into TV Shows
+  const tvShows = allEntries.filter((item) => item.mediaType === "tv");
+  const movies = allEntries.filter((item) => item.mediaType === "movie");
 
   const inProgressMovies = movies.filter((m) => calculateSeriesProgress(m) < 100);
   const completedMovies = movies.filter((m) => calculateSeriesProgress(m) === 100);
