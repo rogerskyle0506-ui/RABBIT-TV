@@ -37,15 +37,16 @@ function RootComponent() {
   const [showFirstStartModal, setShowFirstStartModal] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState(false);
+  const [ageErrorNotice, setAgeErrorNotice] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "quality" | "mouse" | "age" | "backup">("theme");
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "mouse" | "age" | "backup">("theme");
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
   const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [helpfulMouse, setHelpfulMouseState] = useState(false);
-  const [userAgeInput, setUserAgeInput] = useState<string>("18");
+  const [userAgeInput, setUserAgeInput] = useState<string>("");
   const [settingsAgeCodeInput, setSettingsAgeCodeInput] = useState<string>("");
   const [settingsAgeError, setSettingsAgeError] = useState<boolean>(false);
   const [settingsAgeSuccess, setSettingsAgeSuccess] = useState<boolean>(false);
@@ -68,14 +69,17 @@ function RootComponent() {
     setStreamQuality(getSavedStreamQuality());
     setAppTheme(getSavedTheme());
     setHelpfulMouseState(getHelpfulMouse());
-    setUserAgeInput(String(getSavedUserAge()));
+    
+    const existingAge = localStorage.getItem("rabtv_user_age");
+    if (existingAge) {
+      setUserAgeInput(existingAge);
+    }
 
     const handleSettingsUpdate = () => {
       setCardSize(getSavedCardSize());
       setStreamQuality(getSavedStreamQuality());
       setAppTheme(getSavedTheme());
       setHelpfulMouseState(getHelpfulMouse());
-      setUserAgeInput(String(getSavedUserAge()));
     };
 
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
@@ -87,6 +91,13 @@ function RootComponent() {
   const handleFirstTimeAuthorize = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const trimmedAge = userAgeInput.trim();
+    if (!trimmedAge || isNaN(parseInt(trimmedAge, 10))) {
+      setAgeErrorNotice(true);
+      setPasscodeError(false);
+      return;
+    }
+
     if (passcodeInput.trim() === AUTHORIZATION_CODE) {
       localStorage.setItem(DISCLAIMER_ACCEPTED_KEY, "true");
       saveCardSize(cardSize);
@@ -94,14 +105,16 @@ function RootComponent() {
       saveTheme(appTheme);
       setHelpfulMouse(helpfulMouse);
 
-      const parsedAge = parseInt(userAgeInput, 10);
-      saveUserAge(isNaN(parsedAge) ? 18 : parsedAge);
+      const parsedAge = parseInt(trimmedAge, 10);
+      saveUserAge(parsedAge);
 
       setShowFirstStartModal(false);
       setPasscodeError(false);
+      setAgeErrorNotice(false);
       window.dispatchEvent(new Event("rabtv_settings_updated"));
     } else {
       setPasscodeError(true);
+      setAgeErrorNotice(false);
       setPasscodeInput("");
     }
   };
@@ -109,12 +122,6 @@ function RootComponent() {
   const handleSizeChange = (newSize: CardSize) => {
     saveCardSize(newSize);
     setCardSize(newSize);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
-  };
-
-  const handleQualityChange = (newQuality: StreamQuality) => {
-    saveStreamQuality(newQuality);
-    setStreamQuality(newQuality);
     window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
@@ -133,7 +140,11 @@ function RootComponent() {
     e.preventDefault();
     if (settingsAgeCodeInput.trim() === AUTHORIZATION_CODE) {
       const parsedAge = parseInt(userAgeInput, 10);
-      saveUserAge(isNaN(parsedAge) ? 18 : parsedAge);
+      if (isNaN(parsedAge)) {
+        setSettingsAgeError(true);
+        return;
+      }
+      saveUserAge(parsedAge);
       setSettingsAgeError(false);
       setSettingsAgeSuccess(true);
       setSettingsAgeCodeInput("");
@@ -252,30 +263,18 @@ function RootComponent() {
   const getThemeHeaderStyles = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return {
-          btnBg: "bg-red-950/70 border-red-500/30 text-red-200 hover:bg-red-900/80",
-        };
+        return { btnBg: "bg-red-950/70 border-red-500/30 text-red-200 hover:bg-red-900/80" };
       case "midnight":
-        return {
-          btnBg: "bg-blue-950/70 border-blue-500/30 text-blue-200 hover:bg-blue-900/80",
-        };
+        return { btnBg: "bg-blue-950/70 border-blue-500/30 text-blue-200 hover:bg-blue-900/80" };
       case "emerald":
-        return {
-          btnBg: "bg-emerald-950/70 border-emerald-500/30 text-emerald-200 hover:bg-emerald-900/80",
-        };
+        return { btnBg: "bg-emerald-950/70 border-emerald-500/30 text-emerald-200 hover:bg-emerald-900/80" };
       case "amber":
-        return {
-          btnBg: "bg-yellow-950/70 border-amber-500/30 text-amber-200 hover:bg-yellow-900/80",
-        };
+        return { btnBg: "bg-yellow-950/70 border-amber-500/30 text-amber-200 hover:bg-yellow-900/80" };
       case "cyan":
-        return {
-          btnBg: "bg-cyan-950/70 border-cyan-500/30 text-cyan-200 hover:bg-cyan-900/80",
-        };
+        return { btnBg: "bg-cyan-950/70 border-cyan-500/30 text-cyan-200 hover:bg-cyan-900/80" };
       case "violet":
       default:
-        return {
-          btnBg: "bg-purple-950/70 border-violet-500/30 text-purple-200 hover:bg-purple-900/80",
-        };
+        return { btnBg: "bg-purple-950/70 border-violet-500/30 text-purple-200 hover:bg-purple-900/80" };
     }
   };
 
@@ -283,37 +282,25 @@ function RootComponent() {
 
   const getPrimaryAccentColor = (theme: AppTheme) => {
     switch (theme) {
-      case "red":
-        return "text-red-400";
-      case "midnight":
-        return "text-blue-400";
-      case "emerald":
-        return "text-emerald-300";
-      case "amber":
-        return "text-amber-300";
-      case "cyan":
-        return "text-cyan-300";
+      case "red": return "text-red-400";
+      case "midnight": return "text-blue-400";
+      case "emerald": return "text-emerald-300";
+      case "amber": return "text-amber-300";
+      case "cyan": return "text-cyan-300";
       case "violet":
-      default:
-        return "text-violet-400";
+      default: return "text-violet-400";
     }
   };
 
   const getPrimaryBgColor = (theme: AppTheme) => {
     switch (theme) {
-      case "red":
-        return "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30";
-      case "midnight":
-        return "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30";
-      case "emerald":
-        return "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30";
-      case "amber":
-        return "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30";
-      case "cyan":
-        return "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30";
+      case "red": return "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30";
+      case "midnight": return "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30";
+      case "emerald": return "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30";
+      case "amber": return "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30";
+      case "cyan": return "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30";
       case "violet":
-      default:
-        return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
+      default: return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
     }
   };
 
@@ -343,7 +330,6 @@ function RootComponent() {
         <AuthProvider>
           <header className={`sticky top-0 z-40 border-b border-white/10 ${getOuterPanelBackground(appTheme)} backdrop-blur-md transition-colors duration-300`}>
             <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6">
-              {/* Brand Logo with Bunny Emoji */}
               <Link
                 to="/"
                 className="flex items-center gap-2.5 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
@@ -354,7 +340,6 @@ function RootComponent() {
                 <span className="whitespace-nowrap">RABBiT TV</span>
               </Link>
 
-              {/* Watch History Link & Settings Gear Button */}
               {!showFirstStartModal && (
                 <div className="flex items-center gap-2">
                   <Link
@@ -376,7 +361,6 @@ function RootComponent() {
               )}
             </div>
 
-            {/* Popout Settings Menu */}
             {showSettings && !showFirstStartModal && (
               <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-md shadow-2xl`}>
                 <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
@@ -402,17 +386,6 @@ function RootComponent() {
                       }`}
                     >
                       Scale
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab("quality")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        activeSettingsTab === "quality"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                      }`}
-                    >
-                      Quality
                     </button>
                     <button
                       type="button"
@@ -490,31 +463,6 @@ function RootComponent() {
                       </div>
                     )}
 
-                    {activeSettingsTab === "quality" && (
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Cap:</span>
-                        {[
-                          { key: "1080p", label: "FHD (1080p)" },
-                          { key: "720p", label: "HD (720p)" },
-                          { key: "480p", label: "SD (480p)" },
-                          { key: "auto", label: "Auto Bandwidth" },
-                        ].map((item) => (
-                          <button
-                            key={item.key}
-                            type="button"
-                            onClick={() => handleQualityChange(item.key as StreamQuality)}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                              streamQuality === item.key
-                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                                : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                            }`}
-                          >
-                            {item.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
                     {activeSettingsTab === "mouse" && (
                       <div className="flex items-center justify-center gap-4 py-1">
                         <div className="text-left">
@@ -569,7 +517,7 @@ function RootComponent() {
                         </div>
 
                         {settingsAgeError && (
-                          <span className="text-xs font-semibold text-red-400">⚠️ Invalid Code</span>
+                          <span className="text-xs font-semibold text-red-400">⚠️ Invalid Code or Age</span>
                         )}
                         {settingsAgeSuccess && (
                           <span className="text-xs font-semibold text-emerald-400">✓ Age Updated!</span>
@@ -614,7 +562,7 @@ function RootComponent() {
             <Outlet />
           </main>
 
-          {/* Startup Modal with Friendly Age Question */}
+          {/* Startup Modal with Age Validation Check */}
           {showFirstStartModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
               <form
@@ -639,7 +587,7 @@ function RootComponent() {
                   </div>
                 </div>
 
-                {/* Friendly Age Prompt */}
+                {/* Friendly Age Prompt (Blank by Default) */}
                 <div className="space-y-2 border-t border-white/10 pt-4">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
                     How old are you? <span className="text-slate-400 font-normal lowercase">(So we can streamline your experience!)</span>
@@ -653,6 +601,11 @@ function RootComponent() {
                     placeholder="Enter Age"
                     className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-2.5 text-center text-base font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
                   />
+                  {ageErrorNotice && (
+                    <p className="text-xs font-semibold text-red-400 text-center">
+                      ⚠️ Age was not entered! Please enter your age and passcode to proceed.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2 border-t border-white/10 pt-3">
