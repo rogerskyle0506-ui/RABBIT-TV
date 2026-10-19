@@ -24,7 +24,7 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-const STORAGE_PREFIX = "rabtv_catalog_cache_v4_";
+const STORAGE_PREFIX = "rabtv_catalog_cache_v5_";
 const INITIAL_TARGET_PAGES = 10;
 const ITEMS_PER_PAGE = 20;
 
@@ -91,6 +91,13 @@ const genreNameToId: Record<string, number> = {
   thriller: 53,
   war: 10752,
   western: 37,
+};
+
+// Official TMDB Watch Provider IDs
+const providerIdMap: Record<string, string> = {
+  Netflix: "8",
+  Prime: "9",
+  "Disney+": "337",
 };
 
 function getGenreName(genreIds: number[]): string {
@@ -160,7 +167,7 @@ export async function scrapeTrendingContent(page = 1): Promise<ScrapeResult> {
 }
 
 export async function scrapeCategoryContent(
-  category: "Home" | "Series" | "Movies" | "Live" | "My List",
+  category: string,
   page = 1,
   genreFilter = "Trending"
 ): Promise<ScrapeResult> {
@@ -202,8 +209,21 @@ export async function scrapeCategoryContent(
         let data: Record<string, unknown>;
         const batch: MediaItem[] = [];
 
-        // 1. If we are on Home and "Trending" (Featured) is selected, pull the mixed trending feed
-        if (category === "Home" && (!genreFilter || genreFilter === "Trending")) {
+        const providerId = providerIdMap[category];
+
+        if (providerId) {
+          data = await fetchTmdb("discover/movie", nextApiPage, {
+            with_watch_providers: providerId,
+            watch_region: "CA",
+            sort_by: "popularity.desc",
+          });
+          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
+          const results = (data.results as Record<string, unknown>[]) || [];
+          results.forEach((item) => {
+            const mapped = mapTmdbItemToMediaItem(item, "movie");
+            if (mapped) batch.push(mapped);
+          });
+        } else if (category === "Home" && (!genreFilter || genreFilter === "Trending")) {
           const movieData = await fetchTmdb("trending/movie/week", nextApiPage);
           const tvData = await fetchTmdb("trending/tv/week", nextApiPage);
 
@@ -223,9 +243,7 @@ export async function scrapeCategoryContent(
             const mapped = mapTmdbItemToMediaItem(item, "tv");
             if (mapped) batch.push(mapped);
           });
-        } 
-        // 2. Otherwise (Movies, Series, or Home with a specific genre filter like Horror/Comedy), discover by genre
-        else {
+        } else {
           const genreId = genreFilter && genreFilter !== "Trending" ? genreNameToId[genreFilter.toLowerCase()] : null;
           
           if (category === "Series") {
@@ -235,7 +253,6 @@ export async function scrapeCategoryContent(
           } else if (category === "Live") {
             data = await fetchTmdb("tv/on_the_air", nextApiPage);
           } else {
-            // Home with a specific genre selected -> discover movies matching that genre
             data = await fetchTmdb("discover/movie", nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
           }
 
