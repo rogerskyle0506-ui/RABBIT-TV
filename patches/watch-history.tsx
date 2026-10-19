@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { AppTheme, getSavedTheme } from "@/lib/settings";
+import { AppTheme, CardSize, getSavedTheme, getSavedCardSize } from "@/lib/settings";
 import {
   getWatchHistory,
   markEpisodeCompleted,
@@ -23,11 +23,13 @@ function WatchHistoryComponent() {
   const [dislikedTitles, setDislikedTitles] = useState<DislikedTitle[]>([]);
   const [verifyingTarget, setVerifyingTarget] = useState<{ showId: string; episodeId: string; title: string } | null>(null);
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
+  const [cardSize, setCardSize] = useState<CardSize>("large");
 
   const refreshData = () => {
     setHistoryMap(getWatchHistory());
     setDislikedTitles(getDislikedTitles());
     setAppTheme(getSavedTheme());
+    setCardSize(getSavedCardSize());
   };
 
   useEffect(() => {
@@ -95,24 +97,19 @@ function WatchHistoryComponent() {
     }
   };
 
-  const getPrimaryBgColor = (theme: AppTheme) => {
-    switch (theme) {
-      case "red":
-        return "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30";
-      case "midnight":
-        return "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30";
-      case "emerald":
-        return "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30";
-      case "amber":
-        return "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30";
-      case "cyan":
-        return "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30";
-      case "violet":
+  const getGridColsClass = (size: CardSize) => {
+    switch (size) {
+      case "small":
+        return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8";
+      case "medium":
+        return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6";
+      case "large":
       default:
-        return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
+        return "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
     }
   };
 
+  const gridColsClass = getGridColsClass(cardSize);
   const allEntries = Object.values(historyMap);
 
   const tvShows = allEntries.filter(
@@ -150,7 +147,7 @@ function WatchHistoryComponent() {
               <h2 className={`text-sm font-bold text-slate-200 border-l-4 pl-3 uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
                 Movies - In Progress
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className={`grid ${gridColsClass} gap-3`}>
                 {inProgressMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
@@ -173,7 +170,7 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-blue-500 pl-3 uppercase tracking-wider">
                 TV Shows - In Progress
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className={`grid ${gridColsClass} gap-3`}>
                 {inProgressShows.map((show) => (
                   <TvShowCard
                     key={show.showId}
@@ -196,7 +193,7 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-emerald-500 pl-3 uppercase tracking-wider">
                 Completed
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className={`grid ${gridColsClass} gap-3`}>
                 {completedMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
@@ -231,7 +228,7 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-red-500 pl-3 uppercase tracking-wider">
                 Disliked / Removed
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              <div className={`grid ${gridColsClass} gap-3`}>
                 {dislikedTitles.map((item) => (
                   <div
                     key={item.id}
