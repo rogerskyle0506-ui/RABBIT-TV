@@ -96,28 +96,40 @@ export function DetailsPage() {
     fetchSeasonEpisodes();
   }, [season, mediaId, mediaType]);
 
-  // Theme-aware helpers matching root.tsx
+  // Full 6-Theme Background & Card Helpers matching index.tsx
   const getPageBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-[#120202]";
+        return "bg-gradient-to-br from-zinc-950 via-red-950/40 to-black";
       case "midnight":
-        return "bg-[#020617]";
+        return "bg-gradient-to-br from-slate-950 via-blue-950/40 to-slate-950";
+      case "emerald":
+        return "bg-gradient-to-br from-slate-950 via-emerald-950/40 to-slate-950";
+      case "amber":
+        return "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950";
+      case "cyan":
+        return "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950";
       case "violet":
       default:
-        return "bg-[#050b16]";
+        return "bg-gradient-to-br from-slate-950 via-purple-950/40 to-slate-950";
     }
   };
 
   const getCardBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-[#160404] border-red-500/20";
+        return "bg-red-950/60 border-red-500/30 shadow-red-950/50";
       case "midnight":
-        return "bg-[#03091e] border-blue-500/20";
+        return "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50";
+      case "emerald":
+        return "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50";
+      case "amber":
+        return "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50";
+      case "cyan":
+        return "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50";
       case "violet":
       default:
-        return "bg-[#090e1f] border-violet-500/20";
+        return "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50";
     }
   };
 
@@ -140,6 +152,33 @@ export function DetailsPage() {
           border: "border-blue-500",
           ring: "focus:ring-blue-400",
           shadow: "shadow-blue-600/30",
+        };
+      case "emerald":
+        return {
+          text: "text-emerald-300",
+          bg: "bg-emerald-600",
+          hoverBg: "hover:bg-emerald-500",
+          border: "border-emerald-500",
+          ring: "focus:ring-emerald-400",
+          shadow: "shadow-emerald-600/30",
+        };
+      case "amber":
+        return {
+          text: "text-amber-300",
+          bg: "bg-amber-600",
+          hoverBg: "hover:bg-amber-500",
+          border: "border-amber-500",
+          ring: "focus:ring-amber-400",
+          shadow: "shadow-amber-600/30",
+        };
+      case "cyan":
+        return {
+          text: "text-cyan-300",
+          bg: "bg-cyan-600",
+          hoverBg: "hover:bg-cyan-500",
+          border: "border-cyan-500",
+          ring: "focus:ring-cyan-400",
+          shadow: "shadow-cyan-600/30",
         };
       case "violet":
       default:
@@ -395,7 +434,7 @@ export function DetailsPage() {
       {isPlaying ? (
         <div className="mx-auto flex max-w-5xl flex-col gap-6">
           {inferredMediaType === "tv" && (
-            <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur`}>
+            <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur transition-colors duration-300`}>
               <div className="flex flex-wrap items-center gap-4 text-sm font-semibold relative">
                 
                 {/* Custom Active Player Season Dropdown */}
@@ -536,7 +575,7 @@ export function DetailsPage() {
             ></iframe>
           </div>
 
-          <div className={`flex flex-col gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-6 backdrop-blur`}>
+          <div className={`flex flex-col gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-6 backdrop-blur transition-colors duration-300`}>
             <h1 className="text-2xl font-bold text-white">{title}</h1>
             <p className="text-sm leading-relaxed text-slate-300">{overview}</p>
           </div>
@@ -593,7 +632,7 @@ export function DetailsPage() {
 
             {/* Custom Theme-Aware Season & Episode Dropdown Pickers for TV Series */}
             {inferredMediaType === "tv" && mediaDetails?.seasons && (
-              <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2`}>
+              <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2 transition-colors duration-300`}>
                 
                 {/* Custom Season Dropdown */}
                 <div className="relative" ref={seasonRef}>
