@@ -208,20 +208,58 @@ function RootComponent() {
   const getOuterPanelBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-zinc-950/80 border-red-500/20 shadow-red-950/40";
+        return "bg-red-950/80 border-red-500/20 shadow-red-950/40";
       case "midnight":
-        return "bg-slate-950/80 border-blue-500/20 shadow-blue-950/40";
+        return "bg-blue-950/80 border-blue-500/20 shadow-blue-950/40";
       case "emerald":
-        return "bg-slate-950/80 border-emerald-500/20 shadow-emerald-950/40";
+        return "bg-emerald-950/80 border-emerald-500/20 shadow-emerald-950/40";
       case "amber":
-        return "bg-stone-950/80 border-amber-500/20 shadow-amber-950/40";
+        return "bg-yellow-950/80 border-amber-500/20 shadow-yellow-950/40";
       case "cyan":
-        return "bg-slate-950/80 border-cyan-500/20 shadow-cyan-950/40";
+        return "bg-cyan-950/80 border-cyan-500/20 shadow-cyan-950/40";
       case "violet":
       default:
-        return "bg-slate-950/80 border-violet-500/20 shadow-violet-950/40";
+        return "bg-purple-950/80 border-violet-500/20 shadow-purple-950/40";
     }
   };
+
+  const getThemeHeaderStyles = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return {
+          logoBg: "bg-gradient-to-br from-red-600 to-rose-800 shadow-red-600/40",
+          btnBg: "bg-red-950/70 border-red-500/30 text-red-200 hover:bg-red-900/80",
+        };
+      case "midnight":
+        return {
+          logoBg: "bg-gradient-to-br from-blue-600 to-sky-800 shadow-blue-600/40",
+          btnBg: "bg-blue-950/70 border-blue-500/30 text-blue-200 hover:bg-blue-900/80",
+        };
+      case "emerald":
+        return {
+          logoBg: "bg-gradient-to-br from-emerald-600 to-teal-800 shadow-emerald-600/40",
+          btnBg: "bg-emerald-950/70 border-emerald-500/30 text-emerald-200 hover:bg-emerald-900/80",
+        };
+      case "amber":
+        return {
+          logoBg: "bg-gradient-to-br from-amber-500 to-yellow-700 shadow-amber-600/40",
+          btnBg: "bg-yellow-950/70 border-amber-500/30 text-amber-200 hover:bg-yellow-900/80",
+        };
+      case "cyan":
+        return {
+          logoBg: "bg-gradient-to-br from-cyan-600 to-blue-800 shadow-cyan-600/40",
+          btnBg: "bg-cyan-950/70 border-cyan-500/30 text-cyan-200 hover:bg-cyan-900/80",
+        };
+      case "violet":
+      default:
+        return {
+          logoBg: "bg-gradient-to-br from-violet-600 to-purple-800 shadow-violet-600/40",
+          btnBg: "bg-purple-950/70 border-violet-500/30 text-purple-200 hover:bg-purple-900/80",
+        };
+    }
+  };
+
+  const activeHeader = getThemeHeaderStyles(appTheme);
 
   const getPrimaryAccentColor = (theme: AppTheme) => {
     switch (theme) {
@@ -288,9 +326,9 @@ function RootComponent() {
               {/* Brand Logo */}
               <Link
                 to="/"
-                className="flex items-center gap-2 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0"
+                className="flex items-center gap-2 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
               >
-                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-slate-900/80 shrink-0">
+                <div className={`flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-white/20 shadow-md transition-transform group-hover:scale-105 ${activeHeader.logoBg}`}>
                   <img
                     src={RABBIT_LOGO_DATA_URL}
                     alt="RABBiT TV"
@@ -305,7 +343,7 @@ function RootComponent() {
                 <div className="flex items-center gap-2">
                   <Link
                     to="/watch-history"
-                    className="flex h-10 items-center justify-center rounded-xl border border-white/10 bg-slate-800 px-3 text-xs font-bold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 ${activeHeader.btnBg}`}
                   >
                     🕒 Watch History
                   </Link>
@@ -313,7 +351,7 @@ function RootComponent() {
                   <button
                     type="button"
                     onClick={() => setShowSettings((prev) => !prev)}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-800 text-white text-lg transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400"
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl border text-lg shadow-md transition focus:outline-none focus:ring-2 ${activeHeader.btnBg}`}
                     aria-label="Settings"
                   >
                     ⚙️
