@@ -28,12 +28,15 @@ const FAVORITES_STORAGE_KEY = "rabtv_favorites";
 
 export function MediaCard({ item }: { item: MediaItem }) {
   const [cardSize, setCardSize] = useState<CardSize>("large");
+  const [appTheme, setAppTheme] = useState<AppTheme>("violet");
 
   useEffect(() => {
     setCardSize(getSavedCardSize());
+    setAppTheme(getSavedTheme());
 
     const handleSettingsUpdate = () => {
       setCardSize(getSavedCardSize());
+      setAppTheme(getSavedTheme());
     };
 
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
@@ -41,13 +44,56 @@ export function MediaCard({ item }: { item: MediaItem }) {
       window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
   }, []);
 
+  // Theme-matched card background gradients to eliminate slate-blue clashes
+  const cardThemeStyles = useMemo(() => {
+    switch (appTheme) {
+      case "red":
+        return {
+          bg: "bg-gradient-to-b from-red-950/70 via-zinc-900 to-black",
+          border: "border-red-500/30",
+          ring: "focus-within:ring-red-400 focus:ring-red-400",
+        };
+      case "midnight":
+        return {
+          bg: "bg-gradient-to-b from-blue-950/70 via-slate-900 to-slate-950",
+          border: "border-blue-500/30",
+          ring: "focus-within:ring-blue-400 focus:ring-blue-400",
+        };
+      case "emerald":
+        return {
+          bg: "bg-gradient-to-b from-emerald-950/70 via-slate-900 to-slate-950",
+          border: "border-emerald-500/30",
+          ring: "focus-within:ring-emerald-400 focus:ring-emerald-400",
+        };
+      case "amber":
+        return {
+          bg: "bg-gradient-to-b from-yellow-950/70 via-stone-900 to-stone-950",
+          border: "border-amber-500/30",
+          ring: "focus-within:ring-amber-400 focus:ring-amber-400",
+        };
+      case "cyan":
+        return {
+          bg: "bg-gradient-to-b from-cyan-950/70 via-slate-900 to-slate-950",
+          border: "border-cyan-500/30",
+          ring: "focus-within:ring-cyan-400 focus:ring-cyan-400",
+        };
+      case "violet":
+      default:
+        return {
+          bg: "bg-gradient-to-b from-purple-950/70 via-slate-900 to-slate-950",
+          border: "border-violet-500/30",
+          ring: "focus-within:ring-violet-400 focus:ring-violet-400",
+        };
+    }
+  }, [appTheme]);
+
   const dimensions = getPosterDimensions(cardSize);
 
   if (cardSize === "small") {
     return (
       <Link
         to={item.href}
-        className={`group flex ${dimensions.card} bg-slate-900 focus:outline-none focus:ring-4 focus:ring-violet-400 hover:scale-105 overflow-hidden relative rounded-xl transition w-full`}
+        className={`group flex ${dimensions.card} ${cardThemeStyles.bg} border ${cardThemeStyles.border} focus:outline-none focus:ring-4 ${cardThemeStyles.ring} hover:scale-105 overflow-hidden relative rounded-xl transition w-full shadow-lg`}
       >
         <img
           src={item.image}
@@ -55,8 +101,8 @@ export function MediaCard({ item }: { item: MediaItem }) {
           className="h-full w-full object-cover"
           loading="lazy"
         />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-1.5 text-center">
-          <p className="text-[10px] font-bold text-white truncate px-1 rounded bg-black/40 backdrop-blur-sm">
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-1.5 text-center">
+          <p className="text-[10px] font-bold text-white truncate px-1 rounded bg-black/60 backdrop-blur-sm border border-white/10">
             {item.title}
           </p>
         </div>
@@ -66,7 +112,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
 
   return (
     <div
-      className={`group relative flex w-full flex-col overflow-hidden rounded-2xl bg-slate-900/90 transition hover:-translate-y-1 focus-within:ring-4 focus-within:ring-violet-400 ${dimensions.card}`}
+      className={`group relative flex w-full flex-col overflow-hidden rounded-2xl ${cardThemeStyles.bg} border ${cardThemeStyles.border} shadow-xl transition hover:-translate-y-1 ${cardThemeStyles.ring} ${dimensions.card}`}
     >
       <Link className="block relative overflow-hidden flex-1 focus:outline-none" to={item.href}>
         <img
@@ -77,7 +123,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
         />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2.5">
           <div className="flex items-center justify-between mb-1">
-            <span className="rounded-full bg-black/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-slate-200 truncate max-w-[70%] backdrop-blur-sm">
+            <span className="rounded-full bg-black/60 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-slate-200 truncate max-w-[70%] backdrop-blur-sm border border-white/10">
               {item.genre ?? "TV"}
             </span>
             {item.year ? (
@@ -96,7 +142,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
       <div className="p-2 bg-black/80 border-t border-white/10 flex items-center justify-between">
         <Link
           to={item.href}
-          className="w-full text-center rounded-full bg-gradient-to-r from-slate-900 via-black to-slate-900 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 focus:ring-violet-400"
+          className={`w-full text-center rounded-full bg-gradient-to-r from-black/80 via-black to-black/80 border border-white/10 py-1 text-[10px] font-bold text-white shadow-inner hover:bg-white/20 transition focus:outline-none focus:ring-2 ${cardThemeStyles.ring}`}
         >
           WATCH →
         </Link>
@@ -327,7 +373,7 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs Sticky Wrapper with ~20% Transparency */}
+      {/* Navigation Bar Tabs Sticky Wrapper with 20% Transparency */}
       <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-3 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
         appTheme === "red" ? "bg-red-950/80" :
         appTheme === "midnight" ? "bg-blue-950/80" :
@@ -465,10 +511,10 @@ function Home() {
             <button
               type="button"
               onClick={() => setMyListSubTab("all")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
                 myListSubTab === "all"
                   ? themeStyles.btnActive
-                  : "bg-gradient-to-r from-slate-900/90 to-slate-950/90 text-slate-300 border border-white/5"
+                  : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
               }`}
             >
               All Saved ({savedMyList.length + savedFavorites.length + inProgressHistory.length})
@@ -477,10 +523,10 @@ function Home() {
             <button
               type="button"
               onClick={() => setMyListSubTab("in_progress")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
                 myListSubTab === "in_progress"
-                  ? "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-cyan-600/30"
-                  : "bg-gradient-to-r from-slate-900/90 to-slate-950/90 text-slate-300 border border-white/5"
+                  ? "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-cyan-600/30 border-cyan-400/30"
+                  : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
               }`}
             >
               ⏳ In Progress ({inProgressHistory.length})
@@ -489,10 +535,10 @@ function Home() {
             <button
               type="button"
               onClick={() => setMyListSubTab("mylist")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
                 myListSubTab === "mylist"
                   ? themeStyles.btnActive
-                  : "bg-gradient-to-r from-slate-900/90 to-slate-950/90 text-slate-300 border border-white/5"
+                  : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
               }`}
             >
               🔖 Watch Later ({savedMyList.length})
@@ -501,10 +547,10 @@ function Home() {
             <button
               type="button"
               onClick={() => setMyListSubTab("favorites")}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
                 myListSubTab === "favorites"
-                  ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30"
-                  : "bg-gradient-to-r from-slate-900/90 to-slate-950/90 text-slate-300 border border-white/5"
+                  ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30 border-amber-400/30"
+                  : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
               }`}
             >
               ⭐ Favorites ({savedFavorites.length})
@@ -530,7 +576,7 @@ function Home() {
               ))}
             </div>
           ) : (
-            <div className="rounded-[20px] bg-slate-900/80 p-6 text-center mx-2">
+            <div className={`rounded-[20px] bg-gradient-to-r ${themeStyles.cardGradient} border ${themeStyles.borderGlow} p-6 text-center mx-2`}>
               <p className="text-sm text-slate-300">
                 {activeTab === "My List"
                   ? "No saved titles in this section yet. Open any movie or show to save it!"
@@ -544,7 +590,7 @@ function Home() {
 
         {/* Pagination Controls */}
         {activeTab !== "My List" && totalPages > 1 && (
-          <div className="mb-6 flex items-center justify-center gap-3 rounded-2xl bg-slate-900/60 p-3 mx-2">
+          <div className={`mb-6 flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r ${themeStyles.cardGradient} border ${themeStyles.borderGlow} p-3 mx-2`}>
             <button
               type="button"
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
