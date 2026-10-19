@@ -327,7 +327,7 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs Sticky Wrapper */}
+      {/* Navigation Bar Tabs Sticky Wrapper with ~20% Transparency */}
       <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-3 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
         appTheme === "red" ? "bg-red-950/80" :
         appTheme === "midnight" ? "bg-blue-950/80" :
