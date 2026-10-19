@@ -51,6 +51,7 @@ export interface DislikedTitle {
 
 const WATCH_HISTORY_KEY = "rabtv_watch_history";
 const DISLIKED_TITLES_KEY = "rabbit_tv_disliked_titles";
+const MAX_HISTORY_ITEMS = 50; // Hard cap for 2GB device memory optimization
 
 export function getRawWatchHistory(): WatchHistoryItem[] {
   if (typeof window === "undefined") return [];
@@ -83,7 +84,6 @@ export function getRawWatchHistory(): WatchHistoryItem[] {
   }
 }
 
-/** Returns the grouped record map expected by watch-history.tsx */
 export function getWatchHistory(): Record<string, ShowWatchHistory> {
   const rawItems = getRawWatchHistory();
   const map: Record<string, ShowWatchHistory> = {};
@@ -120,7 +120,6 @@ export function getWatchHistory(): Record<string, ShowWatchHistory> {
       map[showId].totalEpisodes = item.totalEpisodes;
     }
 
-    // Always record episode/completion status
     const epKey = mediaType === "movie" ? `${showId}-s1-e1` : episodeId;
     map[showId].episodes[epKey] = {
       episodeId: epKey,
@@ -165,7 +164,10 @@ export function saveWatchProgress(item: Omit<WatchHistoryItem, "lastWatchedAt">)
     history.unshift(updatedItem);
   }
 
-  localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
+  // Enforce strict 50-item cap to prevent JSON parse freezes
+  const cappedHistory = history.slice(0, MAX_HISTORY_ITEMS);
+
+  localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(cappedHistory));
   window.dispatchEvent(new Event("rabtv_watch_history_updated"));
 }
 
@@ -177,7 +179,7 @@ export function markAsConfirmedCompleted(id: string, completed: boolean): void {
     item.confirmedCompleted = completed;
     item.completed = completed;
     if (completed) item.progressPercent = 100;
-    localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
+    localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY_ITEMS)));
     window.dispatchEvent(new Event("rabtv_watch_history_updated"));
   }
 }
@@ -187,7 +189,6 @@ export function markEpisodeCompleted(showId: string, episodeId: string, complete
   const history = getRawWatchHistory();
   const cleanShowId = String(showId).replace(/^(movie|tv)-/, "");
   
-  // Find all items matching this show or episode
   let updated = false;
 
   for (const item of history) {
@@ -200,7 +201,6 @@ export function markEpisodeCompleted(showId: string, episodeId: string, complete
     }
   }
 
-  // If entry didn't exist yet, insert a new record
   if (!updated) {
     history.unshift({
       id: episodeId || cleanShowId,
@@ -214,14 +214,14 @@ export function markEpisodeCompleted(showId: string, episodeId: string, complete
     });
   }
   
-  localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
+  localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY_ITEMS)));
   window.dispatchEvent(new Event("rabtv_watch_history_updated"));
 }
 
 export function removeFromWatchHistory(id: string): void {
   if (typeof window === "undefined") return;
   const history = getRawWatchHistory().filter((h) => String(h.id) !== String(id) && String(h.mediaId) !== String(id));
-  localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
+  localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY_ITEMS)));
   window.dispatchEvent(new Event("rabtv_watch_history_updated"));
 }
 
@@ -268,7 +268,6 @@ export function dislikeTitle(item: { id: string | number; title?: string; name?:
   if (typeof window === "undefined") return;
   
   const cleanId = String(item.id).replace(/^(movie|tv)-/, "");
-  
   removeFromWatchHistory(cleanId);
 
   const disliked = getDislikedTitles();
