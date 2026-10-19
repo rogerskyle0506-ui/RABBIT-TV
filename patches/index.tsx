@@ -243,7 +243,7 @@ function Home() {
 
   useEffect(() => {
     setPage(1);
-  }, [activeTab]);
+  }, [activeTab, selectedGenre]);
 
   useEffect(() => {
     let active = true;
@@ -264,7 +264,7 @@ function Home() {
       const scraperCategory = activeTab === "TV Shows" ? "Series" : activeTab;
 
       try {
-        const result = await scrapeCategoryContent(scraperCategory, page);
+        const result = await scrapeCategoryContent(scraperCategory, page, selectedGenre);
         if (!active) return;
 
         if (result?.items?.length) {
@@ -290,7 +290,7 @@ function Home() {
     return () => {
       active = false;
     };
-  }, [activeTab, page]);
+  }, [activeTab, page, selectedGenre]);
 
   useEffect(() => {
     let active = true;
