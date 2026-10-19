@@ -9,7 +9,7 @@ import {
   getSavedTheme,
   getPosterDimensions,
 } from "@/lib/settings";
-import { getRawWatchHistory } from "@/lib/watch-history";
+import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
 
 const navTabs = ["Home", "Series", "Movies", "Live", "My List"] as const;
 type NavTab = (typeof navTabs)[number];
@@ -167,6 +167,7 @@ function Home() {
   const [savedMyList, setSavedMyList] = useState<MediaItem[]>([]);
   const [savedFavorites, setSavedFavorites] = useState<MediaItem[]>([]);
   const [historyItems, setHistoryItems] = useState<MediaItem[]>([]);
+  const [, setDislikedTick] = useState(0); // forces re-render when disliked updates
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -205,6 +206,7 @@ function Home() {
       setHistoryItems(mappedHistory);
       setAppTheme(getSavedTheme());
       setCardSize(getSavedCardSize());
+      setDislikedTick((prev) => prev + 1);
     } catch (err) {
       console.error("Error reading saved lists/theme", err);
     }
@@ -217,10 +219,12 @@ function Home() {
     };
     window.addEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
     window.addEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
+    window.addEventListener("rabtv_disliked_updated", loadSavedListsAndTheme);
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
     return () => {
       window.removeEventListener("rabtv_catalog_updated", loadSavedListsAndTheme);
       window.removeEventListener("rabtv_watch_history_updated", loadSavedListsAndTheme);
+      window.removeEventListener("rabtv_disliked_updated", loadSavedListsAndTheme);
       window.removeEventListener("rabtv_settings_updated", handleSettingsUpdate);
     };
   }, []);
@@ -289,6 +293,7 @@ function Home() {
 
     const map = new Map<string, MediaItem>();
     for (const item of rawList) {
+      if (isTitleDisliked(item.id)) continue;
       const normalizedTitle = (item.title ?? "").trim().toLowerCase();
       const uniqueKey = normalizedTitle || String(item.id);
       
@@ -300,9 +305,13 @@ function Home() {
   }, [myListSubTab, savedMyList, savedFavorites, inProgressHistory]);
 
   const filteredItems = useMemo(() => {
-    if (activeTab === "My List") return savedCatalogItems;
-    if (selectedGenre === "Trending") return items;
-    return items.filter((item) =>
+    const baseList = activeTab === "My List" ? savedCatalogItems : items;
+    // Apply global dislike exclusion filter
+    const catalogFiltered = baseList.filter((item) => !isTitleDisliked(item.id));
+
+    if (activeTab === "My List") return catalogFiltered;
+    if (selectedGenre === "Trending") return catalogFiltered;
+    return catalogFiltered.filter((item) =>
       item.genre?.toLowerCase().includes(selectedGenre.toLowerCase())
     );
   }, [items, selectedGenre, activeTab, savedCatalogItems]);
@@ -387,7 +396,7 @@ function Home() {
             appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
             appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
             appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
-            appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50" :
+            appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-yellow-950/50" :
             appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
             "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
           }`}>
@@ -483,7 +492,7 @@ function Home() {
               appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
               appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
               appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
-              appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-amber-950/50" :
+              appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-yellow-950/50" :
               appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
               "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
             }`}>
