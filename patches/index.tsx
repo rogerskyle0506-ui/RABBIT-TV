@@ -491,24 +491,10 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs Sticky Wrapper */}
-      <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-3 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
-        appTheme === "red" ? "bg-red-950/80" :
-        appTheme === "midnight" ? "bg-blue-950/80" :
-        appTheme === "emerald" ? "bg-emerald-950/80" :
-        appTheme === "amber" ? "bg-yellow-950/80" :
-        appTheme === "cyan" ? "bg-cyan-950/80" :
-        "bg-purple-950/80"
-      }`}>
+      {/* Navigation Bar Tabs (Background wrapper completely removed) */}
+      <div className="sticky top-0 z-30 mb-4 mt-2 px-3 py-2.5">
         <div className="mx-auto flex max-w-7xl items-center justify-center">
-          <div className={`flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto rounded-2xl border p-1.5 shadow-lg backdrop-blur-md scrollbar-none transition-colors duration-300 ${
-            appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
-            appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
-            appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
-            appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-yellow-950/50" :
-            appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
-            "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
-          }`}>
+          <div className="flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto p-1.5 scrollbar-none">
             {navTabs.map((tab) => (
               <button
                 key={tab}
@@ -594,17 +580,10 @@ function Home() {
           )}
         </section>
 
-        {/* Genre Filters (Hidden on My List) */}
+        {/* Genre Filters (Background wrapper completely removed) */}
         {activeTab !== "My List" && (
           <section className="mb-4 flex justify-center">
-            <div className={`flex flex-wrap items-center justify-center gap-1.5 p-2 rounded-full border shadow-lg backdrop-blur-md max-w-full transition-colors duration-300 ${
-              appTheme === "red" ? "bg-red-950/60 border-red-500/30 shadow-red-950/50" :
-              appTheme === "midnight" ? "bg-blue-950/60 border-blue-500/30 shadow-blue-950/50" :
-              appTheme === "emerald" ? "bg-emerald-950/60 border-emerald-500/30 shadow-emerald-950/50" :
-              appTheme === "amber" ? "bg-yellow-950/60 border-amber-500/30 shadow-yellow-950/50" :
-              appTheme === "cyan" ? "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50" :
-              "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50"
-            }`}>
+            <div className="flex flex-wrap items-center justify-center gap-1.5 p-2 max-w-full">
               {genreCategories.map((genre) => (
                 <button
                   key={genre}
