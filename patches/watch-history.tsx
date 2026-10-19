@@ -113,7 +113,6 @@ function WatchHistoryComponent() {
   const gridColsClass = getGridColsClass(cardSize);
   const allEntries = Object.values(historyMap);
 
-  // Strict check on mediaType to prevent movies from falling into TV Shows
   const tvShows = allEntries.filter((item) => item.mediaType === "tv");
   const movies = allEntries.filter((item) => item.mediaType === "movie");
 
@@ -310,7 +309,7 @@ function MovieCard({
   onRemove: () => void;
 }) {
   const navigate = useNavigate();
-  const singleEp = Object.values(movie.episodes)[0] || { episodeId: "default", title: movie.title, confirmedCompleted: false };
+  const singleEp = Object.values(movie.episodes)[0] || { episodeId: `${movie.showId}-s1-e1`, title: movie.title, confirmedCompleted: false };
   const isCompleted = singleEp.confirmedCompleted;
 
   const getCardThemeStyles = (theme: AppTheme) => {
