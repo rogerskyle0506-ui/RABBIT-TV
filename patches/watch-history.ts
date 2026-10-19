@@ -98,26 +98,35 @@ export function getWatchHistory(): Record<string, ShowWatchHistory> {
     if (!map[showId]) {
       map[showId] = {
         showId,
-        title,
+        title: title === "Episode" || title === "Title" ? "Unknown Title" : title,
         mediaType,
         posterPath,
         backdropPath: item.backdropPath ?? item.backdrop_path,
-        totalEpisodes: item.totalEpisodes && item.totalEpisodes > 1 ? item.totalEpisodes : (mediaType === "movie" ? 1 : 24),
+        totalEpisodes: mediaType === "movie" ? 1 : (item.totalEpisodes && item.totalEpisodes > 1 ? item.totalEpisodes : 24),
         episodes: {},
       };
+    } else {
+      if ((map[showId].title === "Unknown Title" || map[showId].title === "Episode") && title && title !== "Episode" && title !== "Title") {
+        map[showId].title = title;
+      }
+      if (!map[showId].posterPath && posterPath) {
+        map[showId].posterPath = posterPath;
+      }
     }
 
     if (item.totalEpisodes && item.totalEpisodes > map[showId].totalEpisodes) {
       map[showId].totalEpisodes = item.totalEpisodes;
     }
 
-    map[showId].episodes[episodeId] = {
-      episodeId,
-      seasonNumber: seasonNum,
-      episodeNumber: episodeNum,
-      title: item.title ?? title,
-      confirmedCompleted: item.confirmedCompleted ?? false,
-    };
+    if (mediaType === "tv" || item.seasonNumber || item.episodeNumber) {
+      map[showId].episodes[episodeId] = {
+        episodeId,
+        seasonNumber: seasonNum,
+        episodeNumber: episodeNum,
+        title: item.title && item.title !== "Episode" ? item.title : `S${seasonNum}E${episodeNum}`,
+        confirmedCompleted: item.confirmedCompleted ?? false,
+      };
+    }
   }
 
   return map;
@@ -172,6 +181,8 @@ export function markEpisodeCompleted(showId: string, episodeId: string, complete
   const history = getRawWatchHistory();
   const cleanShowId = String(showId).replace(/^(movie|tv)-/, "");
   
+  const existingShowItem = history.find((h) => String(h.mediaId) === cleanShowId || String(h.id) === cleanShowId);
+
   const existingIndex = history.findIndex(
     (h) => String(h.id) === String(episodeId) || (String(h.mediaId) === cleanShowId && String(h.id) === String(episodeId))
   );
@@ -184,8 +195,11 @@ export function markEpisodeCompleted(showId: string, episodeId: string, complete
     history.unshift({
       id: episodeId,
       mediaId: cleanShowId,
-      mediaType: "tv",
-      title: "Episode",
+      mediaType: existingShowItem?.mediaType ?? "tv",
+      title: existingShowItem?.title && existingShowItem.title !== "Episode" ? existingShowItem.title : "Episode",
+      posterPath: existingShowItem?.posterPath ?? existingShowItem?.image ?? null,
+      backdropPath: existingShowItem?.backdropPath ?? null,
+      totalEpisodes: existingShowItem?.totalEpisodes ?? 24,
       progressPercent: completed ? 100 : 0,
       confirmedCompleted: completed,
       completed,
