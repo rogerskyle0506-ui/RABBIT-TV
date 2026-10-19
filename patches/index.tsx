@@ -14,7 +14,8 @@ import {
 import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
 import React from "react";
 
-const navTabs = ["Home", "Series", "Movies", "My List"] as const;
+// Renamed display tab while keeping scraping routes intact
+const navTabs = ["Home", "TV Shows", "Movies", "My List"] as const;
 type NavTab = (typeof navTabs)[number];
 
 const genreCategories = [
@@ -259,8 +260,11 @@ function Home() {
         return;
       }
 
+      // Map "TV Shows" display tab to the "Series" scraper category correctly
+      const scraperCategory = activeTab === "TV Shows" ? "Series" : activeTab;
+
       try {
-        const result = await scrapeCategoryContent(activeTab, page);
+        const result = await scrapeCategoryContent(scraperCategory, page);
         if (!active) return;
 
         if (result?.items?.length) {
