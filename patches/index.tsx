@@ -389,7 +389,31 @@ function Home() {
     );
   }, [items, selectedGenre, activeTab, savedCatalogItems, userAge]);
 
-  const featured = useMemo(() => filteredItems[0] ?? null, [filteredItems]);
+  // Set of IDs or normalized titles that are marked as completed in watch history
+  const completedIdsOrTitles = useMemo(() => {
+    const set = new Set<string>();
+    const raw = getRawWatchHistory();
+    for (const h of raw) {
+      if (h.confirmedCompleted || (h.progressPercent ?? 0) >= 100) {
+        if (h.mediaId) set.add(String(h.mediaId).replace(/^(movie|tv)-/, ""));
+        if (h.id) set.add(String(h.id).replace(/^(movie|tv)-/, ""));
+        if (h.title) set.add(h.title.trim().toLowerCase());
+      }
+    }
+    return set;
+  }, [historyItems]);
+
+  // Featured banner selects the first item that is NOT marked completed
+  const featured = useMemo(() => {
+    for (const item of filteredItems) {
+      const cleanId = String(item.id).replace(/^(movie|tv)-/, "");
+      const cleanTitle = (item.title ?? "").trim().toLowerCase();
+      if (!completedIdsOrTitles.has(cleanId) && !completedIdsOrTitles.has(cleanTitle)) {
+        return item;
+      }
+    }
+    return filteredItems[0] ?? null;
+  }, [filteredItems, completedIdsOrTitles]);
 
   const gridColsClass = useMemo(() => {
     if (cardSize === "small") {
@@ -586,25 +610,25 @@ function Home() {
           </section>
         )}
 
-        {/* My List Sub-category Selector - Wrapped & Padded to Prevent Edge Clipping */}
+        {/* My List Sub-category Selector */}
         {activeTab === "My List" && (
-          <section className="mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 border-b border-white/10 pb-3 px-2">
+          <section className="mb-4 flex flex-wrap items-center gap-2 border-b border-white/10 pb-3 px-2">
             <button
               type="button"
               onClick={() => setMyListSubTab("all")}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition border shrink-0 ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
                 myListSubTab === "all"
                   ? themeStyles.btnActive
                   : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
               }`}
             >
-              All ({savedMyList.length + savedFavorites.length + inProgressHistory.length})
+              All Saved ({savedMyList.length + savedFavorites.length + inProgressHistory.length})
             </button>
 
             <button
               type="button"
               onClick={() => setMyListSubTab("in_progress")}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition border shrink-0 ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
                 myListSubTab === "in_progress"
                   ? "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 text-white shadow-lg shadow-cyan-600/30 border-cyan-400/30"
                   : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
@@ -616,7 +640,7 @@ function Home() {
             <button
               type="button"
               onClick={() => setMyListSubTab("mylist")}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition border shrink-0 ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
                 myListSubTab === "mylist"
                   ? themeStyles.btnActive
                   : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
@@ -628,7 +652,7 @@ function Home() {
             <button
               type="button"
               onClick={() => setMyListSubTab("favorites")}
-              className={`rounded-xl px-3.5 py-2 text-xs font-bold transition border shrink-0 ${
+              className={`rounded-xl px-4 py-2 text-xs font-bold transition border ${
                 myListSubTab === "favorites"
                   ? "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30 border-amber-400/30"
                   : `bg-gradient-to-r ${themeStyles.cardGradient} text-slate-200${themeStyles.borderGlow} hover:brightness-125`
