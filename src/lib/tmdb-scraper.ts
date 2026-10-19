@@ -24,7 +24,7 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-const STORAGE_PREFIX = "rabtv_catalog_cache_v7_"; // Incremented version to ensure clean cache
+const STORAGE_PREFIX = "rabtv_catalog_cache_v8_"; // Incremented version for clean cache
 const INITIAL_TARGET_PAGES = 10;
 const ITEMS_PER_PAGE = 20;
 
@@ -169,10 +169,12 @@ export async function scrapeTrendingContent(page = 1): Promise<ScrapeResult> {
 export async function scrapeCategoryContent(
   category: string,
   page = 1,
-  genreFilter = "Trending"
+  genreFilter = "Trending",
+  subFeed?: string
 ): Promise<ScrapeResult> {
   try {
-    const storageKey = `${STORAGE_PREFIX}_${category}_${genreFilter}`;
+    const feedKey = subFeed ? `_${subFeed}` : "";
+    const storageKey = `${STORAGE_PREFIX}_${category}${feedKey}_${genreFilter}`;
     const requiredItemsCount = page * ITEMS_PER_PAGE;
 
     let catalogItems: MediaItem[] = [];
@@ -212,7 +214,33 @@ export async function scrapeCategoryContent(
         const providerId = providerIdMap[category];
         const genreId = genreFilter && genreFilter !== "Trending" ? genreNameToId[genreFilter.toLowerCase()] : null;
 
-        if (providerId) {
+        if (category === "Global Feeds" && subFeed) {
+          // Discover params for customized regional feeds + genre indexing
+          const params: Record<string, string> = {
+            sort_by: "popularity.desc",
+          };
+
+          if (subFeed === "Russian") {
+            params.with_original_language = "ru";
+          } else if (subFeed === "British") {
+            params.with_original_language = "en";
+            params.with_origin_country = "GB";
+          } else if (subFeed === "Hungarian") {
+            params.with_original_language = "hu";
+          }
+
+          if (genreId) {
+            params.with_genres = genreId.toString();
+          }
+
+          data = await fetchTmdb("discover/movie", nextApiPage, params);
+          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
+          const results = (data.results as Record<string, unknown>[]) || [];
+          results.forEach((item) => {
+            const mapped = mapTmdbItemToMediaItem(item, "movie");
+            if (mapped) batch.push(mapped);
+          });
+        } else if (providerId) {
           // Streaming provider tab (Netflix, Prime, Disney+) + Optional Genre Filter
           const params: Record<string, string> = {
             with_watch_providers: providerId,
@@ -312,7 +340,7 @@ export async function scrapeCategoryContent(
       source: "TMDB API",
       items: pageSlice,
       fetchedAt: new Date().toISOString(),
-      message: `Loaded ${pageSlice.length} titles for ${category} / ${genreFilter} (Page ${page}).`,
+      message: `Loaded ${pageSlice.length} titles for ${category}${subFeed ? ` (${subFeed})` : ""} / ${genreFilter} (Page ${page}).`,
       page,
       totalPages: isFullyLoaded ? totalPages : Math.max(totalPages, page + 1),
     };
