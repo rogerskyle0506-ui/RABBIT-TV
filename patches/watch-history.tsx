@@ -8,6 +8,7 @@ import {
   calculateSeriesProgress,
   getDislikedTitles,
   removeDislikedTitle,
+  dislikeTitle,
   ShowWatchHistory,
   DislikedTitle,
 } from "@/lib/watch-history";
@@ -126,8 +127,11 @@ function WatchHistoryComponent() {
   return (
     <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-4 md:p-12 text-white space-y-8 transition-colors duration-300`}>
       <div className="flex items-center justify-between border-b border-white/10 pb-4">
-        <h1 className="text-xl font-bold tracking-wide flex items-center gap-2">
-          <span>🕒</span> Watch History & Activity
+        <h1 className="text-xl font-bold tracking-wide flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-lg">
+            🐰
+          </div>
+          <span>Watch History & Activity</span>
         </h1>
         <span className="text-xs text-slate-400 font-semibold">
           {allEntries.length} Tracked Titles
@@ -253,7 +257,7 @@ function WatchHistoryComponent() {
                         {item.title}
                       </h3>
                     </div>
-                    <span className="text-[9px] text-slate-500 pt-2">Removed from history</span>
+                    <span className="text-[9px] text-slate-500 pt-2">Excluded from catalog</span>
                   </div>
                 ))}
               </div>
@@ -358,9 +362,17 @@ function MovieCard({
           </button>
           <button
             type="button"
+            onClick={() => dislikeTitle({ id: movie.showId, title: movie.title, mediaType: "movie", posterPath: movie.posterPath })}
+            className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-950/80 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none text-xs font-bold"
+            title="Dislike & Hide Globally"
+          >
+            👎
+          </button>
+          <button
+            type="button"
             onClick={onRemove}
             className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-950/80 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none text-xs font-bold"
-            title="Remove"
+            title="Remove from history"
           >
             ✕
           </button>
@@ -429,12 +441,20 @@ function TvShowCard({
           </div>
         )}
 
-        <div className="absolute top-1.5 right-1.5 z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            onClick={() => dislikeTitle({ id: show.showId, title: show.title, mediaType: "tv", posterPath: show.posterPath })}
+            className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-950/80 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none text-xs font-bold"
+            title="Dislike & Hide Globally"
+          >
+            👎
+          </button>
           <button
             type="button"
             onClick={onRemove}
             className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-950/80 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none text-xs font-bold"
-            title="Remove"
+            title="Remove from history"
           >
             ✕
           </button>
