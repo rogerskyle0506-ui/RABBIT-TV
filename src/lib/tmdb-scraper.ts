@@ -24,7 +24,7 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-const STORAGE_PREFIX = "rabtv_catalog_cache_v12_"; // Incremented version to flush old cache
+const STORAGE_PREFIX = "rabtv_catalog_cache_v13_"; // Incremented version to flush empty cache
 const ITEMS_PER_PAGE = 20;
 
 let lastRequestTimestamp = 0;
@@ -231,28 +231,26 @@ export async function scrapeCategoryContent(
           discoverParams.watch_region = "CA";
         }
 
-        if (providerId) {
-          // Streaming providers (Netflix, Prime, Disney+) default to movies, but we can also query TV if it's a TV tab
-          const endpoint = isTvTab ? "discover/tv" : "discover/movie";
-          const data = await fetchTmdb(endpoint, nextApiPage, discoverParams);
+        const endpoint = isTvTab ? "discover/tv" : "discover/movie";
+
+        if (providerId || cleanSubFeed) {
+          let data = await fetchTmdb(endpoint, nextApiPage, discoverParams);
+          let results = (data.results as Record<string, unknown>[]) || [];
+
+          // Fallback if specific genre + regional filter returns empty: drop genre filter and fetch regional general
+          if (results.length === 0 && genreId && cleanSubFeed) {
+            delete discoverParams.with_genres;
+            data = await fetchTmdb(endpoint, nextApiPage, discoverParams);
+            results = (data.results as Record<string, unknown>[]) || [];
+          }
+
           totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
-          const results = (data.results as Record<string, unknown>[]) || [];
-          results.forEach((item) => {
-            const mapped = mapTmdbItemToMediaItem(item, isTvTab ? "tv" : "movie");
-            if (mapped) batch.push(mapped);
-          });
-        } else if (cleanSubFeed) {
-          // Regional Feed override
-          const endpoint = isTvTab ? "discover/tv" : "discover/movie";
-          const data = await fetchTmdb(endpoint, nextApiPage, discoverParams);
-          totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
-          const results = (data.results as Record<string, unknown>[]) || [];
           results.forEach((item) => {
             const mapped = mapTmdbItemToMediaItem(item, isTvTab ? "tv" : "movie");
             if (mapped) batch.push(mapped);
           });
 
-          // For Home, mix in some TV shows if it's movie discovery
+          // If Home tab with regional feed, mix in TV shows as well
           if (category === "Home" && !isTvTab) {
             const tvData = await fetchTmdb("discover/tv", nextApiPage, discoverParams);
             const tvResults = (tvData.results as Record<string, unknown>[]) || [];
@@ -282,15 +280,18 @@ export async function scrapeCategoryContent(
             if (mapped) batch.push(mapped);
           });
         } else {
-          // Standard Category (Movies, TV Shows / Series) + Genre filter
-          const endpoint = isTvTab ? "tv/popular" : "movie/popular";
-          const data = await fetchTmdb(endpoint, nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
+          let standardEndpoint = isTvTab ? "tv/popular" : "movie/popular";
+          let data = await fetchTmdb(standardEndpoint, nextApiPage, genreId ? { with_genres: genreId.toString() } : {});
+          let results = (data.results as Record<string, unknown>[]) || [];
+
+          if (results.length === 0 && genreId) {
+            data = await fetchTmdb(standardEndpoint, nextApiPage);
+            results = (data.results as Record<string, unknown>[]) || [];
+          }
 
           totalAvailablePages = Math.min((data.total_pages as number) || 50, 50);
-          const results = (data.results as Record<string, unknown>[]) || [];
-          const mediaType = isTvTab ? "tv" : "movie";
           results.forEach((item) => {
-            const mapped = mapTmdbItemToMediaItem(item, mediaType);
+            const mapped = mapTmdbItemToMediaItem(item, isTvTab ? "tv" : "movie");
             if (mapped) batch.push(mapped);
           });
         }
@@ -309,7 +310,8 @@ export async function scrapeCategoryContent(
         }
       }
 
-      if (cleanSubFeed && catalogItems.length < requiredItemsCount) {
+      // Final absolute fallback buffer to guarantee items are never 0
+      if (catalogItems.length < requiredItemsCount) {
         try {
           const fallbackEndpoint = isTvTab ? "tv/popular" : "movie/popular";
           const fallbackData = await fetchTmdb(fallbackEndpoint, 1);
