@@ -120,15 +120,15 @@ export function getWatchHistory(): Record<string, ShowWatchHistory> {
       map[showId].totalEpisodes = item.totalEpisodes;
     }
 
-    if (mediaType === "tv") {
-      map[showId].episodes[episodeId] = {
-        episodeId,
-        seasonNumber: seasonNum,
-        episodeNumber: episodeNum,
-        title: item.title && item.title !== "Episode" ? item.title : `S${seasonNum}E${episodeNum}`,
-        confirmedCompleted: item.confirmedCompleted ?? false,
-      };
-    }
+    // Always record episode/completion status
+    const epKey = mediaType === "movie" ? `${showId}-s1-e1` : episodeId;
+    map[showId].episodes[epKey] = {
+      episodeId: epKey,
+      seasonNumber: seasonNum,
+      episodeNumber: episodeNum,
+      title: item.title && item.title !== "Episode" ? item.title : `S${seasonNum}E${episodeNum}`,
+      confirmedCompleted: item.confirmedCompleted ?? false,
+    };
   }
 
   return map;
@@ -187,25 +187,26 @@ export function markEpisodeCompleted(showId: string, episodeId: string, complete
   const history = getRawWatchHistory();
   const cleanShowId = String(showId).replace(/^(movie|tv)-/, "");
   
-  const existingShowItem = history.find((h) => String(h.mediaId) === cleanShowId || String(h.id) === cleanShowId);
+  // Find all items matching this show or episode
+  let updated = false;
 
-  const existingIndex = history.findIndex(
-    (h) => String(h.id) === String(episodeId) || (String(h.mediaId) === cleanShowId && String(h.id) === String(episodeId))
-  );
+  for (const item of history) {
+    const itemCleanId = String(item.mediaId ?? item.id).replace(/^(movie|tv)-/, "");
+    if (itemCleanId === cleanShowId || String(item.id) === String(episodeId)) {
+      item.confirmedCompleted = completed;
+      item.completed = completed;
+      item.progressPercent = completed ? 100 : 0;
+      updated = true;
+    }
+  }
 
-  if (existingIndex >= 0) {
-    history[existingIndex].confirmedCompleted = completed;
-    history[existingIndex].completed = completed;
-    history[existingIndex].progressPercent = completed ? 100 : 0;
-  } else {
+  // If entry didn't exist yet, insert a new record
+  if (!updated) {
     history.unshift({
-      id: episodeId,
+      id: episodeId || cleanShowId,
       mediaId: cleanShowId,
-      mediaType: existingShowItem?.mediaType ?? "tv",
-      title: existingShowItem?.title && existingShowItem.title !== "Episode" ? existingShowItem.title : "Episode",
-      posterPath: existingShowItem?.posterPath ?? existingShowItem?.image ?? null,
-      backdropPath: existingShowItem?.backdropPath ?? null,
-      totalEpisodes: existingShowItem?.totalEpisodes ?? 24,
+      mediaType: "movie",
+      title: "Unknown Title",
       progressPercent: completed ? 100 : 0,
       confirmedCompleted: completed,
       completed,
@@ -256,7 +257,6 @@ export function getDislikedTitles(): DislikedTitle[] {
   }
 }
 
-/** Global check helper to see if a media ID is excluded/disliked from the catalog */
 export function isTitleDisliked(id: string | number): boolean {
   if (!id) return false;
   const cleanId = String(id).replace(/^(movie|tv)-/, "");
@@ -264,16 +264,13 @@ export function isTitleDisliked(id: string | number): boolean {
   return disliked.some((item) => String(item.id).replace(/^(movie|tv)-/, "") === cleanId);
 }
 
-/** Dislikes a title: removes it from watch history and adds it to the global catalog exclusion registry */
 export function dislikeTitle(item: { id: string | number; title?: string; name?: string; mediaType?: string; posterPath?: string | null }): void {
   if (typeof window === "undefined") return;
   
   const cleanId = String(item.id).replace(/^(movie|tv)-/, "");
   
-  // Purge from watch history and active trackers
   removeFromWatchHistory(cleanId);
 
-  // Add to disliked registry
   const disliked = getDislikedTitles();
   const exists = disliked.some((d) => String(d.id).replace(/^(movie|tv)-/, "") === cleanId);
   
