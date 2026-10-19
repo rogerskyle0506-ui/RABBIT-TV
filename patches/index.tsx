@@ -14,7 +14,7 @@ import {
 import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
 import React from "react";
 
-const navTabs = ["Home", "Series", "Movies", "Live", "My List"] as const;
+const navTabs = ["Home", "Series", "Movies", "My List"] as const;
 type NavTab = (typeof navTabs)[number];
 
 const genreCategories = [
@@ -389,7 +389,6 @@ function Home() {
     );
   }, [items, selectedGenre, activeTab, savedCatalogItems, userAge]);
 
-  // Set of IDs or normalized titles that are marked as completed in watch history
   const completedIdsOrTitles = useMemo(() => {
     const set = new Set<string>();
     const raw = getRawWatchHistory();
@@ -403,7 +402,6 @@ function Home() {
     return set;
   }, [historyItems]);
 
-  // Featured banner selects the first item that is NOT marked completed
   const featured = useMemo(() => {
     for (const item of filteredItems) {
       const cleanId = String(item.id).replace(/^(movie|tv)-/, "");
@@ -478,7 +476,7 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs Sticky Wrapper with Clean Padding & Constraints */}
+      {/* Navigation Bar Tabs Sticky Wrapper */}
       <div className={`sticky top-0 z-30 mb-4 mt-2 border-b border-white/10 px-4 py-2.5 backdrop-blur-md shadow-md transition-colors duration-300 ${
         appTheme === "red" ? "bg-red-950/80" :
         appTheme === "midnight" ? "bg-blue-950/80" :
@@ -501,7 +499,7 @@ function Home() {
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
+                className={`shrink-0 rounded-xl px-4 py-1.5 text-xs font-semibold transition focus:outline-none ${
                   activeTab === tab
                     ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
                     : "text-slate-300 hover:bg-white/10 hover:text-white"
@@ -515,7 +513,7 @@ function Home() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 overflow-x-hidden">
-        {/* Featured Hero Banner - Fully Bounded & Centered to Prevent Clipping */}
+        {/* Featured Hero Banner */}
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
           {featured ? (
             <>
