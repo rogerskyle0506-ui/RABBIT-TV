@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import React, { useState, useEffect } from "react";
-import { AppTheme, CardSize, getSavedTheme, getSavedCardSize, getHistoryOverscale, getLargeButtons, getPosterDimensions } from "@/lib/settings";
+import { AppTheme, CardSize, HistoryScale, getSavedTheme, getSavedCardSize, getHistoryOverscale, getLargeButtons, getPosterDimensions } from "@/lib/settings";
 import {
   getWatchHistory,
   markEpisodeCompleted,
@@ -25,7 +25,7 @@ function WatchHistoryComponent() {
   const [verifyingTarget, setVerifyingTarget] = useState<{ showId: string; episodeId: string; title: string } | null>(null);
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [cardSize, setCardSize] = useState<CardSize>("large");
-  const [historyOverscale, setHistoryOverscale] = useState<boolean>(true);
+  const [historyOverscale, setHistoryOverscale] = useState<HistoryScale>("off");
   const [largeButtons, setLargeButtons] = useState<boolean>(true);
 
   const refreshData = () => {
@@ -334,7 +334,7 @@ const MovieCard = React.memo(function MovieCard({
 }: {
   movie: ShowWatchHistory;
   appTheme: AppTheme;
-  historyOverscale: boolean;
+  historyOverscale: HistoryScale | boolean;
   largeButtons: boolean;
   onEyeballClick: (showId: string, episodeId: string, episodeTitle: string, isCompleted: boolean) => void;
   onRemove: () => void;
@@ -361,7 +361,19 @@ const MovieCard = React.memo(function MovieCard({
     }
   };
 
-  const overscaleClass = historyOverscale ? "transform scale-105 origin-top transition-transform" : "";
+  const getScaleClass = (scale: HistoryScale | boolean) => {
+    if (scale === true) return "transform scale-105 origin-top transition-transform my-3";
+    switch (scale) {
+      case "20%": return "transform scale-120 origin-top transition-transform my-3";
+      case "50%": return "transform scale-150 origin-top transition-transform my-6";
+      case "80%": return "transform scale-[1.8] origin-top transition-transform my-12";
+      case "off":
+      default:
+        return "";
+    }
+  };
+
+  const overscaleClass = getScaleClass(historyOverscale);
   const btnClass = largeButtons ? "h-7 px-2 text-xs" : "h-6 px-1.5 text-[10px]";
   const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
 
@@ -433,7 +445,7 @@ const TvShowCard = React.memo(function TvShowCard({
 }: {
   show: ShowWatchHistory;
   appTheme: AppTheme;
-  historyOverscale: boolean;
+  historyOverscale: HistoryScale | boolean;
   largeButtons: boolean;
   onEyeballClick: (showId: string, episodeId: string, episodeTitle: string, isCompleted: boolean) => void;
   onRemove: () => void;
@@ -460,7 +472,19 @@ const TvShowCard = React.memo(function TvShowCard({
     }
   };
 
-  const overscaleClass = historyOverscale ? "transform scale-105 origin-top transition-transform" : "";
+  const getScaleClass = (scale: HistoryScale | boolean) => {
+    if (scale === true) return "transform scale-105 origin-top transition-transform my-3";
+    switch (scale) {
+      case "20%": return "transform scale-120 origin-top transition-transform my-3";
+      case "50%": return "transform scale-150 origin-top transition-transform my-6";
+      case "80%": return "transform scale-[1.8] origin-top transition-transform my-12";
+      case "off":
+      default:
+        return "";
+    }
+  };
+
+  const overscaleClass = getScaleClass(historyOverscale);
   const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
 
   return (
