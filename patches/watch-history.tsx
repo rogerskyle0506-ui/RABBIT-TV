@@ -140,19 +140,33 @@ function WatchHistoryComponent() {
     }
   };
 
-  const getGridColsClass = (size: CardSize) => {
+  // Smart Overscale Grid Constraint: Automatically reduces columns when overscaling is active so cards never overlap
+  const getGridColsClass = (size: CardSize, overscale: HistoryScale) => {
+    let reductionOffset = 0;
+    if (overscale === "20%") reductionOffset = 1;
+    if (overscale === "50%") reductionOffset = 2;
+    if (overscale === "80%") reductionOffset = 3;
+
     switch (size) {
       case "small":
-        return "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8";
+        return reductionOffset >= 3
+          ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+          : reductionOffset >= 2
+          ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+          : "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8";
       case "medium":
-        return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6";
+        return reductionOffset >= 2
+          ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6";
       case "large":
       default:
-        return "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
+        return reductionOffset >= 2
+          ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
+          : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
     }
   };
 
-  const gridColsClass = getGridColsClass(cardSize);
+  const gridColsClass = getGridColsClass(cardSize, historyOverscale);
   const allEntries = Object.values(historyMap);
 
   const tvShows = allEntries.filter((item) => item.mediaType === "tv");
@@ -206,7 +220,7 @@ function WatchHistoryComponent() {
               <h2 className={`text-sm font-bold text-slate-200 border-l-4 pl-3 uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
                 Movies - In Progress
               </h2>
-              <div className={`grid ${gridColsClass} gap-6 pt-2`}>
+              <div className={`grid ${gridColsClass} gap-8 pt-4`}>
                 {inProgressMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
@@ -231,7 +245,7 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-blue-500 pl-3 uppercase tracking-wider">
                 TV Shows - In Progress
               </h2>
-              <div className={`grid ${gridColsClass} gap-6 pt-2`}>
+              <div className={`grid ${gridColsClass} gap-8 pt-4`}>
                 {inProgressShows.map((show) => (
                   <TvShowCard
                     key={show.showId}
@@ -256,7 +270,7 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-emerald-500 pl-3 uppercase tracking-wider">
                 Completed
               </h2>
-              <div className={`grid ${gridColsClass} gap-6 pt-2`}>
+              <div className={`grid ${gridColsClass} gap-8 pt-4`}>
                 {completedMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
@@ -295,7 +309,7 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-red-500 pl-3 uppercase tracking-wider">
                 Disliked / Removed
               </h2>
-              <div className={`grid ${gridColsClass} gap-3`}>
+              <div className={`grid ${gridColsClass} gap-4 pt-2`}>
                 {dislikedTitles.map((item) => (
                   <div
                     key={item.id}
@@ -412,15 +426,16 @@ const MovieCard = React.memo(function MovieCard({
     }
   };
 
+  // Safe layout scaling with generous vertical padding margins (`my-3` to `my-8`) to prevent row collision
   const getScaleClass = (scale: HistoryScale | boolean) => {
-    if (scale === true) return "transform scale-105 origin-top transition-transform my-2";
+    if (scale === true) return "transform scale-105 origin-top transition-transform my-3";
     switch (scale) {
-      case "20%": return "transform scale-110 origin-top transition-transform my-2";
-      case "50%": return "transform scale-120 origin-top transition-transform my-4";
-      case "80%": return "transform scale-130 origin-top transition-transform my-6";
+      case "20%": return "transform scale-110 origin-top transition-transform my-4";
+      case "50%": return "transform scale-120 origin-top transition-transform my-6";
+      case "80%": return "transform scale-130 origin-top transition-transform my-8";
       case "off":
       default:
-        return "";
+        return "my-2";
     }
   };
 
@@ -429,7 +444,7 @@ const MovieCard = React.memo(function MovieCard({
   const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
 
   return (
-    <div className="w-full py-1">
+    <div className="w-full">
       <div
         onClick={() => navigate({ to: "/details", search: { id: movie.showId, type: "movie" } })}
         className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
@@ -526,14 +541,14 @@ const TvShowCard = React.memo(function TvShowCard({
   };
 
   const getScaleClass = (scale: HistoryScale | boolean) => {
-    if (scale === true) return "transform scale-105 origin-top transition-transform my-2";
+    if (scale === true) return "transform scale-105 origin-top transition-transform my-3";
     switch (scale) {
-      case "20%": return "transform scale-110 origin-top transition-transform my-2";
-      case "50%": return "transform scale-120 origin-top transition-transform my-4";
-      case "80%": return "transform scale-130 origin-top transition-transform my-6";
+      case "20%": return "transform scale-110 origin-top transition-transform my-4";
+      case "50%": return "transform scale-120 origin-top transition-transform my-6";
+      case "80%": return "transform scale-130 origin-top transition-transform my-8";
       case "off":
       default:
-        return "";
+        return "my-2";
     }
   };
 
@@ -541,7 +556,7 @@ const TvShowCard = React.memo(function TvShowCard({
   const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
 
   return (
-    <div className="w-full py-1">
+    <div className="w-full">
       <div
         onClick={() => navigate({ to: "/details", search: { id: show.showId, type: "tv" } })}
         className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
