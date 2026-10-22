@@ -84,7 +84,6 @@ function SearchPage() {
     setUserAge(getSavedUserAge());
   }, []);
 
-  // Vertical scroll check for bottom scroll indicator
   useEffect(() => {
     const handleScrollCheck = () => {
       const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
@@ -258,7 +257,6 @@ function SearchPage() {
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 px-4 py-6 pb-12`}>
       <div className="mx-auto max-w-7xl space-y-6">
         
-        {/* Search Bar & Title Header */}
         <div className={`rounded-2xl border ${themeStyles.border} bg-black/40 backdrop-blur-md p-4 sm:p-6 shadow-xl`}>
           <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-3 items-center">
             <div className="relative flex-1 w-full">
@@ -278,9 +276,7 @@ function SearchPage() {
             </button>
           </form>
 
-          {/* Advanced Filters Toolbar */}
           <div className="mt-4 flex flex-wrap items-center gap-3 pt-4 border-t border-white/10">
-            {/* Media Type */}
             <div className="flex rounded-xl bg-slate-900 border border-white/10 p-1">
               {(["all", "movie", "tv"] as const).map((t) => (
                 <button
@@ -294,7 +290,6 @@ function SearchPage() {
               ))}
             </div>
 
-            {/* Language / Region Filter */}
             <div className="flex items-center gap-2 bg-slate-900 border border-white/10 rounded-xl px-3 py-1.5">
               <span className="text-xs text-slate-400 font-semibold">Language:</span>
               <select
@@ -310,7 +305,6 @@ function SearchPage() {
               </select>
             </div>
 
-            {/* Year Input */}
             <div className="flex items-center gap-2 bg-slate-900 border border-white/10 rounded-xl px-3 py-1.5">
               <span className="text-xs text-slate-400 font-semibold">Year:</span>
               <input
@@ -327,7 +321,6 @@ function SearchPage() {
               )}
             </div>
 
-            {/* Minimum Rating Selector */}
             <div className="flex items-center gap-2 bg-slate-900 border border-white/10 rounded-xl px-3 py-1.5">
               <span className="text-xs text-slate-400 font-semibold">Min Rating:</span>
               <select
@@ -344,7 +337,6 @@ function SearchPage() {
             </div>
           </div>
 
-          {/* Genre Scroll Pill Bar */}
           <div className="mt-4 space-y-1">
             <span className="text-xs text-slate-400 font-semibold block px-1">Genre:</span>
             <ScrollPillBar
@@ -357,7 +349,6 @@ function SearchPage() {
           </div>
         </div>
 
-        {/* Results Header */}
         <div className="flex items-center justify-between px-1">
           <h2 className="text-lg font-bold text-white">
             {searchParams.q ? `Search Results for "${searchParams.q}"` : "Filtered Catalog Results"}
@@ -367,7 +358,6 @@ function SearchPage() {
           </span>
         </div>
 
-        {/* Results Grid using Native MediaCard Wrappers */}
         {loading ? (
           <div className="py-20 text-center text-slate-400">Loading titles matching your filters...</div>
         ) : error ? (
@@ -384,7 +374,6 @@ function SearchPage() {
           </div>
         )}
 
-        {/* Fixed Bottom Floating Scroll Indicator with 10% Opacity Wrapper */}
         {canScrollDown && (
           <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
             <div className="flex flex-col items-center gap-0.5 bg-black/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
