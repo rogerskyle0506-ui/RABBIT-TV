@@ -8,6 +8,8 @@ export const THEME_KEY = "rabtv_app_theme";
 export const HELPFUL_MOUSE_KEY = "rabtv_helpful_mouse";
 export const STREAM_QUALITY_KEY = "rabtv_stream_quality";
 export const USER_AGE_KEY = "rabtv_user_age";
+export const HISTORY_OVERSCALE_KEY = "rabtv_history_overscale";
+export const LARGE_BUTTONS_KEY = "rabtv_large_buttons";
 
 export function getSavedCardSize(): CardSize {
   if (typeof window === "undefined") return "large";
@@ -53,6 +55,28 @@ export function setHelpfulMouse(enabled: boolean) {
     localStorage.setItem(HELPFUL_MOUSE_KEY, String(enabled));
     window.dispatchEvent(new Event("rabtv_settings_updated"));
   }
+}
+
+export function getHistoryOverscale(): boolean {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(HISTORY_OVERSCALE_KEY) !== "false"; // default true (+10% large size)
+}
+
+export function setHistoryOverscale(enabled: boolean): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(HISTORY_OVERSCALE_KEY, enabled ? "true" : "false");
+  window.dispatchEvent(new Event("rabtv_settings_updated"));
+}
+
+export function getLargeButtons(): boolean {
+  if (typeof window === "undefined") return true;
+  return localStorage.getItem(LARGE_BUTTONS_KEY) !== "false"; // default true (+5% bigger action buttons)
+}
+
+export function setLargeButtons(enabled: boolean): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(LARGE_BUTTONS_KEY, enabled ? "true" : "false");
+  window.dispatchEvent(new Event("rabtv_settings_updated"));
 }
 
 /** AGE TIER & RATING VERIFICATION HELPERS */
