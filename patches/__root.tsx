@@ -184,19 +184,16 @@ function RootComponent() {
   const handleMouseToggle = (enabled: boolean) => {
     setHelpfulMouse(enabled);
     setHelpfulMouseState(enabled);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
   const handleHistoryOverscaleToggle = (enabled: boolean) => {
     setHistoryOverscale(enabled);
     setHistoryOverscaleState(enabled);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
   const handleLargeButtonsToggle = (enabled: boolean) => {
     setLargeButtons(enabled);
     setLargeButtonsState(enabled);
-    window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
   const handleUpdateAgeInSettings = (e: React.FormEvent) => {
@@ -329,7 +326,7 @@ function RootComponent() {
         return "bg-cyan-950/80 border-cyan-500/20 shadow-cyan-950/40";
       case "violet":
       default:
-        return "bg-purple-950/80 border-violet-500/20 shadow-purple-950/40";
+        return "bg-purple-950/80 border-violet-500/20 shadow-violet-950/40";
     }
   };
 
@@ -414,51 +411,56 @@ function RootComponent() {
         <PreviewHostBridge />
         <AuthProvider>
           <header className={`sticky top-0 z-40 border-b border-white/10 ${getOuterPanelBackground(appTheme)} backdrop-blur-md transition-colors duration-300`}>
-            <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 gap-2 overflow-x-auto scrollbar-none">
-              <div className="flex items-center gap-3 shrink-0">
+            <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-stretch sm:items-center justify-between px-3 py-2 sm:px-6 gap-2">
+              
+              {/* Top Row on Mobile / Left Side on Desktop */}
+              <div className="flex items-center justify-between sm:justify-start gap-2">
                 <Link
                   to="/"
-                  className="flex items-center gap-2.5 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
+                  className="flex items-center gap-2 text-sm sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-lg transition-transform group-hover:scale-105 shrink-0">
+                  <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-base sm:text-lg transition-transform group-hover:scale-105 shrink-0">
                     🐰
                   </div>
                   <span className="whitespace-nowrap">RABBiT TV</span>
                 </Link>
 
                 {savedProfileName && (
-                  <div className="hidden md:flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-slate-200">
+                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-[11px] sm:text-xs font-semibold text-slate-200">
                     <span>👋 <strong className="text-white">{savedProfileName}</strong></span>
                   </div>
                 )}
               </div>
 
+              {/* Bottom Row on Mobile / Right Side on Desktop */}
               {!showFirstStartModal && (
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                  
                   {/* Header Search Form */}
-                  <form onSubmit={handleHeaderSearchSubmit} className="hidden sm:flex items-center gap-1.5 shrink-0">
+                  <form onSubmit={handleHeaderSearchSubmit} className="flex items-center gap-1 shrink-0 flex-1 sm:flex-initial">
                     <input
                       type="text"
                       value={headerSearchInput}
                       onChange={(e) => setHeaderSearchInput(e.target.value)}
                       placeholder="Search..."
-                      className="h-10 w-32 lg:w-44 rounded-xl border border-white/10 bg-slate-900/80 px-3 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2"
+                      className="h-9 sm:h-10 w-full sm:w-32 lg:w-44 rounded-xl border border-white/10 bg-slate-900/80 px-2.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2"
                     />
                     <button
                       type="submit"
-                      className={`flex h-10 px-3 items-center justify-center rounded-xl border text-xs font-bold shadow-md transition ${activeHeader.btnBg}`}
+                      className={`flex h-9 sm:h-10 px-2.5 sm:px-3 items-center justify-center rounded-xl border text-xs font-bold shadow-md transition shrink-0 ${activeHeader.btnBg}`}
+                      aria-label="Search"
                     >
                       🔍
                     </button>
                   </form>
 
-                  {/* Global Feeds Header Selector Pillbox */}
+                  {/* Global Feeds Selector Pillbox */}
                   <div className="relative shrink-0">
-                    <div className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus-within:ring-2 ${activeHeader.btnBg} gap-1.5 relative pointer-events-auto`}>
-                      <span className="whitespace-nowrap pointer-events-none">
-                        🌍 Global: {selectedGlobalFeed}
+                    <div className={`flex h-9 sm:h-10 items-center justify-center rounded-xl border px-2 sm:px-3 text-[11px] sm:text-xs font-bold shadow-md transition focus-within:ring-2 ${activeHeader.btnBg} gap-1 relative pointer-events-auto`}>
+                      <span className="whitespace-nowrap pointer-events-none truncate max-w-[90px] sm:max-w-none">
+                        🌐 {selectedGlobalFeed === "All (Default)" ? "Global" : selectedGlobalFeed}
                       </span>
-                      <span className="text-[10px] pointer-events-none">▼</span>
+                      <span className="text-[9px] pointer-events-none">▼</span>
 
                       <select
                         value={selectedGlobalFeed}
@@ -476,7 +478,7 @@ function RootComponent() {
 
                   <Link
                     to="/watch-history"
-                    className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 shrink-0 ${activeHeader.btnBg}`}
+                    className={`flex h-9 sm:h-10 items-center justify-center rounded-xl border px-2.5 sm:px-3 text-[11px] sm:text-xs font-bold shadow-md transition focus:outline-none focus:ring-2 shrink-0 ${activeHeader.btnBg}`}
                   >
                     🕒 History
                   </Link>
@@ -484,7 +486,7 @@ function RootComponent() {
                   <button
                     type="button"
                     onClick={() => setShowSettings((prev) => !prev)}
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl border text-lg shadow-md transition focus:outline-none focus:ring-2 shrink-0 ${activeHeader.btnBg}`}
+                    className={`flex h-9 sm:h-10 w-9 sm:w-10 items-center justify-center rounded-xl border text-base sm:text-lg shadow-md transition focus:outline-none focus:ring-2 shrink-0 ${activeHeader.btnBg}`}
                     aria-label="Settings"
                   >
                     ⚙️
@@ -494,13 +496,13 @@ function RootComponent() {
             </div>
 
             {showSettings && !showFirstStartModal && (
-              <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-md shadow-2xl`}>
+              <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-3 py-3 sm:px-4 sm:py-4 backdrop-blur-md shadow-2xl max-h-[85vh] overflow-y-auto`}>
                 <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-white/10 w-full justify-center">
+                  <div className="flex items-center gap-1 overflow-x-auto pb-2 border-b border-white/10 w-full justify-start sm:justify-center scrollbar-none">
                     <button
                       type="button"
                       onClick={() => setActiveSettingsTab("theme")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "theme"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
                           : `${getSubtlePillBg(appTheme)}`
@@ -511,7 +513,7 @@ function RootComponent() {
                     <button
                       type="button"
                       onClick={() => setActiveSettingsTab("scale")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "scale"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
                           : `${getSubtlePillBg(appTheme)}`
@@ -522,7 +524,7 @@ function RootComponent() {
                     <button
                       type="button"
                       onClick={() => setActiveSettingsTab("accessibility")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "accessibility"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
                           : `${getSubtlePillBg(appTheme)}`
@@ -533,7 +535,7 @@ function RootComponent() {
                     <button
                       type="button"
                       onClick={() => setActiveSettingsTab("age")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "age"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
                           : `${getSubtlePillBg(appTheme)}`
@@ -544,7 +546,7 @@ function RootComponent() {
                     <button
                       type="button"
                       onClick={() => setActiveSettingsTab("backup")}
-                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "backup"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
                           : `${getSubtlePillBg(appTheme)}`
@@ -554,16 +556,16 @@ function RootComponent() {
                     </button>
                   </div>
 
-                  <div className="w-full flex justify-center py-1">
+                  <div className="w-full flex justify-center py-1 max-w-lg mx-auto">
                     {activeSettingsTab === "theme" && (
                       <div className="flex flex-wrap items-center justify-center gap-2">
-                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Theme:</span>
+                        <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Theme:</span>
                         {allThemesList.map((t) => (
                           <button
                             key={t.id}
                             type="button"
                             onClick={() => handleThemeChange(t.id)}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+                            className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
                               appTheme === t.id
                                 ? `${getPrimaryBgColor(t.id)} text-white shadow-md`
                                 : `${getSubtlePillBg(appTheme)}`
@@ -577,7 +579,7 @@ function RootComponent() {
 
                     {activeSettingsTab === "scale" && (
                       <div className="flex flex-wrap items-center justify-center gap-2">
-                        <span className="text-xs font-semibold text-slate-300 mr-2">Choose Scale:</span>
+                        <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Scale:</span>
                         {(["small", "medium", "large"] as CardSize[]).map((size) => (
                           <button
                             key={size}
@@ -596,17 +598,16 @@ function RootComponent() {
                     )}
 
                     {activeSettingsTab === "accessibility" && (
-                      <div className="flex flex-col gap-3 max-w-md w-full mx-auto py-1">
-                        {/* XL Mouse Toggle */}
-                        <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-3 w-full max-w-md mx-auto py-1">
+                        <div className="flex items-center justify-between gap-3">
                           <div>
-                            <p className="text-xs font-bold text-white">XL Mouse Pointer (3x Scaled)</p>
-                            <p className="text-[10px] text-slate-400">Enlarges cursor for visibility on TVs/projectors.</p>
+                            <p className="text-xs font-bold text-white">XL Mouse Pointer (3x)</p>
+                            <p className="text-[10px] text-slate-400">Enlarges cursor for TVs/projectors.</p>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleMouseToggle(!helpfulMouse)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
                               helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
                             }`}
                           >
@@ -614,16 +615,15 @@ function RootComponent() {
                           </button>
                         </div>
 
-                        {/* History Overscale Toggle */}
-                        <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                        <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
                           <div>
-                            <p className="text-xs font-bold text-white">History Page Overscale (+10% Large)</p>
-                            <p className="text-[10px] text-slate-400">Forces watch history cards to be large and 10% larger.</p>
+                            <p className="text-xs font-bold text-white">History Overscale (+10%)</p>
+                            <p className="text-[10px] text-slate-400">Forces large history card sizing.</p>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleHistoryOverscaleToggle(!historyOverscale)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
                               historyOverscale ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
                             }`}
                           >
@@ -631,16 +631,15 @@ function RootComponent() {
                           </button>
                         </div>
 
-                        {/* Larger Action Buttons Toggle */}
-                        <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                        <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
                           <div>
                             <p className="text-xs font-bold text-white">Enlarged Action Buttons (+5%)</p>
-                            <p className="text-[10px] text-slate-400">Makes eye, thumbs down, and X buttons slightly bigger.</p>
+                            <p className="text-[10px] text-slate-400">Makes eye, thumb, and X buttons bigger.</p>
                           </div>
                           <button
                             type="button"
                             onClick={() => handleLargeButtonsToggle(!largeButtons)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
                               largeButtons ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
                             }`}
                           >
@@ -651,9 +650,9 @@ function RootComponent() {
                     )}
 
                     {activeSettingsTab === "age" && (
-                      <div className="flex flex-col gap-3 max-w-md w-full mx-auto">
+                      <div className="flex flex-col gap-3 w-full max-w-sm mx-auto">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-300 w-20 shrink-0">Name:</span>
+                          <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Name:</span>
                           <input
                             type="text"
                             maxLength={20}
@@ -665,34 +664,38 @@ function RootComponent() {
                               setSavedProfileName(val.trim());
                             }}
                             placeholder="Your Name"
-                            className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1 text-xs font-bold text-white focus:outline-none"
+                            className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-xs font-bold text-white focus:outline-none"
                           />
                         </div>
 
-                        <form onSubmit={handleUpdateAgeInSettings} className="flex items-center gap-2 pt-2 border-t border-white/10">
-                          <span className="text-xs font-semibold text-slate-300 w-20 shrink-0">Age / Code:</span>
-                          <input
-                            type="number"
-                            min={1}
-                            max={120}
-                            value={userAgeInput}
-                            onChange={(e) => setUserAgeInput(e.target.value)}
-                            className="w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-xs font-bold text-white focus:outline-none"
-                          />
-                          <input
-                            type="password"
-                            maxLength={10}
-                            placeholder="Passcode"
-                            value={settingsAgeCodeInput}
-                            onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
-                            className="w-28 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-xs font-bold text-white focus:outline-none"
-                          />
-                          <button
-                            type="submit"
-                            className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-3 py-1 text-xs font-bold whitespace-nowrap shadow`}
-                          >
-                            Update
-                          </button>
+                        <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Age:</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={120}
+                              value={userAgeInput}
+                              onChange={(e) => setUserAgeInput(e.target.value)}
+                              className="w-20 rounded-lg border border-white/10 bg-slate-800 px-2 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="password"
+                              maxLength={10}
+                              placeholder="Passcode"
+                              value={settingsAgeCodeInput}
+                              onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
+                              className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                            />
+                            <button
+                              type="submit"
+                              className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-4 py-1.5 text-xs font-bold whitespace-nowrap shadow`}
+                            >
+                              Update
+                            </button>
+                          </div>
                         </form>
 
                         {settingsAgeError && (
@@ -705,17 +708,17 @@ function RootComponent() {
                     )}
 
                     {activeSettingsTab === "backup" && (
-                      <div className="flex flex-wrap items-center justify-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full">
                         <button
                           type="button"
                           onClick={handleSaveBackup}
-                          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}
+                          className={`w-full sm:w-auto rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}
                         >
-                          💾 Export Backup File
+                          💾 Export Backup
                         </button>
 
-                        <label className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}>
-                          🔄 Restore Profile File
+                        <label className={`w-full sm:w-auto text-center cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}>
+                          🔄 Restore Backup
                           <input
                             type="file"
                             accept=".json"
@@ -725,7 +728,7 @@ function RootComponent() {
                         </label>
 
                         {backupStatus && (
-                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold ml-2`}>
+                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold text-center w-full`}>
                             {backupStatus}
                           </span>
                         )}
