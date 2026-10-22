@@ -737,7 +737,7 @@ function Home() {
   const activeHeroItem = heroItems[currentHeroIndex] || filteredItems[0] || null;
 
   return (
-    <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
+    <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-20`}>
       <div className="sticky top-0 z-30 mb-4 mt-2 px-3 py-2.5">
         <div className="mx-auto flex max-w-7xl items-center justify-center">
           <div className="w-full">
@@ -929,18 +929,16 @@ function Home() {
           )}
         </section>
 
+        {/* Fixed Bottom Floating Scroll Indicator */}
         {canScrollDown && (
-          <div className="my-8 flex w-full items-center justify-center">
-            <div className={`relative flex w-1/2 sm:w-1/3 items-center justify-center rounded-2xl border ${themeStyles.borderGlow} bg-black/60 backdrop-blur-md py-3 shadow-2xl transition-opacity duration-300`}>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-              <div className="flex flex-col items-center gap-1 z-10">
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
-                  More Content Below
-                </span>
-                <span className={`text-xl font-black transition-colors duration-300 animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
-                  ⌄
-                </span>
-              </div>
+          <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="flex flex-col items-center gap-0.5 bg-black/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+                More Content Below
+              </span>
+              <span className={`text-xl font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
+                ⌄
+              </span>
             </div>
           </div>
         )}
