@@ -2,7 +2,7 @@ import { Outlet, createRootRoute, HeadContent, Scripts, Link, useNavigate } from
 import { AuthProvider } from "@/components/auth-provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import "@/styles.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { StatusBar, Style } from "@capacitor/status-bar";
 import {
   CardSize,
@@ -71,6 +71,7 @@ function RootComponent() {
 
   const [showSettings, setShowSettings] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const lastScrollYRef = useRef(0);
   
   const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "backup" | null>(null);
 
@@ -121,6 +122,7 @@ function RootComponent() {
       handleCloseAll();
     } else {
       handleCloseAll();
+      lastScrollYRef.current = window.scrollY;
       setShowSettings(true);
       setActiveSettingsTab(null);
     }
@@ -131,14 +133,18 @@ function RootComponent() {
       handleCloseAll();
     } else {
       handleCloseAll();
+      lastScrollYRef.current = window.scrollY;
       setShowProfileMenu(true);
     }
   };
 
   useEffect(() => {
     const handleWindowScroll = () => {
-      if ((showSettings || showProfileMenu) && window.scrollY > 40) {
-        handleCloseAll();
+      if (showSettings || showProfileMenu) {
+        // Only collapse if the user scrolls down past a small threshold from where they opened it
+        if (window.scrollY > lastScrollYRef.current + 15) {
+          handleCloseAll();
+        }
       }
     };
 
@@ -1018,7 +1024,6 @@ function RootComponent() {
                   Enter RABBiT TV
                 </button>
 
-                {/* Fixed Bottom Floating Modal Scroll Indicator with 10% Opacity Wrapper */}
                 {canModalScrollDown && (
                   <div className="pointer-events-none fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center">
                     <div className="flex flex-col items-center gap-0.5 bg-black/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
