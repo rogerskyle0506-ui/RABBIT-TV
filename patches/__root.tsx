@@ -18,6 +18,10 @@ import {
   setHelpfulMouse,
   getSavedUserAge,
   saveUserAge,
+  getHistoryOverscale,
+  setHistoryOverscale,
+  getLargeButtons,
+  setLargeButtons,
 } from "@/lib/settings";
 
 const AUTHORIZATION_CODE = "34688643";
@@ -43,12 +47,14 @@ function RootComponent() {
   const [ageErrorNotice, setAgeErrorNotice] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "mouse" | "age" | "backup">("theme");
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "accessibility" | "age" | "backup">("theme");
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
   const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [helpfulMouse, setHelpfulMouseState] = useState(false);
+  const [historyOverscale, setHistoryOverscaleState] = useState(true);
+  const [largeButtons, setLargeButtonsState] = useState(true);
   const [userAgeInput, setUserAgeInput] = useState<string>("");
   const [profileNameInput, setProfileNameInput] = useState<string>("");
   const [savedProfileName, setSavedProfileName] = useState<string>("");
@@ -97,6 +103,8 @@ function RootComponent() {
     setStreamQuality(getSavedStreamQuality());
     setAppTheme(getSavedTheme());
     setHelpfulMouseState(getHelpfulMouse());
+    setHistoryOverscaleState(getHistoryOverscale());
+    setLargeButtonsState(getLargeButtons());
     
     const existingAge = localStorage.getItem("rabtv_user_age");
     if (existingAge) {
@@ -114,6 +122,8 @@ function RootComponent() {
       setStreamQuality(getSavedStreamQuality());
       setAppTheme(getSavedTheme());
       setHelpfulMouseState(getHelpfulMouse());
+      setHistoryOverscaleState(getHistoryOverscale());
+      setLargeButtonsState(getLargeButtons());
       const updatedName = localStorage.getItem("rabtv_profile_name");
       if (updatedName) setSavedProfileName(updatedName);
     };
@@ -174,6 +184,19 @@ function RootComponent() {
   const handleMouseToggle = (enabled: boolean) => {
     setHelpfulMouse(enabled);
     setHelpfulMouseState(enabled);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
+  const handleHistoryOverscaleToggle = (enabled: boolean) => {
+    setHistoryOverscale(enabled);
+    setHistoryOverscaleState(enabled);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
+  const handleLargeButtonsToggle = (enabled: boolean) => {
+    setLargeButtons(enabled);
+    setLargeButtonsState(enabled);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
   const handleUpdateAgeInSettings = (e: React.FormEvent) => {
@@ -189,6 +212,7 @@ function RootComponent() {
       setSettingsAgeSuccess(true);
       setSettingsAgeCodeInput("");
       setTimeout(() => setSettingsAgeSuccess(false), 3000);
+      window.dispatchEvent(new Event("rabtv_settings_updated"));
     } else {
       setSettingsAgeError(true);
       setSettingsAgeCodeInput("");
@@ -201,6 +225,8 @@ function RootComponent() {
       streamQuality,
       appTheme,
       helpfulMouse,
+      historyOverscale,
+      largeButtons,
       userAge: getSavedUserAge(),
       profileName: savedProfileName,
       myList: localStorage.getItem("rabtv_my_list"),
@@ -232,6 +258,8 @@ function RootComponent() {
         if (data.streamQuality) saveStreamQuality(data.streamQuality);
         if (data.appTheme) saveTheme(data.appTheme);
         if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
+        if (typeof data.historyOverscale === "boolean") setHistoryOverscale(data.historyOverscale);
+        if (typeof data.largeButtons === "boolean") setLargeButtons(data.largeButtons);
         if (data.userAge) saveUserAge(data.userAge);
         if (data.profileName) {
           localStorage.setItem("rabtv_profile_name", data.profileName);
@@ -493,14 +521,14 @@ function RootComponent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveSettingsTab("mouse")}
+                      onClick={() => setActiveSettingsTab("accessibility")}
                       className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                        activeSettingsTab === "mouse"
+                        activeSettingsTab === "accessibility"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
                           : `${getSubtlePillBg(appTheme)}`
                       }`}
                     >
-                      XL Mouse
+                      Accessibility
                     </button>
                     <button
                       type="button"
@@ -567,25 +595,58 @@ function RootComponent() {
                       </div>
                     )}
 
-                    {activeSettingsTab === "mouse" && (
-                      <div className="flex items-center justify-center gap-4 py-1">
-                        <div className="text-left">
-                          <p className="text-xs font-bold text-white">XL Mouse Pointer (3x Scaled)</p>
-                          <p className="text-[10px] text-slate-400">Enlarges the cursor for improved visibility on TVs and projectors.</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleMouseToggle(!helpfulMouse)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              helpfulMouse ? "translate-x-6" : "translate-x-1"
+                    {activeSettingsTab === "accessibility" && (
+                      <div className="flex flex-col gap-3 max-w-md w-full mx-auto py-1">
+                        {/* XL Mouse Toggle */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs font-bold text-white">XL Mouse Pointer (3x Scaled)</p>
+                            <p className="text-[10px] text-slate-400">Enlarges cursor for visibility on TVs/projectors.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleMouseToggle(!helpfulMouse)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
                             }`}
-                          />
-                        </button>
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${helpfulMouse ? "translate-x-6" : "translate-x-1"}`} />
+                          </button>
+                        </div>
+
+                        {/* History Overscale Toggle */}
+                        <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                          <div>
+                            <p className="text-xs font-bold text-white">History Page Overscale (+10% Large)</p>
+                            <p className="text-[10px] text-slate-400">Forces watch history cards to be large and 10% larger.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleHistoryOverscaleToggle(!historyOverscale)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              historyOverscale ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                            }`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${historyOverscale ? "translate-x-6" : "translate-x-1"}`} />
+                          </button>
+                        </div>
+
+                        {/* Larger Action Buttons Toggle */}
+                        <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                          <div>
+                            <p className="text-xs font-bold text-white">Enlarged Action Buttons (+5%)</p>
+                            <p className="text-[10px] text-slate-400">Makes eye, thumbs down, and X buttons slightly bigger.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleLargeButtonsToggle(!largeButtons)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              largeButtons ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                            }`}
+                          >
+                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${largeButtons ? "translate-x-6" : "translate-x-1"}`} />
+                          </button>
+                        </div>
                       </div>
                     )}
 
