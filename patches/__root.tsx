@@ -48,8 +48,10 @@ function RootComponent() {
   const [ageErrorNotice, setAgeErrorNotice] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  
   // Setting default to null so sub-menus start fully closed/collapsed when opened fresh
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "accessibility" | "age" | "backup" | null>(null);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "backup" | null>(null);
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
   const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
@@ -89,32 +91,43 @@ function RootComponent() {
     setHeaderSearchInput("");
   };
 
-  // Completely closes settings and resets sub-menus back to closed (without touching saved settings data)
-  const handleCloseSettings = () => {
+  // Closes all dropdowns
+  const handleCloseAll = () => {
     setShowSettings(false);
+    setShowProfileMenu(false);
     setActiveSettingsTab(null);
   };
 
   const handleToggleSettings = () => {
     if (showSettings) {
-      handleCloseSettings();
+      handleCloseAll();
     } else {
+      handleCloseAll();
       setShowSettings(true);
-      setActiveSettingsTab(null); // Fresh open with no sub-menus expanded
+      setActiveSettingsTab(null);
+    }
+  };
+
+  const handleToggleProfileMenu = () => {
+    if (showProfileMenu) {
+      handleCloseAll();
+    } else {
+      handleCloseAll();
+      setShowProfileMenu(true);
     }
   };
 
   // Automatically collapse and reset everything when scrolling down the page
   useEffect(() => {
     const handleWindowScroll = () => {
-      if (showSettings && window.scrollY > 40) {
-        handleCloseSettings();
+      if ((showSettings || showProfileMenu) && window.scrollY > 40) {
+        handleCloseAll();
       }
     };
 
     window.addEventListener("scroll", handleWindowScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleWindowScroll);
-  }, [showSettings]);
+  }, [showSettings, showProfileMenu]);
 
   // Modal scroll check for small screens
   const handleModalScrollCheck = (node: HTMLDivElement | null) => {
@@ -304,7 +317,7 @@ function RootComponent() {
 
         localStorage.removeItem(DISCLAIMER_ACCEPTED_KEY);
         setShowFirstStartModal(true);
-        handleCloseSettings();
+        handleCloseAll();
         setBackupStatus("Settings restored. Please reinstate your passcode agreement.");
       } catch {
         setBackupStatus("Failed to restore backup file.");
@@ -480,9 +493,16 @@ function RootComponent() {
                   <span className="whitespace-nowrap">RABBiT TV</span>
                 </Link>
 
-                {savedProfileName && (
-                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 text-[11px] sm:text-xs font-semibold text-slate-200">
-                    <span>👋 <strong className="text-white">{savedProfileName}</strong></span>
+                {savedProfileName && !showFirstStartModal && (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={handleToggleProfileMenu}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-xs font-bold text-white shadow transition cursor-pointer"
+                    >
+                      <span>👋 Hi, <strong className="text-white">{savedProfileName}</strong></span>
+                      <span className="text-[10px] ml-1 text-slate-300">▼</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -550,6 +570,149 @@ function RootComponent() {
               )}
             </div>
 
+            {/* Profile Menu Dropdown */}
+            {showProfileMenu && !showFirstStartModal && (
+              <div className={`border-t border-white/15 ${getCardBackground(appTheme)} px-4 py-4 sm:px-6 sm:py-5 backdrop-blur-md shadow-2xl max-h-[85vh] overflow-y-auto`}>
+                <div className="mx-auto flex max-w-lg flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                    <h3 className={`text-sm font-black uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
+                      👤 Personal Profile & Accessibility
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={handleCloseAll}
+                      className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+
+                  {/* Name & Age / Passcode Section */}
+                  <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Name:</span>
+                      <input
+                        type="text"
+                        maxLength={20}
+                        value={profileNameInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setProfileNameInput(val);
+                          localStorage.setItem("rabtv_profile_name", val.trim());
+                          setSavedProfileName(val.trim());
+                        }}
+                        placeholder="Your Name"
+                        className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-xs font-bold text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Age:</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={120}
+                          value={userAgeInput}
+                          onChange={(e) => setUserAgeInput(e.target.value)}
+                          className="w-20 rounded-lg border border-white/10 bg-slate-800 px-2 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="password"
+                          maxLength={10}
+                          placeholder="Passcode"
+                          value={settingsAgeCodeInput}
+                          onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
+                          className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                        />
+                        <button
+                          type="submit"
+                          className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-4 py-1.5 text-xs font-bold whitespace-nowrap shadow`}
+                        >
+                          Update Age
+                        </button>
+                      </div>
+                    </form>
+
+                    {settingsAgeError && (
+                      <span className="text-xs font-semibold text-red-400 text-center block">⚠️ Invalid Code or Age</span>
+                    )}
+                    {settingsAgeSuccess && (
+                      <span className="text-xs font-semibold text-emerald-400 text-center block">✓ Profile Updated!</span>
+                    )}
+                  </div>
+
+                  {/* Accessibility Settings Section */}
+                  <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
+                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Accessibility</span>
+                    
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-bold text-white">XL Mouse Pointer (3x)</p>
+                        <p className="text-[10px] text-slate-400">Enlarges cursor for TVs/projectors.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleMouseToggle(!helpfulMouse)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                          helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${helpfulMouse ? "translate-x-6" : "translate-x-1"}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-xs font-bold text-white">History Page Overscale</p>
+                          <p className="text-[10px] text-slate-400">Choose card size increase on history page.</p>
+                        </div>
+                        <span className="text-xs font-bold text-violet-400">
+                          {historyOverscale === "off" ? "Off" : `+${historyOverscale}`}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2">
+                        {(["off", "20%", "50%", "80%"] as HistoryScale[]).map((scale) => (
+                          <button
+                            key={scale}
+                            type="button"
+                            onClick={() => handleHistoryOverscaleChange(scale)}
+                            className={`rounded-lg py-1.5 text-xs font-bold capitalize transition ${
+                              historyOverscale === scale
+                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                : `${getSubtlePillBg(appTheme)}`
+                            }`}
+                          >
+                            {scale === "off" ? "Off" : `+${scale}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
+                      <div>
+                        <p className="text-xs font-bold text-white">Enlarged Action Buttons (+5%)</p>
+                        <p className="text-[10px] text-slate-400">Makes eye, thumb, and X buttons bigger.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleLargeButtonsToggle(!largeButtons)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                          largeButtons ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                        }`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${largeButtons ? "translate-x-6" : "translate-x-1"}`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Global Settings Gear Dropdown */}
             {showSettings && !showFirstStartModal && (
               <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-3 py-3 sm:px-4 sm:py-4 backdrop-blur-md shadow-2xl max-h-[85vh] overflow-y-auto`}>
                 <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
@@ -575,28 +738,6 @@ function RootComponent() {
                       }`}
                     >
                       Scale
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab(activeSettingsTab === "accessibility" ? null : "accessibility")}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
-                        activeSettingsTab === "accessibility"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
-                    >
-                      Accessibility
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab(activeSettingsTab === "age" ? null : "age")}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
-                        activeSettingsTab === "age"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
-                    >
-                      Profile
                     </button>
                     <button
                       type="button"
@@ -650,129 +791,6 @@ function RootComponent() {
                               {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
                             </button>
                           ))}
-                        </div>
-                      )}
-
-                      {activeSettingsTab === "accessibility" && (
-                        <div className="flex flex-col gap-3 w-full max-w-md mx-auto py-1">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <p className="text-xs font-bold text-white">XL Mouse Pointer (3x)</p>
-                              <p className="text-[10px] text-slate-400">Enlarges cursor for TVs/projectors.</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleMouseToggle(!helpfulMouse)}
-                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
-                                helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
-                              }`}
-                            >
-                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${helpfulMouse ? "translate-x-6" : "translate-x-1"}`} />
-                            </button>
-                          </div>
-
-                          {/* History Page Overscale Selector (Off by default) */}
-                          <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-xs font-bold text-white">History Page Overscale</p>
-                                <p className="text-[10px] text-slate-400">Choose card size increase on history page.</p>
-                              </div>
-                              <span className="text-xs font-bold text-violet-400">
-                                {historyOverscale === "off" ? "Off" : `+${historyOverscale}`}
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-4 gap-2">
-                              {(["off", "20%", "50%", "80%"] as HistoryScale[]).map((scale) => (
-                                <button
-                                  key={scale}
-                                  type="button"
-                                  onClick={() => handleHistoryOverscaleChange(scale)}
-                                  className={`rounded-lg py-1.5 text-xs font-bold capitalize transition ${
-                                    historyOverscale === scale
-                                      ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                                      : `${getSubtlePillBg(appTheme)}`
-                                  }`}
-                                >
-                                  {scale === "off" ? "Off" : `+${scale}`}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
-                            <div>
-                              <p className="text-xs font-bold text-white">Enlarged Action Buttons (+5%)</p>
-                              <p className="text-[10px] text-slate-400">Makes eye, thumb, and X buttons bigger.</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleLargeButtonsToggle(!largeButtons)}
-                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
-                                largeButtons ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
-                              }`}
-                            >
-                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${largeButtons ? "translate-x-6" : "translate-x-1"}`} />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {activeSettingsTab === "age" && (
-                        <div className="flex flex-col gap-3 w-full max-w-sm mx-auto">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Name:</span>
-                            <input
-                              type="text"
-                              maxLength={20}
-                              value={profileNameInput}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setProfileNameInput(val);
-                                localStorage.setItem("rabtv_profile_name", val.trim());
-                                setSavedProfileName(val.trim());
-                              }}
-                              placeholder="Your Name"
-                              className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-xs font-bold text-white focus:outline-none"
-                            />
-                          </div>
-
-                          <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col gap-2 pt-2 border-t border-white/10">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Age:</span>
-                              <input
-                                type="number"
-                                min={1}
-                                max={120}
-                                value={userAgeInput}
-                                onChange={(e) => setUserAgeInput(e.target.value)}
-                                className="w-20 rounded-lg border border-white/10 bg-slate-800 px-2 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
-                              />
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="password"
-                                maxLength={10}
-                                placeholder="Passcode"
-                                value={settingsAgeCodeInput}
-                                onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
-                                className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
-                              />
-                              <button
-                                type="submit"
-                                className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-4 py-1.5 text-xs font-bold whitespace-nowrap shadow`}
-                              >
-                                Update
-                              </button>
-                            </div>
-                          </form>
-
-                          {settingsAgeError && (
-                            <span className="text-xs font-semibold text-red-400 text-center">⚠️ Invalid Code or Age</span>
-                          )}
-                          {settingsAgeSuccess && (
-                            <span className="text-xs font-semibold text-emerald-400 text-center">✓ Profile Updated!</span>
-                          )}
                         </div>
                       )}
 
