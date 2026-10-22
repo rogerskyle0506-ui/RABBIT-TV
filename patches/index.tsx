@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, memo } from "react";
 import type { MediaItem } from "@/lib/tmdb-scraper";
 import { scrapeCategoryContent } from "@/lib/tmdb-scraper";
 import {
@@ -15,7 +15,6 @@ import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
 import { ScrollPillBar } from "@/components/scroll-pill-bar";
 import React from "react";
 
-// Standard navigation tabs including "In Theaters"
 const navTabs = ["Home", "TV Shows", "Movies", "Netflix", "Prime", "Disney+", "In Theaters", "My List"] as const;
 type NavTab = (typeof navTabs)[number];
 
@@ -157,7 +156,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
   );
 }
 
-const MemoizedMediaCard = React.memo(
+const MemoizedMediaCard = memo(
   function MemoizedMediaCard({ item }: { item: MediaItem }) {
     return <MediaCard item={item} />;
   },
@@ -192,7 +191,6 @@ function Home() {
   const [historyItems, setHistoryItems] = useState<MediaItem[]>([]);
   const [suggestedItems, setSuggestedItems] = useState<MediaItem[]>([]);
 
-  // Smart Rotating Hero Banner State (10 titles, 5-second interval)
   const [heroItems, setHeroItems] = useState<MediaItem[]>([]);
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
@@ -201,7 +199,6 @@ function Home() {
   const [cardSize, setCardSize] = useState<CardSize>("large");
   const [canScrollDown, setCanScrollDown] = useState(false);
 
-  // Vertical scroll bounds check for bottom scroll indicator
   useEffect(() => {
     const checkVerticalScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -219,7 +216,7 @@ function Home() {
       window.removeEventListener("scroll", checkVerticalScroll);
       window.removeEventListener("resize", checkVerticalScroll);
     };
-  }, [items, filteredItems, loading]);
+  }, [items, loading]);
 
   const loadSavedListsAndTheme = () => {
     try {
@@ -290,7 +287,6 @@ function Home() {
     setPage(1);
   }, [activeTab, selectedGenre, globalFeedOverride]);
 
-  // Context-Aware Smart Hero Banner Fetching & 10-Title Rotation Rule
   useEffect(() => {
     let active = true;
 
@@ -315,7 +311,6 @@ function Home() {
         });
 
         if (activeTab === "Home") {
-          // --- RULE 1: HOME TAB (In-Theater Movies First + 7+ Rated Backfill) ---
           const inTheaterRes = await fetch(`${TMDB_BASE_URL}movie/now_playing?api_key=${apiKey}&language=en-US&page=1`);
           const inTheaterData = await inTheaterRes.json();
 
@@ -354,7 +349,6 @@ function Home() {
             }
           }
 
-          // Backfill for Home tab (Current Year 7.0+ Rated Movies & TV)
           const movieParams = new URLSearchParams(discoverParams);
           movieParams.set("primary_release_year", currentYear);
           const tvParams = new URLSearchParams(discoverParams);
@@ -406,7 +400,6 @@ function Home() {
           }
 
         } else if (activeTab === "TV Shows") {
-          // --- RULE 2: TV SHOWS TAB (Strictly Top-Rated 7.0+ Current Year TV Series) ---
           const tvParams = new URLSearchParams(discoverParams);
           tvParams.set("first_air_date_year", currentYear);
 
@@ -449,7 +442,6 @@ function Home() {
             }
           }
         } else {
-          // --- OTHER TABS (Fallback to standard category scrape filtered by rating & watch status) ---
           const res = await scrapeCategoryContent(activeTab === "TV Shows" ? "Series" : activeTab, 1);
           if (res?.items && active) {
             for (const item of res.items) {
@@ -475,7 +467,6 @@ function Home() {
           }
         }
 
-        // Combine: Unstarted fresh candidates first, in-progress demoted to back, strictly capped at 10 titles
         const combinedQueue = [...freshCandidates, ...inProgressCandidates];
         const uniqueMap = new Map<string, MediaItem>();
         for (const item of combinedQueue) {
@@ -500,13 +491,12 @@ function Home() {
     };
   }, [activeTab, userAge, historyItems]);
 
-  // 5-Second Auto-Rotation Timer Effect for Hero Banner
   useEffect(() => {
     if (heroItems.length <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentHeroIndex((prevIndex) => (prevIndex + 1) % heroItems.length);
-    }, 5000); // Rotates every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [heroItems.length]);
@@ -748,7 +738,6 @@ function Home() {
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs Container using ScrollPillBar */}
       <div className="sticky top-0 z-30 mb-4 mt-2 px-3 py-2.5">
         <div className="mx-auto flex max-w-7xl items-center justify-center">
           <div className="w-full">
@@ -764,7 +753,6 @@ function Home() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 overflow-x-hidden">
-        {/* Smart Rotating Hero Banner (10 titles, 5-second interval) */}
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col group`}>
           {activeHeroItem ? (
             <>
@@ -821,7 +809,6 @@ function Home() {
                 </div>
               </div>
 
-              {/* Hero Banner Rotation Dots / Indicators */}
               {heroItems.length > 1 && (
                 <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-white/10">
                   {heroItems.map((_, idx) => (
@@ -847,7 +834,6 @@ function Home() {
           )}
         </section>
 
-        {/* Genre Filters Container using ScrollPillBar */}
         {activeTab !== "My List" && (
           <section className="mb-4 flex justify-center">
             <div className="w-full max-w-3xl">
@@ -862,7 +848,6 @@ function Home() {
           </section>
         )}
 
-        {/* My List Sub-category Selector */}
         {activeTab === "My List" && (
           <section className="mb-4 flex flex-wrap items-center gap-2 border-b border-white/10 pb-3 px-2">
             <button
@@ -915,7 +900,6 @@ function Home() {
           </section>
         )}
 
-        {/* Content Grid */}
         <section className="mb-6 px-1">
           <div className="mb-3 flex items-center justify-between px-1">
             <h3 className="text-lg font-bold text-white">
@@ -945,7 +929,6 @@ function Home() {
           )}
         </section>
 
-        {/* Vertical Scroll Down Indicator */}
         {canScrollDown && (
           <div className="my-8 flex w-full items-center justify-center">
             <div className={`relative flex w-1/2 sm:w-1/3 items-center justify-center rounded-2xl border ${themeStyles.borderGlow} bg-black/60 backdrop-blur-md py-3 shadow-2xl transition-opacity duration-300`}>
@@ -962,7 +945,6 @@ function Home() {
           </div>
         )}
 
-        {/* Suggested For You Section */}
         {activeTab === "My List" && suggestedItems.length > 0 && (
           <section className="mb-8 px-1 pt-4 border-t border-white/10">
             <div className="mb-3 flex items-center justify-between px-1">
@@ -981,7 +963,6 @@ function Home() {
           </section>
         )}
 
-        {/* Pagination Controls */}
         {activeTab !== "My List" && totalPages > 1 && (
           <div className={`mb-6 flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r ${themeStyles.cardGradient} border ${themeStyles.borderGlow} p-3 mx-2`}>
             <button
