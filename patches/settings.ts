@@ -1,6 +1,7 @@
 export type CardSize = "small" | "medium" | "large";
 export type AppTheme = "violet" | "red" | "midnight" | "emerald" | "amber" | "cyan";
 export type StreamQuality = "1080p" | "720p" | "480p" | "auto";
+export type HistoryScale = "off" | "20%" | "50%" | "80%";
 
 export const DISCLAIMER_ACCEPTED_KEY = "rabtv_disclaimer_accepted";
 export const CARD_SIZE_KEY = "rabtv_card_size";
@@ -57,20 +58,20 @@ export function setHelpfulMouse(enabled: boolean) {
   }
 }
 
-export function getHistoryOverscale(): boolean {
-  if (typeof window === "undefined") return true;
-  return localStorage.getItem(HISTORY_OVERSCALE_KEY) !== "false"; // default true (+10% large size)
+export function getHistoryOverscale(): HistoryScale {
+  if (typeof window === "undefined") return "off";
+  return (localStorage.getItem(HISTORY_OVERSCALE_KEY) as HistoryScale) || "off"; // default off
 }
 
-export function setHistoryOverscale(enabled: boolean): void {
+export function setHistoryOverscale(scale: HistoryScale): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(HISTORY_OVERSCALE_KEY, enabled ? "true" : "false");
+  localStorage.setItem(HISTORY_OVERSCALE_KEY, scale);
   window.dispatchEvent(new Event("rabtv_settings_updated"));
 }
 
 export function getLargeButtons(): boolean {
-  if (typeof window === "undefined") return true;
-  return localStorage.getItem(LARGE_BUTTONS_KEY) !== "false"; // default true (+5% bigger action buttons)
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(LARGE_BUTTONS_KEY) === "true"; // default off
 }
 
 export function setLargeButtons(enabled: boolean): void {
