@@ -30,6 +30,8 @@ const genreCategories = [
 
 const MY_LIST_STORAGE_KEY = "rabtv_my_list";
 const FAVORITES_STORAGE_KEY = "rabtv_favorites";
+const TMDB_API_KEY = (import.meta.env.VITE_TMDB_API_KEY as string) || "9619884fc9c0e58b374a661ab2a692cd";
+const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 
 export function MediaCard({ item }: { item: MediaItem }) {
   const [cardSize, setCardSize] = useState<CardSize>("large");
@@ -190,6 +192,10 @@ function Home() {
   const [historyItems, setHistoryItems] = useState<MediaItem[]>([]);
   const [suggestedItems, setSuggestedItems] = useState<MediaItem[]>([]);
 
+  // Smart Rotating Hero Banner State (10 titles, 5-second interval)
+  const [heroItems, setHeroItems] = useState<MediaItem[]>([]);
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [cardSize, setCardSize] = useState<CardSize>("large");
@@ -202,7 +208,6 @@ function Home() {
       const scrollHeight = document.documentElement.scrollHeight;
       const clientHeight = window.innerHeight;
 
-      // True if there's more than 100px of scrollable content below
       setCanScrollDown(scrollTop + clientHeight < scrollHeight - 100);
     };
 
@@ -284,6 +289,227 @@ function Home() {
   useEffect(() => {
     setPage(1);
   }, [activeTab, selectedGenre, globalFeedOverride]);
+
+  // Context-Aware Smart Hero Banner Fetching & 10-Title Rotation Rule
+  useEffect(() => {
+    let active = true;
+
+    async function fetchSmartHeroBanner() {
+      try {
+        const currentYear = String(new Date().getFullYear());
+        const apiKey = TMDB_API_KEY;
+        const watchHistoryMap = getRawWatchHistory().reduce((acc: Record<string, any>, h) => {
+          const key = String(h.mediaId ?? h.id).replace(/^(movie|tv)-/, "");
+          acc[key] = h;
+          return acc;
+        }, {});
+
+        const freshCandidates: MediaItem[] = [];
+        const inProgressCandidates: MediaItem[] = [];
+
+        const discoverParams = new URLSearchParams({
+          api_key: apiKey,
+          sort_by: "popularity.desc",
+          "vote_average.gte": "7.0",
+          "vote_count.gte": "50",
+        });
+
+        if (activeTab === "Home") {
+          // --- RULE 1: HOME TAB (In-Theater Movies First + 7+ Rated Backfill) ---
+          const inTheaterRes = await fetch(`${TMDB_BASE_URL}movie/now_playing?api_key=${apiKey}&language=en-US&page=1`);
+          const inTheaterData = await inTheaterRes.json();
+
+          for (const item of (inTheaterData.results || [])) {
+            if (!item.title || !item.backdrop_path) continue;
+            const voteAvg = item.vote_average || 0;
+            if (voteAvg < 7.0) continue;
+
+            const tmdbId = String(item.id);
+            if (isTitleDisliked(tmdbId) || isTitleDisliked(`movie-${tmdbId}`)) continue;
+
+            const historyEntry = watchHistoryMap[tmdbId];
+            const isCompleted = historyEntry && (
+              historyEntry.confirmedCompleted || 
+              (historyEntry.progressPercent ?? 0) >= 100 ||
+              Object.values(historyEntry.episodes || {}).some((e: any) => e.confirmedCompleted)
+            );
+            if (isCompleted) continue;
+
+            const mediaObj: MediaItem = {
+              id: `movie-${tmdbId}`,
+              title: item.title,
+              description: item.overview || "No description available.",
+              image: `https://image.tmdb.org/t/p/original${item.backdrop_path}`,
+              href: `/details?id=${tmdbId}&type=movie`,
+              genre: "🎬 IN THEATER",
+              year: currentYear,
+              rating: voteAvg.toFixed(1),
+              mediaType: "movie",
+            };
+
+            if (historyEntry && !isCompleted) {
+              inProgressCandidates.push(mediaObj);
+            } else {
+              freshCandidates.push(mediaObj);
+            }
+          }
+
+          // Backfill for Home tab (Current Year 7.0+ Rated Movies & TV)
+          const movieParams = new URLSearchParams(discoverParams);
+          movieParams.set("primary_release_year", currentYear);
+          const tvParams = new URLSearchParams(discoverParams);
+          tvParams.set("first_air_date_year", currentYear);
+
+          const [mRes, tRes] = await Promise.all([
+            fetch(`${TMDB_BASE_URL}discover/movie?${movieParams.toString()}`),
+            fetch(`${TMDB_BASE_URL}discover/tv?${tvParams.toString()}`),
+          ]);
+          const mData = await mRes.json();
+          const tData = await tRes.json();
+
+          if (!active) return;
+
+          for (const item of [...(mData.results || []), ...(tData.results || [])]) {
+            const isTv = !!item.name;
+            const title = item.title || item.name;
+            const tmdbId = String(item.id);
+            const voteAvg = item.vote_average || 0;
+            if (!title || !item.backdrop_path || voteAvg < 7.0) continue;
+
+            if (isTitleDisliked(tmdbId) || isTitleDisliked(`${isTv ? "tv" : "movie"}-${tmdbId}`)) continue;
+
+            const historyEntry = watchHistoryMap[tmdbId];
+            const isCompleted = historyEntry && (
+              historyEntry.confirmedCompleted || 
+              (historyEntry.progressPercent ?? 0) >= 100 ||
+              Object.values(historyEntry.episodes || {}).some((e: any) => e.confirmedCompleted)
+            );
+            if (isCompleted) continue;
+
+            const mediaObj: MediaItem = {
+              id: `${isTv ? "tv" : "movie"}-${tmdbId}`,
+              title,
+              description: item.overview || "No description available.",
+              image: `https://image.tmdb.org/t/p/original${item.backdrop_path}`,
+              href: `/details?id=${tmdbId}&type=${isTv ? "tv" : "movie"}`,
+              genre: isTv ? `TV SHOW (${currentYear})` : `MOVIE (${currentYear})`,
+              year: currentYear,
+              rating: voteAvg.toFixed(1),
+              mediaType: isTv ? "tv" : "movie",
+            };
+
+            if (historyEntry && !isCompleted) {
+              inProgressCandidates.push(mediaObj);
+            } else {
+              freshCandidates.push(mediaObj);
+            }
+          }
+
+        } else if (activeTab === "TV Shows") {
+          // --- RULE 2: TV SHOWS TAB (Strictly Top-Rated 7.0+ Current Year TV Series) ---
+          const tvParams = new URLSearchParams(discoverParams);
+          tvParams.set("first_air_date_year", currentYear);
+
+          const res = await fetch(`${TMDB_BASE_URL}discover/tv?${tvParams.toString()}`);
+          const data = await res.json();
+
+          if (!active) return;
+
+          for (const item of (data.results || [])) {
+            const tmdbId = String(item.id);
+            const voteAvg = item.vote_average || 0;
+            if (!item.name || !item.backdrop_path || voteAvg < 7.0) continue;
+
+            if (isTitleDisliked(tmdbId) || isTitleDisliked(`tv-${tmdbId}`)) continue;
+
+            const historyEntry = watchHistoryMap[tmdbId];
+            const isCompleted = historyEntry && (
+              historyEntry.confirmedCompleted || 
+              (historyEntry.progressPercent ?? 0) >= 100 ||
+              Object.values(historyEntry.episodes || {}).some((e: any) => e.confirmedCompleted)
+            );
+            if (isCompleted) continue;
+
+            const mediaObj: MediaItem = {
+              id: `tv-${tmdbId}`,
+              title: item.name,
+              description: item.overview || "No description available.",
+              image: `https://image.tmdb.org/t/p/original${item.backdrop_path}`,
+              href: `/details?id=${tmdbId}&type=tv`,
+              genre: `TOP TV (${currentYear})`,
+              year: currentYear,
+              rating: voteAvg.toFixed(1),
+              mediaType: "tv",
+            };
+
+            if (historyEntry && !isCompleted) {
+              inProgressCandidates.push(mediaObj);
+            } else {
+              freshCandidates.push(mediaObj);
+            }
+          }
+        } else {
+          // --- OTHER TABS (Fallback to standard category scrape filtered by rating & watch status) ---
+          const res = await scrapeCategoryContent(activeTab === "TV Shows" ? "Series" : activeTab, 1);
+          if (res?.items && active) {
+            for (const item of res.items) {
+              const tmdbId = String(item.id).replace(/^(movie|tv)-/, "");
+              const voteAvg = Number(item.rating ?? 7.0);
+              if (voteAvg < 7.0) continue;
+
+              if (isTitleDisliked(item.id) || isTitleDisliked(tmdbId)) continue;
+
+              const historyEntry = watchHistoryMap[tmdbId];
+              const isCompleted = historyEntry && (
+                historyEntry.confirmedCompleted || 
+                (historyEntry.progressPercent ?? 0) >= 100
+              );
+              if (isCompleted) continue;
+
+              if (historyEntry) {
+                inProgressCandidates.push(item);
+              } else {
+                freshCandidates.push(item);
+              }
+            }
+          }
+        }
+
+        // Combine: Unstarted fresh candidates first, in-progress demoted to back, strictly capped at 10 titles
+        const combinedQueue = [...freshCandidates, ...inProgressCandidates];
+        const uniqueMap = new Map<string, MediaItem>();
+        for (const item of combinedQueue) {
+          if (!uniqueMap.has(item.id)) {
+            uniqueMap.set(item.id, item);
+          }
+        }
+
+        const finalHeroList = Array.from(uniqueMap.values()).slice(0, 10);
+        if (active) {
+          setHeroItems(finalHeroList);
+          setCurrentHeroIndex(0);
+        }
+      } catch (err) {
+        console.error("Failed to load smart hero banner queue:", err);
+      }
+    }
+
+    void fetchSmartHeroBanner();
+    return () => {
+      active = false;
+    };
+  }, [activeTab, userAge, historyItems]);
+
+  // 5-Second Auto-Rotation Timer Effect for Hero Banner
+  useEffect(() => {
+    if (heroItems.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentHeroIndex((prevIndex) => (prevIndex + 1) % heroItems.length);
+    }, 5000); // Rotates every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [heroItems.length]);
 
   useEffect(() => {
     let active = true;
@@ -427,30 +653,6 @@ function Home() {
     });
   }, [items, activeTab, savedCatalogItems, userAge]);
 
-  const completedIdsOrTitles = useMemo(() => {
-    const set = new Set<string>();
-    const raw = getRawWatchHistory();
-    for (const h of raw) {
-      if (h.confirmedCompleted || (h.progressPercent ?? 0) >= 100) {
-        if (h.mediaId) set.add(String(h.mediaId).replace(/^(movie|tv)-/, ""));
-        if (h.id) set.add(String(h.id).replace(/^(movie|tv)-/, ""));
-        if (h.title) set.add(h.title.trim().toLowerCase());
-      }
-    }
-    return set;
-  }, [historyItems]);
-
-  const featured = useMemo(() => {
-    for (const item of filteredItems) {
-      const cleanId = String(item.id).replace(/^(movie|tv)-/, "");
-      const cleanTitle = (item.title ?? "").trim().toLowerCase();
-      if (!completedIdsOrTitles.has(cleanId) && !completedIdsOrTitles.has(cleanTitle)) {
-        return item;
-      }
-    }
-    return filteredItems[0] ?? null;
-  }, [filteredItems, completedIdsOrTitles]);
-
   const gridColsClass = useMemo(() => {
     if (cardSize === "small") {
       return "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3";
@@ -524,7 +726,6 @@ function Home() {
     }
   };
 
-  // Theme Color Mapping for the vertical glowing down arrow
   const getThemeArrowColor = (theme: AppTheme) => {
     switch (theme) {
       case "red":
@@ -542,6 +743,8 @@ function Home() {
         return "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]";
     }
   };
+
+  const activeHeroItem = heroItems[currentHeroIndex] || filteredItems[0] || null;
 
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
@@ -561,15 +764,15 @@ function Home() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 overflow-x-hidden">
-        {/* Featured Hero Banner */}
-        <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col`}>
-          {featured ? (
+        {/* Smart Rotating Hero Banner (10 titles, 5-second interval) */}
+        <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col group`}>
+          {activeHeroItem ? (
             <>
               <div className="absolute inset-0 w-full h-full overflow-hidden bg-transparent flex items-center justify-center">
                 <img
-                  src={featured.image}
-                  alt={featured.title}
-                  className="absolute inset-0 h-full w-full object-contain object-center opacity-90"
+                  src={activeHeroItem.image}
+                  alt={activeHeroItem.title}
+                  className="absolute inset-0 h-full w-full object-contain object-center opacity-90 transition-opacity duration-1000"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/20 to-transparent"></div>
               </div>
@@ -579,37 +782,37 @@ function Home() {
                   <div className="space-y-1 flex-1 min-w-0 w-full">
                     <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] ${themeStyles.accentText}`}>
                       <span className="rounded-full border border-white/20 bg-white/5 px-2 py-0.5 shrink-0">
-                        Featured
+                        ⭐ 7.0+ Spotlight ({currentHeroIndex + 1}/{heroItems.length || 1})
                       </span>
                       <span className="truncate max-w-[140px]">
-                        {featured.genre ?? "Entertainment"}
+                        {activeHeroItem.genre ?? "Entertainment"}
                       </span>
                     </div>
 
                     <div className="flex items-center flex-wrap gap-2 min-w-0">
                       <h2 className="text-lg sm:text-xl font-black text-white leading-snug truncate max-w-full">
-                        {featured.title}
+                        {activeHeroItem.title}
                       </h2>
-                      {featured.rating && (
+                      {activeHeroItem.rating && (
                         <span className="rounded-full border border-yellow-400/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 px-2 py-0.5 uppercase tracking-[0.2em] text-yellow-200 text-[10px] font-semibold shrink-0">
-                          ⭐ {featured.rating}
+                          ⭐ {activeHeroItem.rating}
                         </span>
                       )}
-                      {featured.year && (
+                      {activeHeroItem.year && (
                         <span className="text-[11px] text-slate-300 font-medium shrink-0">
-                          {featured.year}
+                          {activeHeroItem.year}
                         </span>
                       )}
                     </div>
 
                     <p className="text-xs leading-relaxed text-slate-300 line-clamp-2">
-                      {featured.description}
+                      {activeHeroItem.description}
                     </p>
                   </div>
 
-                  <div className="shrink-0 w-full sm:w-auto">
+                  <div className="shrink-0 w-full sm:w-auto flex items-center gap-3">
                     <Link
-                      to={featured.href}
+                      to={activeHeroItem.href}
                       className={`w-full sm:w-auto inline-flex items-center justify-center px-5 py-2.5 rounded-full shadow-lg text-xs font-bold transition whitespace-nowrap border border-white/10 ${themeStyles.btnActive}`}
                     >
                       WATCH NOW
@@ -617,6 +820,23 @@ function Home() {
                   </div>
                 </div>
               </div>
+
+              {/* Hero Banner Rotation Dots / Indicators */}
+              {heroItems.length > 1 && (
+                <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-white/10">
+                  {heroItems.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCurrentHeroIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === currentHeroIndex ? "w-5 bg-white" : "w-1.5 bg-white/40 hover:bg-white/70"
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
             </>
           ) : (
             <div className="flex h-full items-center justify-center text-slate-300 z-10">
@@ -708,7 +928,7 @@ function Home() {
 
           {filteredItems.length > 0 ? (
             <div className={gridColsClass}>
-              {filteredItems.slice(activeTab === "My List" ? 0 : 1).map((item) => (
+              {filteredItems.map((item) => (
                 <MemoizedMediaCard item={item} key={item.id} />
               ))}
             </div>
@@ -725,7 +945,7 @@ function Home() {
           )}
         </section>
 
-        {/* Vertical Scroll Down Indicator (Shows when more movies/catalog items are below) */}
+        {/* Vertical Scroll Down Indicator */}
         {canScrollDown && (
           <div className="my-8 flex w-full items-center justify-center">
             <div className={`relative flex w-1/2 sm:w-1/3 items-center justify-center rounded-2xl border ${themeStyles.borderGlow} bg-black/60 backdrop-blur-md py-3 shadow-2xl transition-opacity duration-300`}>
