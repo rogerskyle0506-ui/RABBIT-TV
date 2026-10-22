@@ -1011,14 +1011,14 @@ function RootComponent() {
                   Enter RABBiT TV
                 </button>
 
-                {/* Fixed Bottom Floating Modal Scroll Indicator */}
+                {/* Fixed Bottom Floating Modal Scroll Indicator with 10% Opacity Wrapper */}
                 {canModalScrollDown && (
                   <div className="pointer-events-none fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-0.5 bg-black/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+                    <div className="flex flex-col items-center gap-0.5 bg-black/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white opacity-100">
                         Scroll Down For Passcode
                       </span>
-                      <span className={`text-lg font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
+                      <span className={`text-lg font-black animate-slow-glow ${getThemeArrowColor(appTheme)} opacity-100`}>
                         ⌄
                       </span>
                     </div>
