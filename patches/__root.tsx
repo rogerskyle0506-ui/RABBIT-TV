@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
+import { Outlet, createRootRoute, HeadContent, Scripts, Link, useNavigate } from "@tanstack/react-router";
 import { AuthProvider } from "@/components/auth-provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import "@/styles.css";
@@ -36,6 +36,7 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  const navigate = useNavigate();
   const [showFirstStartModal, setShowFirstStartModal] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [passcodeError, setPasscodeError] = useState(false);
@@ -54,6 +55,9 @@ function RootComponent() {
   const [settingsAgeSuccess, setSettingsAgeSuccess] = useState<boolean>(false);
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
 
+  // Header Search Input State
+  const [headerSearchInput, setHeaderSearchInput] = useState("");
+
   // Global Feed Dropdown State in Header
   const [selectedGlobalFeed, setSelectedGlobalFeed] = useState<GlobalFeedOption>(() => {
     if (typeof window !== "undefined") {
@@ -66,6 +70,12 @@ function RootComponent() {
     setSelectedGlobalFeed(feed);
     localStorage.setItem("rabtv_global_feed", feed);
     window.dispatchEvent(new CustomEvent("rabtv_global_feed_updated", { detail: feed }));
+  };
+
+  const handleHeaderSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate({ to: "/search", search: { q: headerSearchInput.trim() } });
+    setHeaderSearchInput("");
   };
 
   useEffect(() => {
@@ -370,6 +380,23 @@ function RootComponent() {
 
               {!showFirstStartModal && (
                 <div className="flex items-center gap-2 shrink-0">
+                  {/* Header Search Form */}
+                  <form onSubmit={handleHeaderSearchSubmit} className="hidden sm:flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="text"
+                      value={headerSearchInput}
+                      onChange={(e) => setHeaderSearchInput(e.target.value)}
+                      placeholder="Search..."
+                      className="h-10 w-32 lg:w-44 rounded-xl border border-white/10 bg-slate-900/80 px-3 text-xs text-white placeholder-slate-400 focus:outline-none focus:ring-2"
+                    />
+                    <button
+                      type="submit"
+                      className={`flex h-10 px-3 items-center justify-center rounded-xl border text-xs font-bold shadow-md transition ${activeHeader.btnBg}`}
+                    >
+                      🔍
+                    </button>
+                  </form>
+
                   {/* Global Feeds Header Selector Pillbox */}
                   <div className="relative shrink-0">
                     <div className={`flex h-10 items-center justify-center rounded-xl border px-3 text-xs font-bold shadow-md transition focus-within:ring-2 ${activeHeader.btnBg} gap-1.5 relative pointer-events-auto`}>
