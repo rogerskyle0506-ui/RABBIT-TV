@@ -756,6 +756,23 @@ function Home() {
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col group`}>
           {activeHeroItem ? (
             <>
+              {/* Header Dots Indicator positioned safely in top right */}
+              {heroItems.length > 1 && (
+                <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
+                  {heroItems.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCurrentHeroIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === currentHeroIndex ? "w-5 bg-white" : "w-1.5 bg-white/40 hover:bg-white/70"
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+
               <div className="absolute inset-0 w-full h-full overflow-hidden bg-transparent flex items-center justify-center">
                 <img
                   src={activeHeroItem.image}
@@ -808,22 +825,6 @@ function Home() {
                   </div>
                 </div>
               </div>
-
-              {heroItems.length > 1 && (
-                <div className="absolute top-4 right-4 z-20 flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-white/10">
-                  {heroItems.map((_, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setCurrentHeroIndex(idx)}
-                      className={`h-1.5 rounded-full transition-all ${
-                        idx === currentHeroIndex ? "w-5 bg-white" : "w-1.5 bg-white/40 hover:bg-white/70"
-                      }`}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
-                </div>
-              )}
             </>
           ) : (
             <div className="flex h-full items-center justify-center text-slate-300 z-10">
@@ -929,14 +930,14 @@ function Home() {
           )}
         </section>
 
-        {/* Fixed Bottom Floating Scroll Indicator */}
+        {/* Fixed Bottom Floating Scroll Indicator with 10% Opacity Wrapper */}
         {canScrollDown && (
           <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
-            <div className="flex flex-col items-center gap-0.5 bg-black/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+            <div className="flex flex-col items-center gap-0.5 bg-black/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white opacity-100">
                 More Content Below
               </span>
-              <span className={`text-xl font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
+              <span className={`text-xl font-black animate-slow-glow ${getThemeArrowColor(appTheme)} opacity-100`}>
                 ⌄
               </span>
             </div>
