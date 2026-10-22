@@ -141,7 +141,6 @@ function RootComponent() {
   useEffect(() => {
     const handleWindowScroll = () => {
       if (showSettings || showProfileMenu) {
-        // Only collapse if the user scrolls down past a small threshold from where they opened it
         if (window.scrollY > lastScrollYRef.current + 15) {
           handleCloseAll();
         }
