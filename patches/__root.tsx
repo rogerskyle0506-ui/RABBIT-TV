@@ -3,6 +3,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import "@/styles.css";
 import { useState, useEffect } from "react";
+import { StatusBar, Style } from "@capacitor/status-bar";
 import {
   CardSize,
   StreamQuality,
@@ -29,6 +30,27 @@ const AUTHORIZATION_CODE = "34688643";
 const globalFeedOptions = ["All (Default)", "Russian", "British", "Hungarian", "German"] as const;
 export type GlobalFeedOption = (typeof globalFeedOptions)[number];
 
+// Map app themes to their matching native status bar background colors
+const themeStatusBarMap: Record<AppTheme, string> = {
+  violet: "#0f0728",
+  red: "#180505",
+  midnight: "#050b1a",
+  emerald: "#021a12",
+  amber: "#1c1505",
+  cyan: "#021820",
+};
+
+async function updateNativeStatusBar(theme: AppTheme) {
+  if (typeof window === "undefined") return;
+  try {
+    const hex = themeStatusBarMap[theme] || "#050b1a";
+    await StatusBar.setBackgroundColor({ color: hex });
+    await StatusBar.setStyle({ style: Style.Dark });
+  } catch (e) {
+    // Gracefully fallback if running in standard web browser preview
+  }
+}
+
 export const Route = createRootRoute({
   component: RootComponent,
   head: () => ({
@@ -50,7 +72,6 @@ function RootComponent() {
   const [showSettings, setShowSettings] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   
-  // Setting default to null so sub-menus start fully closed/collapsed when opened fresh
   const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "backup" | null>(null);
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
@@ -68,10 +89,8 @@ function RootComponent() {
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
   const [canModalScrollDown, setCanModalScrollDown] = useState<boolean>(false);
 
-  // Header Search Input State
   const [headerSearchInput, setHeaderSearchInput] = useState("");
 
-  // Global Feed Dropdown State in Header
   const [selectedGlobalFeed, setSelectedGlobalFeed] = useState<GlobalFeedOption>(() => {
     if (typeof window !== "undefined") {
       return (localStorage.getItem("rabtv_global_feed") as GlobalFeedOption) || "All (Default)";
@@ -91,7 +110,6 @@ function RootComponent() {
     setHeaderSearchInput("");
   };
 
-  // Closes all dropdowns
   const handleCloseAll = () => {
     setShowSettings(false);
     setShowProfileMenu(false);
@@ -117,7 +135,6 @@ function RootComponent() {
     }
   };
 
-  // Automatically collapse and reset everything when scrolling down the page
   useEffect(() => {
     const handleWindowScroll = () => {
       if ((showSettings || showProfileMenu) && window.scrollY > 40) {
@@ -129,7 +146,6 @@ function RootComponent() {
     return () => window.removeEventListener("scroll", handleWindowScroll);
   }, [showSettings, showProfileMenu]);
 
-  // Modal scroll check for small screens
   const handleModalScrollCheck = (node: HTMLDivElement | null) => {
     if (!node) return;
     const { scrollTop, scrollHeight, clientHeight } = node;
@@ -149,12 +165,16 @@ function RootComponent() {
       setShowFirstStartModal(true);
     }
 
+    const loadedTheme = getSavedTheme();
     setCardSize(getSavedCardSize());
     setStreamQuality(getSavedStreamQuality());
-    setAppTheme(getSavedTheme());
+    setAppTheme(loadedTheme);
     setHelpfulMouseState(getHelpfulMouse());
     setHistoryOverscaleState(getHistoryOverscale());
     setLargeButtonsState(getLargeButtons());
+    
+    // Sync native status bar color on load
+    void updateNativeStatusBar(loadedTheme);
     
     const existingAge = localStorage.getItem("rabtv_user_age");
     if (existingAge) {
@@ -168,12 +188,15 @@ function RootComponent() {
     }
 
     const handleSettingsUpdate = () => {
+      const updatedTheme = getSavedTheme();
       setCardSize(getSavedCardSize());
       setStreamQuality(getSavedStreamQuality());
-      setAppTheme(getSavedTheme());
+      setAppTheme(updatedTheme);
       setHelpfulMouseState(getHelpfulMouse());
       setHistoryOverscaleState(getHistoryOverscale());
       setLargeButtonsState(getLargeButtons());
+      void updateNativeStatusBar(updatedTheme);
+      
       const updatedName = localStorage.getItem("rabtv_profile_name");
       if (updatedName) setSavedProfileName(updatedName);
     };
@@ -228,6 +251,7 @@ function RootComponent() {
   const handleThemeChange = (newTheme: AppTheme) => {
     saveTheme(newTheme);
     setAppTheme(newTheme);
+    void updateNativeStatusBar(newTheme);
     window.dispatchEvent(new Event("rabtv_settings_updated"));
   };
 
@@ -303,7 +327,11 @@ function RootComponent() {
         const data = JSON.parse(event.target?.result as string);
         if (data.cardSize) saveCardSize(data.cardSize);
         if (data.streamQuality) saveStreamQuality(data.streamQuality);
-        if (data.appTheme) saveTheme(data.appTheme);
+        if (data.appTheme) {
+          saveTheme(data.appTheme);
+          setAppTheme(data.appTheme);
+          void updateNativeStatusBar(data.appTheme);
+        }
         if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
         if (data.historyOverscale) setHistoryOverscale(data.historyOverscale);
         if (typeof data.largeButtons === "boolean") setLargeButtons(data.largeButtons);
