@@ -7,6 +7,7 @@ import {
   CardSize,
   StreamQuality,
   AppTheme,
+  HistoryScale,
   DISCLAIMER_ACCEPTED_KEY,
   getSavedCardSize,
   saveCardSize,
@@ -53,8 +54,8 @@ function RootComponent() {
   const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [helpfulMouse, setHelpfulMouseState] = useState(false);
-  const [historyOverscale, setHistoryOverscaleState] = useState(true);
-  const [largeButtons, setLargeButtonsState] = useState(true);
+  const [historyOverscale, setHistoryOverscaleState] = useState<HistoryScale>("off");
+  const [largeButtons, setLargeButtonsState] = useState(false);
   const [userAgeInput, setUserAgeInput] = useState<string>("");
   const [profileNameInput, setProfileNameInput] = useState<string>("");
   const [savedProfileName, setSavedProfileName] = useState<string>("");
@@ -186,9 +187,9 @@ function RootComponent() {
     setHelpfulMouseState(enabled);
   };
 
-  const handleHistoryOverscaleToggle = (enabled: boolean) => {
-    setHistoryOverscale(enabled);
-    setHistoryOverscaleState(enabled);
+  const handleHistoryOverscaleChange = (scale: HistoryScale) => {
+    setHistoryOverscale(scale);
+    setHistoryOverscaleState(scale);
   };
 
   const handleLargeButtonsToggle = (enabled: boolean) => {
@@ -255,7 +256,7 @@ function RootComponent() {
         if (data.streamQuality) saveStreamQuality(data.streamQuality);
         if (data.appTheme) saveTheme(data.appTheme);
         if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
-        if (typeof data.historyOverscale === "boolean") setHistoryOverscale(data.historyOverscale);
+        if (data.historyOverscale) setHistoryOverscale(data.historyOverscale);
         if (typeof data.largeButtons === "boolean") setLargeButtons(data.largeButtons);
         if (data.userAge) saveUserAge(data.userAge);
         if (data.profileName) {
@@ -326,7 +327,7 @@ function RootComponent() {
         return "bg-cyan-950/80 border-cyan-500/20 shadow-cyan-950/40";
       case "violet":
       default:
-        return "bg-purple-950/80 border-violet-500/20 shadow-violet-950/40";
+        return "bg-purple-950/80 border-violet-500/20 shadow-purple-950/40";
     }
   };
 
@@ -615,20 +616,33 @@ function RootComponent() {
                           </button>
                         </div>
 
-                        <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
-                          <div>
-                            <p className="text-xs font-bold text-white">History Overscale (+10%)</p>
-                            <p className="text-[10px] text-slate-400">Forces large history card sizing.</p>
+                        {/* History Page Overscale Selector (Off by default) */}
+                        <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="text-xs font-bold text-white">History Page Overscale</p>
+                              <p className="text-[10px] text-slate-400">Choose card size increase on history page.</p>
+                            </div>
+                            <span className="text-xs font-bold text-violet-400">
+                              {historyOverscale === "off" ? "Off" : `+${historyOverscale}`}
+                            </span>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleHistoryOverscaleToggle(!historyOverscale)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
-                              historyOverscale ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
-                            }`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${historyOverscale ? "translate-x-6" : "translate-x-1"}`} />
-                          </button>
+                          <div className="grid grid-cols-4 gap-2">
+                            {(["off", "20%", "50%", "80%"] as HistoryScale[]).map((scale) => (
+                              <button
+                                key={scale}
+                                type="button"
+                                onClick={() => handleHistoryOverscaleChange(scale)}
+                                className={`rounded-lg py-1.5 text-xs font-bold capitalize transition ${
+                                  historyOverscale === scale
+                                    ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                    : `${getSubtlePillBg(appTheme)}`
+                                }`}
+                              >
+                                {scale === "off" ? "Off" : `+${scale}`}
+                              </button>
+                            ))}
+                          </div>
                         </div>
 
                         <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
