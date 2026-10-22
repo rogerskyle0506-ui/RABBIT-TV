@@ -29,17 +29,12 @@ jobs:
       - name: Extract App Name & Version
         id: version-extractor
         run: |
-          APP_NAME=$(node -p "require('./package.json').name || 'RABBiT-TV'")
-          VERSION=$(node -p "require('./package.json').version || '1.0.0'")
+          VERSION=$(node -p "require('./package.json').version || '2.2.5'")
           
-          SLUG=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr '/' '-' | tr ' ' '-')
+          echo "artifact_name=rabbittv-v${VERSION}" >> $GITHUB_OUTPUT
+          echo "apk_filename=rabbittv${VERSION}.apk" >> $GITHUB_OUTPUT
           
-          echo "app_name=$APP_NAME" >> $GITHUB_OUTPUT
-          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
-          echo "artifact_name=${SLUG}-v${VERSION}" >> $GITHUB_OUTPUT
-          echo "apk_filename=${SLUG}-v${VERSION}.apk" >> $GITHUB_OUTPUT
-          
-          echo "Building: $APP_NAME version$VERSION"
+          echo "Building RABBiT TV version ${VERSION}"
 
       - name: Install dependencies
         run: npm install
@@ -110,6 +105,14 @@ jobs:
           else
             echo "Error: patches/__root.tsx not found!"
             exit 1
+          fi
+
+          # 6. Copy global styles to src/styles.css (with slow-glow animations)
+          if [ -f patches/styles.css ]; then
+            cp patches/styles.css src/styles.css
+            echo "Successfully patched src/styles.css"
+          else
+            echo "Warning: patches/styles.css not found!"
           fi
 
       - name: Create Temporary index.html for Capacitor Build
@@ -208,11 +211,11 @@ jobs:
 
       - name: Rename and Prepare APK Artifact
         run: |
-          mkdir -p output_apk
-          cp android/app/build/outputs/apk/debug/app-debug.apk output_apk/${{ steps.version-extractor.outputs.apk_filename }}
+          mkdir -p rabbittv
+          cp android/app/build/outputs/apk/debug/app-debug.apk rabbittv/${{ steps.version-extractor.outputs.apk_filename }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.version-extractor.outputs.artifact_name }}
-          path: output_apk/${{ steps.version-extractor.outputs.apk_filename }}
+          path: rabbittv/${{ steps.version-extractor.outputs.apk_filename }}
