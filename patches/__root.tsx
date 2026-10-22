@@ -30,7 +30,6 @@ const AUTHORIZATION_CODE = "34688643";
 const globalFeedOptions = ["All (Default)", "Russian", "British", "Hungarian", "German"] as const;
 export type GlobalFeedOption = (typeof globalFeedOptions)[number];
 
-// Map app themes to their matching native status bar background colors
 const themeStatusBarMap: Record<AppTheme, string> = {
   violet: "#0f0728",
   red: "#180505",
@@ -47,7 +46,7 @@ async function updateNativeStatusBar(theme: AppTheme) {
     await StatusBar.setBackgroundColor({ color: hex });
     await StatusBar.setStyle({ style: Style.Dark });
   } catch (e) {
-    // Gracefully fallback if running in standard web browser preview
+    // Gracefully fallback
   }
 }
 
@@ -173,7 +172,6 @@ function RootComponent() {
     setHistoryOverscaleState(getHistoryOverscale());
     setLargeButtonsState(getLargeButtons());
     
-    // Sync native status bar color on load
     void updateNativeStatusBar(loadedTheme);
     
     const existingAge = localStorage.getItem("rabtv_user_age");
@@ -509,7 +507,6 @@ function RootComponent() {
           <header className={`sticky top-0 z-40 border-b border-white/10 ${getOuterPanelBackground(appTheme)} backdrop-blur-md transition-colors duration-300`}>
             <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-stretch sm:items-center justify-between px-3 py-2 sm:px-6 gap-2">
               
-              {/* Top Row on Mobile / Left Side on Desktop */}
               <div className="flex items-center justify-between sm:justify-start gap-2">
                 <Link
                   to="/"
@@ -535,11 +532,9 @@ function RootComponent() {
                 )}
               </div>
 
-              {/* Bottom Row on Mobile / Right Side on Desktop */}
               {!showFirstStartModal && (
                 <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                   
-                  {/* Header Search Form */}
                   <form onSubmit={handleHeaderSearchSubmit} className="flex items-center gap-1 shrink-0 flex-1 sm:flex-initial">
                     <input
                       type="text"
@@ -557,7 +552,6 @@ function RootComponent() {
                     </button>
                   </form>
 
-                  {/* Global Feeds Selector Pillbox */}
                   <div className="relative shrink-0">
                     <div className={`flex h-9 sm:h-10 items-center justify-center rounded-xl border px-2 sm:px-3 text-[11px] sm:text-xs font-bold shadow-md transition focus-within:ring-2 ${activeHeader.btnBg} gap-1 relative pointer-events-auto`}>
                       <span className="whitespace-nowrap pointer-events-none truncate max-w-[90px] sm:max-w-none">
@@ -598,7 +592,6 @@ function RootComponent() {
               )}
             </div>
 
-            {/* Profile Menu Dropdown */}
             {showProfileMenu && !showFirstStartModal && (
               <div className={`border-t border-white/15 ${getCardBackground(appTheme)} px-4 py-4 sm:px-6 sm:py-5 backdrop-blur-md shadow-2xl max-h-[85vh] overflow-y-auto`}>
                 <div className="mx-auto flex max-w-lg flex-col gap-4">
@@ -615,7 +608,6 @@ function RootComponent() {
                     </button>
                   </div>
 
-                  {/* Name & Age / Passcode Section */}
                   <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Name:</span>
@@ -672,7 +664,6 @@ function RootComponent() {
                     )}
                   </div>
 
-                  {/* Accessibility Settings Section */}
                   <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
                     <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Accessibility</span>
                     
@@ -740,7 +731,6 @@ function RootComponent() {
               </div>
             )}
 
-            {/* Global Settings Gear Dropdown */}
             {showSettings && !showFirstStartModal && (
               <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-3 py-3 sm:px-4 sm:py-4 backdrop-blur-md shadow-2xl max-h-[85vh] overflow-y-auto`}>
                 <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
@@ -856,11 +846,10 @@ function RootComponent() {
             )}
           </header>
 
-          <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden">
+          <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden pb-20">
             <Outlet />
           </main>
 
-          {/* Startup Modal with Name & Age Validation */}
           {showFirstStartModal && (
             <div
               ref={(node) => handleModalScrollCheck(node)}
@@ -889,7 +878,6 @@ function RootComponent() {
                   </div>
                 </div>
 
-                {/* Friendly Name Prompt */}
                 <div className="space-y-2 border-t border-white/10 pt-4">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
                     What's your name? <span className="text-slate-400 font-normal lowercase">(For your welcome greeting!)</span>
@@ -909,7 +897,6 @@ function RootComponent() {
                   />
                 </div>
 
-                {/* Friendly Age Prompt */}
                 <div className="space-y-2 border-t border-white/10 pt-3">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
                     How old are you? <span className="text-slate-400 font-normal lowercase">(So we can streamline your experience!)</span>
@@ -1024,11 +1011,11 @@ function RootComponent() {
                   Enter RABBiT TV
                 </button>
 
-                {/* Modal Internal Scroll Down Indicator */}
+                {/* Fixed Bottom Floating Modal Scroll Indicator */}
                 {canModalScrollDown && (
-                  <div className="pt-2 flex w-full items-center justify-center pointer-events-none">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                  <div className="pointer-events-none fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-0.5 bg-black/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
                         Scroll Down For Passcode
                       </span>
                       <span className={`text-lg font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
