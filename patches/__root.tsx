@@ -29,6 +29,7 @@ import {
 const AUTHORIZATION_CODE = "34688643";
 const globalFeedOptions = ["All (Default)", "Russian", "British", "Hungarian", "German"] as const;
 export type GlobalFeedOption = (typeof globalFeedOptions)[number];
+const HOSTED_ICON_URL = "https://github.com/rogerskyle0506-ui/RABBIT-TV/blob/main/assets/icon.png?raw=true";
 
 const themeStatusBarMap: Record<AppTheme, string> = {
   violet: "#0f0728",
@@ -512,9 +513,11 @@ function RootComponent() {
                   to="/"
                   className="flex items-center gap-2 text-sm sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
                 >
-                  <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-base sm:text-lg transition-transform group-hover:scale-105 shrink-0">
-                    🐰
-                  </div>
+                  <img
+                    src={HOSTED_ICON_URL}
+                    alt="RABBiT TV Icon"
+                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-cover border border-red-500/30 shadow-lg transition-transform group-hover:scale-105 shrink-0"
+                  />
                   <span className="whitespace-nowrap">RABBiT TV</span>
                 </Link>
 
@@ -861,8 +864,12 @@ function RootComponent() {
                 className={`my-auto w-full max-w-xl space-y-5 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
               >
                 <div className="text-center space-y-2">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 text-xl shadow-lg">
-                    🐰
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden border border-red-500/30 shadow-lg bg-black">
+                    <img
+                      src={HOSTED_ICON_URL}
+                      alt="RABBiT TV Logo"
+                      className="h-full w-full object-cover"
+                    />
                   </div>
                   <h2 className={`text-2xl font-bold ${getPrimaryAccentColor(appTheme)}`}>
                     Welcome to RABBiT TV
