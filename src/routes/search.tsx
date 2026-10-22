@@ -76,12 +76,29 @@ function SearchPage() {
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [cardSize, setCardSize] = useState<CardSize>("large");
   const [userAge, setUserAge] = useState<number>(18);
+  const [canScrollDown, setCanScrollDown] = useState<boolean>(false);
 
   useEffect(() => {
     setAppTheme(getSavedTheme());
     setCardSize(getSavedCardSize());
     setUserAge(getSavedUserAge());
   }, []);
+
+  // Vertical scroll check for bottom scroll indicator
+  useEffect(() => {
+    const handleScrollCheck = () => {
+      const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+      setCanScrollDown(scrollTop + clientHeight < scrollHeight - 40);
+    };
+
+    handleScrollCheck();
+    window.addEventListener("scroll", handleScrollCheck, { passive: true });
+    window.addEventListener("resize", handleScrollCheck);
+    return () => {
+      window.removeEventListener("scroll", handleScrollCheck);
+      window.removeEventListener("resize", handleScrollCheck);
+    };
+  }, [results, loading]);
 
   useEffect(() => {
     let active = true;
@@ -208,6 +225,18 @@ function SearchPage() {
     amber: { bg: "bg-gradient-to-br from-stone-950 via-yellow-950/40 to-neutral-950", accent: "text-amber-300", border: "border-amber-500/30", btn: "bg-amber-600 hover:bg-amber-500" },
     cyan: { bg: "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950", accent: "text-cyan-300", border: "border-cyan-500/30", btn: "bg-cyan-600 hover:bg-cyan-500" },
   }[appTheme] || { bg: "bg-slate-950", accent: "text-violet-300", border: "border-violet-500/30", btn: "bg-violet-600" };
+
+  const getThemeArrowColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red": return "text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.8)]";
+      case "midnight": return "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]";
+      case "emerald": return "text-emerald-300 drop-shadow-[0_0_8px_rgba(110,231,183,0.8)]";
+      case "amber": return "text-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.8)]";
+      case "cyan": return "text-cyan-300 drop-shadow-[0_0_8px_rgba(103,232,249,0.8)]";
+      case "violet":
+      default: return "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]";
+    }
+  };
 
   const getPrimaryBgColor = (theme: AppTheme) => {
     switch (theme) {
@@ -352,6 +381,20 @@ function SearchPage() {
         ) : (
           <div className="rounded-2xl border border-white/10 bg-black/40 p-12 text-center text-slate-400">
             No titles found matching that exact combination of filters. Try relaxing your language, year, or rating filters!
+          </div>
+        )}
+
+        {/* Vertical Scroll Indicator (Shows when page has content below the fold) */}
+        {canScrollDown && (
+          <div className="pt-6 pb-2 flex w-full items-center justify-center pointer-events-none">
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                Scroll Down For More
+              </span>
+              <span className={`text-xl font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
+                ⌄
+              </span>
+            </div>
           </div>
         )}
 
