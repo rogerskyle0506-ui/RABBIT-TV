@@ -29,7 +29,6 @@ function WatchHistoryComponent() {
   const [largeButtons, setLargeButtons] = useState<boolean>(true);
   const [canScrollDown, setCanScrollDown] = useState(false);
 
-  // Vertical scroll bounds check for bottom scroll indicator
   useEffect(() => {
     const checkVerticalScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -337,7 +336,6 @@ function WatchHistoryComponent() {
         </div>
       )}
 
-      {/* Fixed Bottom Floating Scroll Indicator with 10% Opacity Wrapper */}
       {canScrollDown && (
         <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-0.5 bg-black/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
@@ -447,7 +445,7 @@ const MovieCard = React.memo(function MovieCard({
               src={`${TMDB_IMAGE_BASE}${movie.posterPath}`}
               alt={movie.title}
               loading="lazy"
-              className="h-full w-full object-cover transition transform group-hover:scale-105"
+              className="absolute inset-0 h-full w-full object-cover object-center transition transform group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-xs font-bold">
@@ -558,7 +556,7 @@ const TvShowCard = React.memo(function TvShowCard({
               src={`${TMDB_IMAGE_BASE}${show.posterPath}`}
               alt={show.title}
               loading="lazy"
-              className="h-full w-full object-cover transition transform group-hover:scale-105"
+              className="absolute inset-0 h-full w-full object-cover object-center transition transform group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-xs font-bold">
