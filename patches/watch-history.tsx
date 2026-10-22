@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import React, { useState, useEffect } from "react";
-import { AppTheme, CardSize, HistoryScale, getSavedTheme, getSavedCardSize, getHistoryOverscale, getLargeButtons, getPosterDimensions } from "@/lib/settings";
+import { AppTheme, CardSize, HistoryScale, getSavedTheme, getSavedCardSize, getHistoryOverscale, getLargeButtons } from "@/lib/settings";
 import {
   getWatchHistory,
   markEpisodeCompleted,
@@ -140,7 +140,6 @@ function WatchHistoryComponent() {
     }
   };
 
-  // Smart Overscale Grid Constraint: Automatically reduces columns when overscaling is active so cards never overlap
   const getGridColsClass = (size: CardSize, overscale: HistoryScale) => {
     let reductionOffset = 0;
     if (overscale === "20%") reductionOffset = 1;
@@ -179,7 +178,7 @@ function WatchHistoryComponent() {
   const completedShows = tvShows.filter((s) => calculateSeriesProgress(s) === 100);
 
   return (
-    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-4 md:p-12 text-white space-y-6 transition-colors duration-300 overflow-x-hidden`}>
+    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-4 md:p-12 text-white space-y-6 transition-colors duration-300 pb-20 overflow-x-hidden`}>
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <h1 className="text-xl font-bold tracking-wide flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-lg">
@@ -192,7 +191,6 @@ function WatchHistoryComponent() {
         </span>
       </div>
 
-      {/* Compact Single-Line Instructional Ticker */}
       <div className="rounded-xl border border-white/10 bg-black/50 px-3.5 py-2 shadow-md backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-300">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm">💡</span>
@@ -214,7 +212,6 @@ function WatchHistoryComponent() {
         </div>
       ) : (
         <div className="space-y-12">
-          {/* SECTION: IN PROGRESS (MOVIES) */}
           {inProgressMovies.length > 0 && (
             <section className="space-y-4">
               <h2 className={`text-sm font-bold text-slate-200 border-l-4 pl-3 uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
@@ -239,7 +236,6 @@ function WatchHistoryComponent() {
             </section>
           )}
 
-          {/* SECTION: IN PROGRESS (TV SHOWS) */}
           {inProgressShows.length > 0 && (
             <section className="space-y-4">
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-blue-500 pl-3 uppercase tracking-wider">
@@ -264,7 +260,6 @@ function WatchHistoryComponent() {
             </section>
           )}
 
-          {/* SECTION: COMPLETED (MOVIES & TV SHOWS) */}
           {(completedMovies.length > 0 || completedShows.length > 0) && (
             <section className="space-y-4">
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-emerald-500 pl-3 uppercase tracking-wider">
@@ -303,7 +298,6 @@ function WatchHistoryComponent() {
             </section>
           )}
 
-          {/* SECTION: DISLIKED / REMOVED */}
           {dislikedTitles.length > 0 && (
             <section className="space-y-4">
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-red-500 pl-3 uppercase tracking-wider">
@@ -343,20 +337,20 @@ function WatchHistoryComponent() {
         </div>
       )}
 
-      {/* Vertical Scroll Down Indicator */}
+      {/* Fixed Bottom Floating Scroll Indicator */}
       {canScrollDown && (
-        <div className="my-8 flex w-full items-center justify-center pointer-events-none">
-          <div className="relative flex w-1/2 sm:w-1/3 items-center justify-center rounded-2xl border border-white/20 bg-black/60 backdrop-blur-md py-2.5 shadow-2xl">
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-            <div className="flex flex-col items-center gap-0.5 z-10">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">More History Below</span>
-              <span className={`text-xl font-black transition-colors duration-300 animate-slow-glow ${getThemeArrowColor(appTheme)}`}>⌄</span>
-            </div>
+        <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-0.5 bg-black/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+              More History Below
+            </span>
+            <span className={`text-xl font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
+              ⌄
+            </span>
           </div>
         </div>
       )}
 
-      {/* VERIFICATION MODAL */}
       {verifyingTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm space-y-4 rounded-2xl border border-white/10 bg-slate-900 p-5 shadow-2xl text-center">
@@ -388,7 +382,6 @@ function WatchHistoryComponent() {
   );
 }
 
-/** MEMOIZED MOVIE CARD */
 const MovieCard = React.memo(function MovieCard({
   movie,
   appTheme,
@@ -426,7 +419,6 @@ const MovieCard = React.memo(function MovieCard({
     }
   };
 
-  // Safe layout scaling with generous vertical padding margins (`my-3` to `my-8`) to prevent row collision
   const getScaleClass = (scale: HistoryScale | boolean) => {
     if (scale === true) return "transform scale-105 origin-top transition-transform my-3";
     switch (scale) {
@@ -502,7 +494,6 @@ const MovieCard = React.memo(function MovieCard({
   );
 });
 
-/** MEMOIZED TV SHOW CARD */
 const TvShowCard = React.memo(function TvShowCard({
   show,
   appTheme,
@@ -641,7 +632,6 @@ function onEyewayClickWrapper(
   onEyeballClick(showId, episodeId, title, isCompleted);
 }
 
-/** MEMOIZED EPISODE ROW */
 const EpisodeRow = React.memo(function EpisodeRow({
   episode,
   largeButtons,
