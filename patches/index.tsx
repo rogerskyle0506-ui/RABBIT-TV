@@ -193,6 +193,28 @@ function Home() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [cardSize, setCardSize] = useState<CardSize>("large");
+  const [canScrollDown, setCanScrollDown] = useState(false);
+
+  // Vertical scroll bounds check for bottom scroll indicator
+  useEffect(() => {
+    const checkVerticalScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = window.innerHeight;
+
+      // True if there's more than 100px of scrollable content below
+      setCanScrollDown(scrollTop + clientHeight < scrollHeight - 100);
+    };
+
+    checkVerticalScroll();
+    window.addEventListener("scroll", checkVerticalScroll, { passive: true });
+    window.addEventListener("resize", checkVerticalScroll);
+
+    return () => {
+      window.removeEventListener("scroll", checkVerticalScroll);
+      window.removeEventListener("resize", checkVerticalScroll);
+    };
+  }, [items, filteredItems, loading]);
 
   const loadSavedListsAndTheme = () => {
     try {
@@ -502,6 +524,25 @@ function Home() {
     }
   };
 
+  // Theme Color Mapping for the vertical glowing down arrow
+  const getThemeArrowColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.8)]";
+      case "midnight":
+        return "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]";
+      case "emerald":
+        return "text-emerald-300 drop-shadow-[0_0_8px_rgba(110,231,183,0.8)]";
+      case "amber":
+        return "text-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.8)]";
+      case "cyan":
+        return "text-cyan-300 drop-shadow-[0_0_8px_rgba(103,232,249,0.8)]";
+      case "violet":
+      default:
+        return "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]";
+    }
+  };
+
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
       {/* Navigation Bar Tabs Container using ScrollPillBar */}
@@ -683,6 +724,23 @@ function Home() {
             </div>
           )}
         </section>
+
+        {/* Vertical Scroll Down Indicator (Shows when more movies/catalog items are below) */}
+        {canScrollDown && (
+          <div className="my-8 flex w-full items-center justify-center">
+            <div className={`relative flex w-1/2 sm:w-1/3 items-center justify-center rounded-2xl border ${themeStyles.borderGlow} bg-black/60 backdrop-blur-md py-3 shadow-2xl transition-opacity duration-300`}>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+              <div className="flex flex-col items-center gap-1 z-10">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+                  More Content Below
+                </span>
+                <span className={`text-xl font-black transition-colors duration-300 animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
+                  ⌄
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Suggested For You Section */}
         {activeTab === "My List" && suggestedItems.length > 0 && (
