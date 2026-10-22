@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  --app-bg: #050b16;
+  --selection-bg: rgba(168, 85, 247, 0.45);
+}
+
+/* Theme: Violet (Default) */
+html[data-theme="violet"] {
+  --app-bg: #050b16;
+  --selection-bg: rgba(168, 85, 247, 0.45);
+}
+
+/* Theme: Red & Black */
+html[data-theme="red"] {
+  --app-bg: #120202;
+  --selection-bg: rgba(239, 68, 68, 0.45);
+}
+
+/* Theme: Midnight & Black */
+html[data-theme="midnight"] {
+  --app-bg: #020617;
+  --selection-bg: rgba(59, 130, 246, 0.45);
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background-color: var(--app-bg);
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--app-bg);
+}
+
+button,
+[role="button"] {
+  cursor: pointer;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+::selection {
+  background: var(--selection-bg);
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ==========================================================
+   Fire OS 7 / Fire Stick Specific Iframe & Viewport Corrections
+   (Only applies when the 'fire-os' class is detected at runtime)
+   ================================================---------- */
+html.fire-os iframe,
+html.fire-os .video-player-container,
+html.fire-os video {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+  position: relative !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+}
+
+/* Ensure Fire OS doesn't collapse flex containers on player views */
+html.fire-os .player-view-wrapper {
+  display: block !important;
+  min-height: 100vh !important;
+}
