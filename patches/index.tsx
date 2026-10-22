@@ -103,7 +103,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
         <img
           src={item.image}
           alt={item.title}
-          className="absolute inset-0 h-full w-full object-contain object-center"
+          className="absolute inset-0 h-full w-full object-cover object-center"
           loading="lazy"
         />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-1.5 text-center z-10">
@@ -123,7 +123,7 @@ export function MediaCard({ item }: { item: MediaItem }) {
         <img
           src={item.image}
           alt={item.title}
-          className="absolute inset-0 h-full w-full object-contain object-center transition group-hover:scale-105"
+          className="absolute inset-0 h-full w-full object-cover object-center transition group-hover:scale-105"
           loading="lazy"
         />
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2.5 z-10">
@@ -756,7 +756,7 @@ function Home() {
         <section className={`mb-4 w-full overflow-hidden rounded-[24px] border ${themeStyles.borderGlow} bg-gradient-to-br ${themeStyles.cardGradient} shadow-2xl relative h-[420px] flex flex-col group`}>
           {activeHeroItem ? (
             <>
-              {/* Header Dots Indicator positioned safely in top right */}
+              {/* Header Dots Indicator positioned safely in top right overlay */}
               {heroItems.length > 1 && (
                 <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
                   {heroItems.map((_, idx) => (
@@ -773,11 +773,12 @@ function Home() {
                 </div>
               )}
 
-              <div className="absolute inset-0 w-full h-full overflow-hidden bg-transparent flex items-center justify-center">
+              {/* Fully filled hero wrapper snap */}
+              <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
                 <img
                   src={activeHeroItem.image}
                   alt={activeHeroItem.title}
-                  className="absolute inset-0 h-full w-full object-contain object-center opacity-90 transition-opacity duration-1000"
+                  className="absolute inset-0 h-full w-full object-cover object-center opacity-90 transition-opacity duration-1000"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#050b16] via-black/20 to-transparent"></div>
               </div>
@@ -930,7 +931,6 @@ function Home() {
           )}
         </section>
 
-        {/* Fixed Bottom Floating Scroll Indicator with 10% Opacity Wrapper */}
         {canScrollDown && (
           <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
             <div className="flex flex-col items-center gap-0.5 bg-black/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
