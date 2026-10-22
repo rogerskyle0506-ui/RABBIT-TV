@@ -12,6 +12,7 @@ import {
   getPosterDimensions,
 } from "@/lib/settings";
 import { getRawWatchHistory, isTitleDisliked } from "@/lib/watch-history";
+import { ScrollPillBar } from "@/components/scroll-pill-bar";
 import React from "react";
 
 // Standard navigation tabs including "In Theaters"
@@ -489,26 +490,31 @@ function Home() {
     borderGlow: "border-violet-500/30",
   };
 
+  const getPrimaryBgColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red": return "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30";
+      case "midnight": return "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30";
+      case "emerald": return "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30";
+      case "amber": return "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30";
+      case "cyan": return "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30";
+      case "violet":
+      default: return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
+    }
+  };
+
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 transition-colors duration-300 pb-12`}>
-      {/* Navigation Bar Tabs Container */}
+      {/* Navigation Bar Tabs Container using ScrollPillBar */}
       <div className="sticky top-0 z-30 mb-4 mt-2 px-3 py-2.5">
         <div className="mx-auto flex max-w-7xl items-center justify-center">
-          <div className={`flex w-full items-center justify-start sm:justify-center gap-1.5 overflow-x-auto p-2 scrollbar-none rounded-2xl border ${themeStyles.borderGlow} bg-transparent`}>
-            {navTabs.map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                className={`shrink-0 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition focus:outline-none ${
-                  activeTab === tab
-                    ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
-                    : "text-slate-300 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="w-full">
+            <ScrollPillBar
+              options={navTabs.map((tab) => ({ id: tab, label: tab }))}
+              activeId={activeTab}
+              onSelect={(id) => setActiveTab(id as NavTab)}
+              appTheme={appTheme}
+              getPrimaryBgColor={getPrimaryBgColor}
+            />
           </div>
         </div>
       </div>
@@ -580,24 +586,17 @@ function Home() {
           )}
         </section>
 
-        {/* Genre Filters Container */}
+        {/* Genre Filters Container using ScrollPillBar */}
         {activeTab !== "My List" && (
           <section className="mb-4 flex justify-center">
-            <div className={`flex flex-wrap items-center justify-center gap-1.5 p-2.5 max-w-full rounded-2xl border ${themeStyles.borderGlow} bg-transparent`}>
-              {genreCategories.map((genre) => (
-                <button
-                  key={genre}
-                  type="button"
-                  onClick={() => setSelectedGenre(genre)}
-                  className={`rounded-full px-3.5 py-1 text-xs font-semibold transition focus:outline-none focus:ring-4 ${
-                    selectedGenre === genre
-                      ? "bg-gradient-to-r from-white/30 via-white/20 to-white/10 text-white shadow"
-                      : "text-slate-300 hover:text-white hover:bg-white/10"
-                  }`}
-                >
-                  {genre}
-                </button>
-              ))}
+            <div className="w-full max-w-3xl">
+              <ScrollPillBar
+                options={genreCategories.map((genre) => ({ id: genre, label: genre }))}
+                activeId={selectedGenre}
+                onSelect={(id) => setSelectedGenre(id)}
+                appTheme={appTheme}
+                getPrimaryBgColor={getPrimaryBgColor}
+              />
             </div>
           </section>
         )}
