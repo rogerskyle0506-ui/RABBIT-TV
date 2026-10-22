@@ -384,12 +384,12 @@ function SearchPage() {
           </div>
         )}
 
-        {/* Vertical Scroll Indicator (Shows when page has content below the fold) */}
+        {/* Fixed Bottom Floating Scroll Indicator */}
         {canScrollDown && (
-          <div className="pt-6 pb-2 flex w-full items-center justify-center pointer-events-none">
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                Scroll Down For More
+          <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
+            <div className="flex flex-col items-center gap-0.5 bg-black/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+                More Content Below
               </span>
               <span className={`text-xl font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
                 ⌄
