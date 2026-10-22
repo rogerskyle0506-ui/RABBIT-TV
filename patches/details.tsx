@@ -830,11 +830,11 @@ export function DetailsPage() {
                     to={item.href}
                     className={`group relative flex flex-col overflow-hidden rounded-xl border ${getCardBackground(appTheme)} shadow-xl transition hover:-translate-y-1 hover:brightness-110`}
                   >
-                    <div className="aspect-[2/3] w-full overflow-hidden bg-slate-950">
+                    <div className="aspect-[2/3] w-full overflow-hidden bg-slate-950 relative">
                       <img
                         src={item.image}
                         alt={item.title}
-                        className="h-full w-full object-cover transition group-hover:scale-105"
+                        className="absolute inset-0 h-full w-full object-cover object-center transition group-hover:scale-105"
                         loading="lazy"
                       />
                     </div>
@@ -852,7 +852,6 @@ export function DetailsPage() {
             </div>
           )}
 
-          {/* Fixed Bottom Floating Scroll Indicator with 10% Opacity Wrapper */}
           {canScrollDown && (
             <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
               <div className="flex flex-col items-center gap-0.5 bg-black/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
