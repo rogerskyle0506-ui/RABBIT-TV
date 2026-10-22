@@ -48,7 +48,8 @@ function RootComponent() {
   const [ageErrorNotice, setAgeErrorNotice] = useState(false);
 
   const [showSettings, setShowSettings] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "accessibility" | "age" | "backup">("theme");
+  // Setting default to null so sub-menus start fully closed/collapsed when opened fresh
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "accessibility" | "age" | "backup" | null>(null);
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
   const [streamQuality, setStreamQuality] = useState<StreamQuality>("1080p");
@@ -86,6 +87,33 @@ function RootComponent() {
     navigate({ to: "/search", search: { q: headerSearchInput.trim() } });
     setHeaderSearchInput("");
   };
+
+  // Completely closes settings and resets sub-menus back to closed (without touching saved settings data)
+  const handleCloseSettings = () => {
+    setShowSettings(false);
+    setActiveSettingsTab(null);
+  };
+
+  const handleToggleSettings = () => {
+    if (showSettings) {
+      handleCloseSettings();
+    } else {
+      setShowSettings(true);
+      setActiveSettingsTab(null); // Fresh open with no sub-menus expanded
+    }
+  };
+
+  // Automatically collapse and reset everything when scrolling down the page
+  useEffect(() => {
+    const handleWindowScroll = () => {
+      if (showSettings && window.scrollY > 40) {
+        handleCloseSettings();
+      }
+    };
+
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleWindowScroll);
+  }, [showSettings]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -268,7 +296,7 @@ function RootComponent() {
 
         localStorage.removeItem(DISCLAIMER_ACCEPTED_KEY);
         setShowFirstStartModal(true);
-        setShowSettings(false);
+        handleCloseSettings();
         setBackupStatus("Settings restored. Please reinstate your passcode agreement.");
       } catch {
         setBackupStatus("Failed to restore backup file.");
@@ -486,7 +514,7 @@ function RootComponent() {
 
                   <button
                     type="button"
-                    onClick={() => setShowSettings((prev) => !prev)}
+                    onClick={handleToggleSettings}
                     className={`flex h-9 sm:h-10 w-9 sm:w-10 items-center justify-center rounded-xl border text-base sm:text-lg shadow-md transition focus:outline-none focus:ring-2 shrink-0 ${activeHeader.btnBg}`}
                     aria-label="Settings"
                   >
@@ -502,7 +530,7 @@ function RootComponent() {
                   <div className="flex items-center gap-1 overflow-x-auto pb-2 border-b border-white/10 w-full justify-start sm:justify-center scrollbar-none">
                     <button
                       type="button"
-                      onClick={() => setActiveSettingsTab("theme")}
+                      onClick={() => setActiveSettingsTab(activeSettingsTab === "theme" ? null : "theme")}
                       className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "theme"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
@@ -513,7 +541,7 @@ function RootComponent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveSettingsTab("scale")}
+                      onClick={() => setActiveSettingsTab(activeSettingsTab === "scale" ? null : "scale")}
                       className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "scale"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
@@ -524,7 +552,7 @@ function RootComponent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveSettingsTab("accessibility")}
+                      onClick={() => setActiveSettingsTab(activeSettingsTab === "accessibility" ? null : "accessibility")}
                       className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "accessibility"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
@@ -535,7 +563,7 @@ function RootComponent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveSettingsTab("age")}
+                      onClick={() => setActiveSettingsTab(activeSettingsTab === "age" ? null : "age")}
                       className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "age"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
@@ -546,7 +574,7 @@ function RootComponent() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setActiveSettingsTab("backup")}
+                      onClick={() => setActiveSettingsTab(activeSettingsTab === "backup" ? null : "backup")}
                       className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
                         activeSettingsTab === "backup"
                           ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
@@ -557,198 +585,200 @@ function RootComponent() {
                     </button>
                   </div>
 
-                  <div className="w-full flex justify-center py-1 max-w-lg mx-auto">
-                    {activeSettingsTab === "theme" && (
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Theme:</span>
-                        {allThemesList.map((t) => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => handleThemeChange(t.id)}
-                            className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
-                              appTheme === t.id
-                                ? `${getPrimaryBgColor(t.id)} text-white shadow-md`
-                                : `${getSubtlePillBg(appTheme)}`
-                            }`}
-                          >
-                            {t.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {activeSettingsTab === "scale" && (
-                      <div className="flex flex-wrap items-center justify-center gap-2">
-                        <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Scale:</span>
-                        {(["small", "medium", "large"] as CardSize[]).map((size) => (
-                          <button
-                            key={size}
-                            type="button"
-                            onClick={() => handleSizeChange(size)}
-                            className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
-                              cardSize === size
-                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                                : `${getSubtlePillBg(appTheme)}`
-                            }`}
-                          >
-                            {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {activeSettingsTab === "accessibility" && (
-                      <div className="flex flex-col gap-3 w-full max-w-md mx-auto py-1">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-xs font-bold text-white">XL Mouse Pointer (3x)</p>
-                            <p className="text-[10px] text-slate-400">Enlarges cursor for TVs/projectors.</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleMouseToggle(!helpfulMouse)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
-                              helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
-                            }`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${helpfulMouse ? "translate-x-6" : "translate-x-1"}`} />
-                          </button>
-                        </div>
-
-                        {/* History Page Overscale Selector (Off by default) */}
-                        <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <p className="text-xs font-bold text-white">History Page Overscale</p>
-                              <p className="text-[10px] text-slate-400">Choose card size increase on history page.</p>
-                            </div>
-                            <span className="text-xs font-bold text-violet-400">
-                              {historyOverscale === "off" ? "Off" : `+${historyOverscale}`}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-4 gap-2">
-                            {(["off", "20%", "50%", "80%"] as HistoryScale[]).map((scale) => (
-                              <button
-                                key={scale}
-                                type="button"
-                                onClick={() => handleHistoryOverscaleChange(scale)}
-                                className={`rounded-lg py-1.5 text-xs font-bold capitalize transition ${
-                                  historyOverscale === scale
-                                    ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                                    : `${getSubtlePillBg(appTheme)}`
-                                }`}
-                              >
-                                {scale === "off" ? "Off" : `+${scale}`}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
-                          <div>
-                            <p className="text-xs font-bold text-white">Enlarged Action Buttons (+5%)</p>
-                            <p className="text-[10px] text-slate-400">Makes eye, thumb, and X buttons bigger.</p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleLargeButtonsToggle(!largeButtons)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
-                              largeButtons ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
-                            }`}
-                          >
-                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${largeButtons ? "translate-x-6" : "translate-x-1"}`} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {activeSettingsTab === "age" && (
-                      <div className="flex flex-col gap-3 w-full max-w-sm mx-auto">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Name:</span>
-                          <input
-                            type="text"
-                            maxLength={20}
-                            value={profileNameInput}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setProfileNameInput(val);
-                              localStorage.setItem("rabtv_profile_name", val.trim());
-                              setSavedProfileName(val.trim());
-                            }}
-                            placeholder="Your Name"
-                            className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-xs font-bold text-white focus:outline-none"
-                          />
-                        </div>
-
-                        <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col gap-2 pt-2 border-t border-white/10">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Age:</span>
-                            <input
-                              type="number"
-                              min={1}
-                              max={120}
-                              value={userAgeInput}
-                              onChange={(e) => setUserAgeInput(e.target.value)}
-                              className="w-20 rounded-lg border border-white/10 bg-slate-800 px-2 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="password"
-                              maxLength={10}
-                              placeholder="Passcode"
-                              value={settingsAgeCodeInput}
-                              onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
-                              className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
-                            />
+                  {activeSettingsTab !== null && (
+                    <div className="w-full flex justify-center py-1 max-w-lg mx-auto">
+                      {activeSettingsTab === "theme" && (
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Theme:</span>
+                          {allThemesList.map((t) => (
                             <button
-                              type="submit"
-                              className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-4 py-1.5 text-xs font-bold whitespace-nowrap shadow`}
+                              key={t.id}
+                              type="button"
+                              onClick={() => handleThemeChange(t.id)}
+                              className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+                                appTheme === t.id
+                                  ? `${getPrimaryBgColor(t.id)} text-white shadow-md`
+                                  : `${getSubtlePillBg(appTheme)}`
+                              }`}
                             >
-                              Update
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {activeSettingsTab === "scale" && (
+                        <div className="flex flex-wrap items-center justify-center gap-2">
+                          <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Scale:</span>
+                          {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                            <button
+                              key={size}
+                              type="button"
+                              onClick={() => handleSizeChange(size)}
+                              className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
+                                cardSize === size
+                                  ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                  : `${getSubtlePillBg(appTheme)}`
+                              }`}
+                            >
+                              {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {activeSettingsTab === "accessibility" && (
+                        <div className="flex flex-col gap-3 w-full max-w-md mx-auto py-1">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-bold text-white">XL Mouse Pointer (3x)</p>
+                              <p className="text-[10px] text-slate-400">Enlarges cursor for TVs/projectors.</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleMouseToggle(!helpfulMouse)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                                helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                              }`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${helpfulMouse ? "translate-x-6" : "translate-x-1"}`} />
                             </button>
                           </div>
-                        </form>
 
-                        {settingsAgeError && (
-                          <span className="text-xs font-semibold text-red-400 text-center">⚠️ Invalid Code or Age</span>
-                        )}
-                        {settingsAgeSuccess && (
-                          <span className="text-xs font-semibold text-emerald-400 text-center">✓ Profile Updated!</span>
-                        )}
-                      </div>
-                    )}
+                          {/* History Page Overscale Selector (Off by default) */}
+                          <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-xs font-bold text-white">History Page Overscale</p>
+                                <p className="text-[10px] text-slate-400">Choose card size increase on history page.</p>
+                              </div>
+                              <span className="text-xs font-bold text-violet-400">
+                                {historyOverscale === "off" ? "Off" : `+${historyOverscale}`}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                              {(["off", "20%", "50%", "80%"] as HistoryScale[]).map((scale) => (
+                                <button
+                                  key={scale}
+                                  type="button"
+                                  onClick={() => handleHistoryOverscaleChange(scale)}
+                                  className={`rounded-lg py-1.5 text-xs font-bold capitalize transition ${
+                                    historyOverscale === scale
+                                      ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                      : `${getSubtlePillBg(appTheme)}`
+                                  }`}
+                                >
+                                  {scale === "off" ? "Off" : `+${scale}`}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
 
-                    {activeSettingsTab === "backup" && (
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full">
-                        <button
-                          type="button"
-                          onClick={handleSaveBackup}
-                          className={`w-full sm:w-auto rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}
-                        >
-                          💾 Export Backup
-                        </button>
+                          <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
+                            <div>
+                              <p className="text-xs font-bold text-white">Enlarged Action Buttons (+5%)</p>
+                              <p className="text-[10px] text-slate-400">Makes eye, thumb, and X buttons bigger.</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleLargeButtonsToggle(!largeButtons)}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                                largeButtons ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                              }`}
+                            >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${largeButtons ? "translate-x-6" : "translate-x-1"}`} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
-                        <label className={`w-full sm:w-auto text-center cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}>
-                          🔄 Restore Backup
-                          <input
-                            type="file"
-                            accept=".json"
-                            onChange={handleRestoreBackup}
-                            className="hidden"
-                          />
-                        </label>
+                      {activeSettingsTab === "age" && (
+                        <div className="flex flex-col gap-3 w-full max-w-sm mx-auto">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Name:</span>
+                            <input
+                              type="text"
+                              maxLength={20}
+                              value={profileNameInput}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setProfileNameInput(val);
+                                localStorage.setItem("rabtv_profile_name", val.trim());
+                                setSavedProfileName(val.trim());
+                              }}
+                              placeholder="Your Name"
+                              className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-xs font-bold text-white focus:outline-none"
+                            />
+                          </div>
 
-                        {backupStatus && (
-                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold text-center w-full`}>
-                            {backupStatus}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                          <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Age:</span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={120}
+                                value={userAgeInput}
+                                onChange={(e) => setUserAgeInput(e.target.value)}
+                                className="w-20 rounded-lg border border-white/10 bg-slate-800 px-2 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="password"
+                                maxLength={10}
+                                placeholder="Passcode"
+                                value={settingsAgeCodeInput}
+                                onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
+                                className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                              />
+                              <button
+                                type="submit"
+                                className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-4 py-1.5 text-xs font-bold whitespace-nowrap shadow`}
+                              >
+                                Update
+                              </button>
+                            </div>
+                          </form>
+
+                          {settingsAgeError && (
+                            <span className="text-xs font-semibold text-red-400 text-center">⚠️ Invalid Code or Age</span>
+                          )}
+                          {settingsAgeSuccess && (
+                            <span className="text-xs font-semibold text-emerald-400 text-center">✓ Profile Updated!</span>
+                          )}
+                        </div>
+                      )}
+
+                      {activeSettingsTab === "backup" && (
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full">
+                          <button
+                            type="button"
+                            onClick={handleSaveBackup}
+                            className={`w-full sm:w-auto rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}
+                          >
+                            💾 Export Backup
+                          </button>
+
+                          <label className={`w-full sm:w-auto text-center cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}>
+                            🔄 Restore Backup
+                            <input
+                              type="file"
+                              accept=".json"
+                              onChange={handleRestoreBackup}
+                              className="hidden"
+                            />
+                          </label>
+
+                          {backupStatus && (
+                            <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold text-center w-full`}>
+                              {backupStatus}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
