@@ -64,6 +64,7 @@ function RootComponent() {
   const [settingsAgeError, setSettingsAgeError] = useState<boolean>(false);
   const [settingsAgeSuccess, setSettingsAgeSuccess] = useState<boolean>(false);
   const [backupStatus, setBackupStatus] = useState<string | null>(null);
+  const [canModalScrollDown, setCanModalScrollDown] = useState<boolean>(false);
 
   // Header Search Input State
   const [headerSearchInput, setHeaderSearchInput] = useState("");
@@ -114,6 +115,13 @@ function RootComponent() {
     window.addEventListener("scroll", handleWindowScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleWindowScroll);
   }, [showSettings]);
+
+  // Modal scroll check for small screens
+  const handleModalScrollCheck = (node: HTMLDivElement | null) => {
+    if (!node) return;
+    const { scrollTop, scrollHeight, clientHeight } = node;
+    setCanModalScrollDown(scrollTop + clientHeight < scrollHeight - 30);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -412,6 +420,24 @@ function RootComponent() {
       case "cyan": return "bg-cyan-950/50 border-cyan-500/30 text-cyan-200 hover:bg-cyan-900/60";
       case "violet":
       default: return "bg-purple-950/50 border-violet-500/30 text-purple-200 hover:bg-purple-900/60";
+    }
+  };
+
+  const getThemeArrowColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.8)]";
+      case "midnight":
+        return "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]";
+      case "emerald":
+        return "text-emerald-300 drop-shadow-[0_0_8px_rgba(110,231,183,0.8)]";
+      case "amber":
+        return "text-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.8)]";
+      case "cyan":
+        return "text-cyan-300 drop-shadow-[0_0_8px_rgba(103,232,249,0.8)]";
+      case "violet":
+      default:
+        return "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]";
     }
   };
 
@@ -790,7 +816,11 @@ function RootComponent() {
 
           {/* Startup Modal with Name & Age Validation */}
           {showFirstStartModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
+            <div
+              ref={(node) => handleModalScrollCheck(node)}
+              onScroll={(e) => handleModalScrollCheck(e.currentTarget)}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto"
+            >
               <form
                 onSubmit={handleFirstTimeAuthorize}
                 className={`my-auto w-full max-w-xl space-y-5 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
@@ -947,6 +977,20 @@ function RootComponent() {
                 >
                   Enter RABBiT TV
                 </button>
+
+                {/* Modal Internal Scroll Down Indicator */}
+                {canModalScrollDown && (
+                  <div className="pt-2 flex w-full items-center justify-center pointer-events-none">
+                    <div className="flex flex-col items-center gap-0.5">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                        Scroll Down For Passcode
+                      </span>
+                      <span className={`text-lg font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
+                        ⌄
+                      </span>
+                    </div>
+                  </div>
+                )}
               </form>
             </div>
           )}
