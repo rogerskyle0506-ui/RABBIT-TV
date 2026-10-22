@@ -64,6 +64,35 @@ img {
   overflow: hidden;
 }
 
+/* Hide scrollbars cleanly across browsers */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ==========================================================
+   Category & Genre Scroll Bar Slow Glowing Pulse Animation
+   ================================================---------- */
+@keyframes slowGlowPulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+    filter: drop-shadow(0 0 2px currentColor);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 7px currentColor);
+  }
+}
+
+.animate-slow-glow {
+  animation: slowGlowPulse 2.8s ease-in-out infinite;
+}
+
 /* ==========================================================
    Fire OS 7 / Fire Stick Specific Iframe & Viewport Corrections
    (Only applies when the 'fire-os' class is detected at runtime)
