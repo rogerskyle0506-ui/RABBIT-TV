@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import React, { useState, useEffect } from "react";
-import { AppTheme, CardSize, getSavedTheme, getSavedCardSize } from "@/lib/settings";
+import { AppTheme, CardSize, getSavedTheme, getSavedCardSize, getHistoryOverscale, getLargeButtons, getPosterDimensions } from "@/lib/settings";
 import {
   getWatchHistory,
   markEpisodeCompleted,
@@ -25,12 +25,16 @@ function WatchHistoryComponent() {
   const [verifyingTarget, setVerifyingTarget] = useState<{ showId: string; episodeId: string; title: string } | null>(null);
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [cardSize, setCardSize] = useState<CardSize>("large");
+  const [historyOverscale, setHistoryOverscale] = useState<boolean>(true);
+  const [largeButtons, setLargeButtons] = useState<boolean>(true);
 
   const refreshData = () => {
     setHistoryMap(getWatchHistory());
     setDislikedTitles(getDislikedTitles());
     setAppTheme(getSavedTheme());
     setCardSize(getSavedCardSize());
+    setHistoryOverscale(getHistoryOverscale());
+    setLargeButtons(getLargeButtons());
   };
 
   useEffect(() => {
@@ -106,7 +110,7 @@ function WatchHistoryComponent() {
         return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6";
       case "large":
       default:
-        return "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
+        return "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5";
     }
   };
 
@@ -123,8 +127,8 @@ function WatchHistoryComponent() {
   const completedShows = tvShows.filter((s) => calculateSeriesProgress(s) === 100);
 
   return (
-    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-4 md:p-12 text-white space-y-8 transition-colors duration-300`}>
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-4 md:p-12 text-white space-y-6 transition-colors duration-300`}>
+      <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <h1 className="text-xl font-bold tracking-wide flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-lg">
             🐰
@@ -134,6 +138,21 @@ function WatchHistoryComponent() {
         <span className="text-xs text-slate-400 font-semibold">
           {allEntries.length} Tracked Titles
         </span>
+      </div>
+
+      {/* Compact Single-Line Instructional Ticker */}
+      <div className="rounded-xl border border-white/10 bg-black/50 px-3.5 py-2 shadow-md backdrop-blur-md flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-300">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm">💡</span>
+          <span><strong className="text-white">👁️</strong> = Confirm Progress</span>
+          <span className="text-slate-600">•</span>
+          <span><strong className="text-white">👎</strong> = Scrub & Hide from Catalogs</span>
+          <span className="text-slate-600">•</span>
+          <span><strong className="text-white">✕</strong> = Reset to Un-tracked</span>
+        </div>
+        <div className="text-violet-400 font-medium">
+          ✨ More saved items are also on your <strong className="text-white">My List</strong> tab!
+        </div>
       </div>
 
       {allEntries.length === 0 && dislikedTitles.length === 0 ? (
@@ -149,12 +168,14 @@ function WatchHistoryComponent() {
               <h2 className={`text-sm font-bold text-slate-200 border-l-4 pl-3 uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
                 Movies - In Progress
               </h2>
-              <div className={`grid ${gridColsClass} gap-3`}>
+              <div className={`grid ${gridColsClass} gap-4`}>
                 {inProgressMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
                     movie={movie}
                     appTheme={appTheme}
+                    historyOverscale={historyOverscale}
+                    largeButtons={largeButtons}
                     onEyeballClick={handleEyeballClick}
                     onRemove={() => {
                       removeFromWatchHistory(movie.showId);
@@ -172,12 +193,14 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-blue-500 pl-3 uppercase tracking-wider">
                 TV Shows - In Progress
               </h2>
-              <div className={`grid ${gridColsClass} gap-3`}>
+              <div className={`grid ${gridColsClass} gap-4`}>
                 {inProgressShows.map((show) => (
                   <TvShowCard
                     key={show.showId}
                     show={show}
                     appTheme={appTheme}
+                    historyOverscale={historyOverscale}
+                    largeButtons={largeButtons}
                     onEyeballClick={handleEyeballClick}
                     onRemove={() => {
                       removeFromWatchHistory(show.showId);
@@ -195,12 +218,14 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-emerald-500 pl-3 uppercase tracking-wider">
                 Completed
               </h2>
-              <div className={`grid ${gridColsClass} gap-3`}>
+              <div className={`grid ${gridColsClass} gap-4`}>
                 {completedMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
                     movie={movie}
                     appTheme={appTheme}
+                    historyOverscale={historyOverscale}
+                    largeButtons={largeButtons}
                     onEyeballClick={handleEyeballClick}
                     onRemove={() => {
                       removeFromWatchHistory(movie.showId);
@@ -213,6 +238,8 @@ function WatchHistoryComponent() {
                     key={show.showId}
                     show={show}
                     appTheme={appTheme}
+                    historyOverscale={historyOverscale}
+                    largeButtons={largeButtons}
                     onEyeballClick={handleEyeballClick}
                     onRemove={() => {
                       removeFromWatchHistory(show.showId);
@@ -245,7 +272,7 @@ function WatchHistoryComponent() {
                             removeDislikedTitle(item.id);
                             refreshData();
                           }}
-                          className="text-slate-400 hover:text-white text-xs font-bold"
+                          className={`text-slate-400 hover:text-white font-bold ${largeButtons ? "text-sm p-1" : "text-xs p-0.5"}`}
                           title="Restore"
                         >
                           ↺
@@ -300,11 +327,15 @@ function WatchHistoryComponent() {
 const MovieCard = React.memo(function MovieCard({
   movie,
   appTheme,
+  historyOverscale,
+  largeButtons,
   onEyeballClick,
   onRemove,
 }: {
   movie: ShowWatchHistory;
   appTheme: AppTheme;
+  historyOverscale: boolean;
+  largeButtons: boolean;
   onEyeballClick: (showId: string, episodeId: string, episodeTitle: string, isCompleted: boolean) => void;
   onRemove: () => void;
 }) {
@@ -330,10 +361,14 @@ const MovieCard = React.memo(function MovieCard({
     }
   };
 
+  const overscaleClass = historyOverscale ? "transform scale-105 origin-top transition-transform" : "";
+  const btnClass = largeButtons ? "h-7 px-2 text-xs" : "h-6 px-1.5 text-[10px]";
+  const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
+
   return (
     <div
       onClick={() => navigate({ to: "/details", search: { id: movie.showId, type: "movie" } })}
-      className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)}`}
+      className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
     >
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
         {movie.posterPath ? (
@@ -344,16 +379,16 @@ const MovieCard = React.memo(function MovieCard({
             className="h-full w-full object-cover transition transform group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-[10px] font-bold">
+          <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-xs font-bold">
             {movie.title}
           </div>
         )}
 
-        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={() => onEyeballClick(movie.showId, singleEp.episodeId, movie.title, isCompleted)}
-            className="flex h-6 px-1.5 items-center justify-center rounded-lg bg-slate-950/80 text-white backdrop-blur-md border border-white/20 transition hover:scale-110 focus:outline-none text-[10px] font-bold"
+            className={`flex items-center justify-center rounded-lg bg-slate-950/90 text-white backdrop-blur-md border border-white/20 transition hover:scale-110 focus:outline-none font-bold ${btnClass}`}
             title="Toggle Status"
           >
             {isCompleted ? "👁️ ✓" : "👁️ ?"}
@@ -361,7 +396,7 @@ const MovieCard = React.memo(function MovieCard({
           <button
             type="button"
             onClick={() => dislikeTitle({ id: movie.showId, title: movie.title, mediaType: "movie", posterPath: movie.posterPath })}
-            className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-950/80 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none text-xs font-bold"
+            className={`flex items-center justify-center rounded-lg bg-amber-950/90 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
             title="Dislike & Hide Globally"
           >
             👎
@@ -369,7 +404,7 @@ const MovieCard = React.memo(function MovieCard({
           <button
             type="button"
             onClick={onRemove}
-            className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-950/80 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none text-xs font-bold"
+            className={`flex items-center justify-center rounded-lg bg-red-950/90 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
             title="Remove from history"
           >
             ✕
@@ -377,7 +412,7 @@ const MovieCard = React.memo(function MovieCard({
         </div>
       </div>
 
-      <div className="p-2.5">
+      <div className="p-3">
         <h3 className="text-xs font-bold truncate text-white" title={movie.title}>
           {movie.title}
         </h3>
@@ -391,11 +426,15 @@ const MovieCard = React.memo(function MovieCard({
 const TvShowCard = React.memo(function TvShowCard({
   show,
   appTheme,
+  historyOverscale,
+  largeButtons,
   onEyeballClick,
   onRemove,
 }: {
   show: ShowWatchHistory;
   appTheme: AppTheme;
+  historyOverscale: boolean;
+  largeButtons: boolean;
   onEyeballClick: (showId: string, episodeId: string, episodeTitle: string, isCompleted: boolean) => void;
   onRemove: () => void;
 }) {
@@ -421,10 +460,13 @@ const TvShowCard = React.memo(function TvShowCard({
     }
   };
 
+  const overscaleClass = historyOverscale ? "transform scale-105 origin-top transition-transform" : "";
+  const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
+
   return (
     <div
       onClick={() => navigate({ to: "/details", search: { id: show.showId, type: "tv" } })}
-      className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)}`}
+      className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
     >
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
         {show.posterPath ? (
@@ -435,16 +477,16 @@ const TvShowCard = React.memo(function TvShowCard({
             className="h-full w-full object-cover transition transform group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-[10px] font-bold">
+          <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-xs font-bold">
             {show.title}
           </div>
         )}
 
-        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={() => dislikeTitle({ id: show.showId, title: show.title, mediaType: "tv", posterPath: show.posterPath })}
-            className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-950/80 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none text-xs font-bold"
+            className={`flex items-center justify-center rounded-lg bg-amber-950/90 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
             title="Dislike & Hide Globally"
           >
             👎
@@ -452,7 +494,7 @@ const TvShowCard = React.memo(function TvShowCard({
           <button
             type="button"
             onClick={onRemove}
-            className="flex h-6 w-6 items-center justify-center rounded-lg bg-red-950/80 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none text-xs font-bold"
+            className={`flex items-center justify-center rounded-lg bg-red-950/90 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
             title="Remove from history"
           >
             ✕
@@ -460,7 +502,7 @@ const TvShowCard = React.memo(function TvShowCard({
         </div>
       </div>
 
-      <div className="p-2.5 space-y-2">
+      <div className="p-3 space-y-2.5">
         <h3 className="text-xs font-bold truncate text-white" title={show.title}>
           {show.title}
         </h3>
@@ -485,7 +527,8 @@ const TvShowCard = React.memo(function TvShowCard({
             <EpisodeRow
               key={ep.episodeId}
               episode={ep}
-              onEyeballClick={() => onEyeballClick(show.showId, ep.episodeId, ep.title, ep.confirmedCompleted)}
+              largeButtons={largeButtons}
+              onEyeballClick={() => onEyewayClickWrapper(show.showId, ep.episodeId, ep.title, ep.confirmedCompleted, onEyeballClick)}
             />
           ))}
         </div>
@@ -494,18 +537,31 @@ const TvShowCard = React.memo(function TvShowCard({
   );
 });
 
+function onEyewayClickWrapper(
+  showId: string, 
+  episodeId: string, 
+  title: string, 
+  isCompleted: boolean, 
+  onEyeballClick: (sId: string, eId: string, t: string, comp: boolean) => void
+) {
+  onEyeballClick(showId, episodeId, title, isCompleted);
+}
+
 /** MEMOIZED EPISODE ROW */
 const EpisodeRow = React.memo(function EpisodeRow({
   episode,
+  largeButtons,
   onEyeballClick,
 }: {
   episode: { episodeId: string; seasonNumber: number; episodeNumber: number; title: string; confirmedCompleted: boolean };
+  largeButtons: boolean;
   onEyeballClick: () => void;
 }) {
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+  const rowBtnClass = largeButtons ? "h-7 px-2 text-xs" : "h-6 w-6 text-[10px]";
 
   return (
-    <div className="flex items-center justify-between rounded-md bg-slate-950/60 px-2 py-1 border border-white/5 text-[11px]">
+    <div className="flex items-center justify-between rounded-md bg-slate-950/60 px-2 py-1.5 border border-white/5 text-[11px]">
       <div className="truncate pr-1 text-slate-300">
         <span className="font-semibold text-slate-400">S{episode.seasonNumber}E{episode.episodeNumber}</span>
       </div>
@@ -518,14 +574,14 @@ const EpisodeRow = React.memo(function EpisodeRow({
           onMouseLeave={() => setIsTooltipOpen(false)}
           onFocus={() => setIsTooltipOpen(true)}
           onBlur={() => setIsTooltipOpen(false)}
-          className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-900 text-white border border-white/20 transition hover:scale-110 focus:outline-none text-[10px]"
+          className={`flex items-center justify-center rounded-md bg-slate-900 text-white border border-white/20 transition hover:scale-110 focus:outline-none font-bold ${rowBtnClass}`}
           aria-label="Toggle Status"
         >
           {episode.confirmedCompleted ? "👁️ ✓" : "👁️ ?"}
         </button>
 
         {isTooltipOpen && (
-          <div className="absolute right-0 top-7 whitespace-nowrap rounded-lg bg-slate-950 px-2 py-1 text-[9px] font-bold text-white shadow-xl border border-white/20 z-20">
+          <div className="absolute right-0 top-8 whitespace-nowrap rounded-lg bg-slate-950 px-2 py-1 text-[9px] font-bold text-white shadow-xl border border-white/20 z-20">
             Status: {episode.confirmedCompleted ? "Completed" : "Unconfirmed Completion"}
           </div>
         )}
