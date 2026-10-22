@@ -127,7 +127,7 @@ function WatchHistoryComponent() {
   const completedShows = tvShows.filter((s) => calculateSeriesProgress(s) === 100);
 
   return (
-    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-4 md:p-12 text-white space-y-6 transition-colors duration-300`}>
+    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-4 md:p-12 text-white space-y-6 transition-colors duration-300 overflow-x-hidden`}>
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <h1 className="text-xl font-bold tracking-wide flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-lg">
@@ -161,14 +161,14 @@ function WatchHistoryComponent() {
           <p className="text-xs mt-1">Start watching movies or shows to automatically populate your history.</p>
         </div>
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-12">
           {/* SECTION: IN PROGRESS (MOVIES) */}
           {inProgressMovies.length > 0 && (
-            <section className="space-y-3">
+            <section className="space-y-4">
               <h2 className={`text-sm font-bold text-slate-200 border-l-4 pl-3 uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
                 Movies - In Progress
               </h2>
-              <div className={`grid ${gridColsClass} gap-4`}>
+              <div className={`grid ${gridColsClass} gap-6 pt-2`}>
                 {inProgressMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
@@ -189,11 +189,11 @@ function WatchHistoryComponent() {
 
           {/* SECTION: IN PROGRESS (TV SHOWS) */}
           {inProgressShows.length > 0 && (
-            <section className="space-y-3">
+            <section className="space-y-4">
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-blue-500 pl-3 uppercase tracking-wider">
                 TV Shows - In Progress
               </h2>
-              <div className={`grid ${gridColsClass} gap-4`}>
+              <div className={`grid ${gridColsClass} gap-6 pt-2`}>
                 {inProgressShows.map((show) => (
                   <TvShowCard
                     key={show.showId}
@@ -214,11 +214,11 @@ function WatchHistoryComponent() {
 
           {/* SECTION: COMPLETED (MOVIES & TV SHOWS) */}
           {(completedMovies.length > 0 || completedShows.length > 0) && (
-            <section className="space-y-3">
+            <section className="space-y-4">
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-emerald-500 pl-3 uppercase tracking-wider">
                 Completed
               </h2>
-              <div className={`grid ${gridColsClass} gap-4`}>
+              <div className={`grid ${gridColsClass} gap-6 pt-2`}>
                 {completedMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
@@ -253,7 +253,7 @@ function WatchHistoryComponent() {
 
           {/* SECTION: DISLIKED / REMOVED */}
           {dislikedTitles.length > 0 && (
-            <section className="space-y-3">
+            <section className="space-y-4">
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-red-500 pl-3 uppercase tracking-wider">
                 Disliked / Removed
               </h2>
@@ -362,11 +362,11 @@ const MovieCard = React.memo(function MovieCard({
   };
 
   const getScaleClass = (scale: HistoryScale | boolean) => {
-    if (scale === true) return "transform scale-105 origin-top transition-transform my-3";
+    if (scale === true) return "transform scale-105 origin-top transition-transform my-2";
     switch (scale) {
-      case "20%": return "transform scale-120 origin-top transition-transform my-3";
-      case "50%": return "transform scale-150 origin-top transition-transform my-6";
-      case "80%": return "transform scale-[1.8] origin-top transition-transform my-12";
+      case "20%": return "transform scale-110 origin-top transition-transform my-2";
+      case "50%": return "transform scale-120 origin-top transition-transform my-4";
+      case "80%": return "transform scale-130 origin-top transition-transform my-6";
       case "off":
       default:
         return "";
@@ -378,57 +378,59 @@ const MovieCard = React.memo(function MovieCard({
   const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
 
   return (
-    <div
-      onClick={() => navigate({ to: "/details", search: { id: movie.showId, type: "movie" } })}
-      className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
-    >
-      <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
-        {movie.posterPath ? (
-          <img
-            src={`${TMDB_IMAGE_BASE}${movie.posterPath}`}
-            alt={movie.title}
-            loading="lazy"
-            className="h-full w-full object-cover transition transform group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-xs font-bold">
-            {movie.title}
+    <div className="w-full py-1">
+      <div
+        onClick={() => navigate({ to: "/details", search: { id: movie.showId, type: "movie" } })}
+        className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
+      >
+        <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
+          {movie.posterPath ? (
+            <img
+              src={`${TMDB_IMAGE_BASE}${movie.posterPath}`}
+              alt={movie.title}
+              loading="lazy"
+              className="h-full w-full object-cover transition transform group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-xs font-bold">
+              {movie.title}
+            </div>
+          )}
+
+          <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => onEyeballClick(movie.showId, singleEp.episodeId, movie.title, isCompleted)}
+              className={`flex items-center justify-center rounded-lg bg-slate-950/90 text-white backdrop-blur-md border border-white/20 transition hover:scale-110 focus:outline-none font-bold ${btnClass}`}
+              title="Toggle Status"
+            >
+              {isCompleted ? "👁️ ✓" : "👁️ ?"}
+            </button>
+            <button
+              type="button"
+              onClick={() => dislikeTitle({ id: movie.showId, title: movie.title, mediaType: "movie", posterPath: movie.posterPath })}
+              className={`flex items-center justify-center rounded-lg bg-amber-950/90 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
+              title="Dislike & Hide Globally"
+            >
+              👎
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              className={`flex items-center justify-center rounded-lg bg-red-950/90 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
+              title="Remove from history"
+            >
+              ✕
+            </button>
           </div>
-        )}
-
-        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            onClick={() => onEyeballClick(movie.showId, singleEp.episodeId, movie.title, isCompleted)}
-            className={`flex items-center justify-center rounded-lg bg-slate-950/90 text-white backdrop-blur-md border border-white/20 transition hover:scale-110 focus:outline-none font-bold ${btnClass}`}
-            title="Toggle Status"
-          >
-            {isCompleted ? "👁️ ✓" : "👁️ ?"}
-          </button>
-          <button
-            type="button"
-            onClick={() => dislikeTitle({ id: movie.showId, title: movie.title, mediaType: "movie", posterPath: movie.posterPath })}
-            className={`flex items-center justify-center rounded-lg bg-amber-950/90 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
-            title="Dislike & Hide Globally"
-          >
-            👎
-          </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            className={`flex items-center justify-center rounded-lg bg-red-950/90 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
-            title="Remove from history"
-          >
-            ✕
-          </button>
         </div>
-      </div>
 
-      <div className="p-3">
-        <h3 className="text-xs font-bold truncate text-white" title={movie.title}>
-          {movie.title}
-        </h3>
-        <span className="text-[10px] text-slate-400 font-medium">Movie</span>
+        <div className="p-3">
+          <h3 className="text-xs font-bold truncate text-white" title={movie.title}>
+            {movie.title}
+          </h3>
+          <span className="text-[10px] text-slate-400 font-medium">Movie</span>
+        </div>
       </div>
     </div>
   );
@@ -473,11 +475,11 @@ const TvShowCard = React.memo(function TvShowCard({
   };
 
   const getScaleClass = (scale: HistoryScale | boolean) => {
-    if (scale === true) return "transform scale-105 origin-top transition-transform my-3";
+    if (scale === true) return "transform scale-105 origin-top transition-transform my-2";
     switch (scale) {
-      case "20%": return "transform scale-120 origin-top transition-transform my-3";
-      case "50%": return "transform scale-150 origin-top transition-transform my-6";
-      case "80%": return "transform scale-[1.8] origin-top transition-transform my-12";
+      case "20%": return "transform scale-110 origin-top transition-transform my-2";
+      case "50%": return "transform scale-120 origin-top transition-transform my-4";
+      case "80%": return "transform scale-130 origin-top transition-transform my-6";
       case "off":
       default:
         return "";
@@ -488,73 +490,75 @@ const TvShowCard = React.memo(function TvShowCard({
   const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
 
   return (
-    <div
-      onClick={() => navigate({ to: "/details", search: { id: show.showId, type: "tv" } })}
-      className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
-    >
-      <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
-        {show.posterPath ? (
-          <img
-            src={`${TMDB_IMAGE_BASE}${show.posterPath}`}
-            alt={show.title}
-            loading="lazy"
-            className="h-full w-full object-cover transition transform group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-xs font-bold">
+    <div className="w-full py-1">
+      <div
+        onClick={() => navigate({ to: "/details", search: { id: show.showId, type: "tv" } })}
+        className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
+      >
+        <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
+          {show.posterPath ? (
+            <img
+              src={`${TMDB_IMAGE_BASE}${show.posterPath}`}
+              alt={show.title}
+              loading="lazy"
+              className="h-full w-full object-cover transition transform group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center p-2 text-center text-slate-500 text-xs font-bold">
+              {show.title}
+            </div>
+          )}
+
+          <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => dislikeTitle({ id: show.showId, title: show.title, mediaType: "tv", posterPath: show.posterPath })}
+              className={`flex items-center justify-center rounded-lg bg-amber-950/90 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
+              title="Dislike & Hide Globally"
+            >
+              👎
+            </button>
+            <button
+              type="button"
+              onClick={onRemove}
+              className={`flex items-center justify-center rounded-lg bg-red-950/90 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
+              title="Remove from history"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <div className="p-3 space-y-2.5">
+          <h3 className="text-xs font-bold truncate text-white" title={show.title}>
             {show.title}
+          </h3>
+
+          <div className="space-y-1">
+            <div className="flex justify-between text-[10px] font-bold text-slate-400">
+              <span>Series Progress</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden border border-white/5">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  progress === 100 ? "bg-emerald-500" : "bg-amber-500"
+                }`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
-        )}
 
-        <div className="absolute top-1.5 right-1.5 flex items-center gap-1.5 z-10" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            onClick={() => dislikeTitle({ id: show.showId, title: show.title, mediaType: "tv", posterPath: show.posterPath })}
-            className={`flex items-center justify-center rounded-lg bg-amber-950/90 text-amber-300 backdrop-blur-md border border-amber-500/30 transition hover:bg-amber-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
-            title="Dislike & Hide Globally"
-          >
-            👎
-          </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            className={`flex items-center justify-center rounded-lg bg-red-950/90 text-red-300 backdrop-blur-md border border-red-500/30 transition hover:bg-red-600 hover:text-white focus:outline-none font-bold ${iconBtnClass}`}
-            title="Remove from history"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-
-      <div className="p-3 space-y-2.5">
-        <h3 className="text-xs font-bold truncate text-white" title={show.title}>
-          {show.title}
-        </h3>
-
-        <div className="space-y-1">
-          <div className="flex justify-between text-[10px] font-bold text-slate-400">
-            <span>Series Progress</span>
-            <span>{progress}%</span>
+          <div className="space-y-1 max-h-28 overflow-y-auto pr-0.5" onClick={(e) => e.stopPropagation()}>
+            {episodesList.map((ep) => (
+              <EpisodeRow
+                key={ep.episodeId}
+                episode={ep}
+                largeButtons={largeButtons}
+                onEyeballClick={() => onEyewayClickWrapper(show.showId, ep.episodeId, ep.title, ep.confirmedCompleted, onEyeballClick)}
+              />
+            ))}
           </div>
-          <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden border border-white/5">
-            <div
-              className={`h-full transition-all duration-300 ${
-                progress === 100 ? "bg-emerald-500" : "bg-amber-500"
-              }`}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1 max-h-28 overflow-y-auto pr-0.5" onClick={(e) => e.stopPropagation()}>
-          {episodesList.map((ep) => (
-            <EpisodeRow
-              key={ep.episodeId}
-              episode={ep}
-              largeButtons={largeButtons}
-              onEyeballClick={() => onEyewayClickWrapper(show.showId, ep.episodeId, ep.title, ep.confirmedCompleted, onEyeballClick)}
-            />
-          ))}
         </div>
       </div>
     </div>
