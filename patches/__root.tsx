@@ -50,6 +50,8 @@ function RootComponent() {
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
   const [helpfulMouse, setHelpfulMouseState] = useState(false);
   const [userAgeInput, setUserAgeInput] = useState<string>("");
+  const [profileNameInput, setProfileNameInput] = useState<string>("");
+  const [savedProfileName, setSavedProfileName] = useState<string>("");
   const [settingsAgeCodeInput, setSettingsAgeCodeInput] = useState<string>("");
   const [settingsAgeError, setSettingsAgeError] = useState<boolean>(false);
   const [settingsAgeSuccess, setSettingsAgeSuccess] = useState<boolean>(false);
@@ -101,11 +103,19 @@ function RootComponent() {
       setUserAgeInput(existingAge);
     }
 
+    const existingName = localStorage.getItem("rabtv_profile_name");
+    if (existingName) {
+      setProfileNameInput(existingName);
+      setSavedProfileName(existingName);
+    }
+
     const handleSettingsUpdate = () => {
       setCardSize(getSavedCardSize());
       setStreamQuality(getSavedStreamQuality());
       setAppTheme(getSavedTheme());
       setHelpfulMouseState(getHelpfulMouse());
+      const updatedName = localStorage.getItem("rabtv_profile_name");
+      if (updatedName) setSavedProfileName(updatedName);
     };
 
     window.addEventListener("rabtv_settings_updated", handleSettingsUpdate);
@@ -133,6 +143,10 @@ function RootComponent() {
 
       const parsedAge = parseInt(trimmedAge, 10);
       saveUserAge(parsedAge);
+
+      const finalName = profileNameInput.trim() || "Friend";
+      localStorage.setItem("rabtv_profile_name", finalName);
+      setSavedProfileName(finalName);
 
       setShowFirstStartModal(false);
       setPasscodeError(false);
@@ -188,6 +202,7 @@ function RootComponent() {
       appTheme,
       helpfulMouse,
       userAge: getSavedUserAge(),
+      profileName: savedProfileName,
       myList: localStorage.getItem("rabtv_my_list"),
       favorites: localStorage.getItem("rabtv_favorites"),
       backedUpAt: new Date().toISOString(),
@@ -218,6 +233,10 @@ function RootComponent() {
         if (data.appTheme) saveTheme(data.appTheme);
         if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
         if (data.userAge) saveUserAge(data.userAge);
+        if (data.profileName) {
+          localStorage.setItem("rabtv_profile_name", data.profileName);
+          setSavedProfileName(data.profileName);
+        }
         if (data.myList) localStorage.setItem("rabtv_my_list", data.myList);
         if (data.favorites) localStorage.setItem("rabtv_favorites", data.favorites);
 
@@ -368,15 +387,23 @@ function RootComponent() {
         <AuthProvider>
           <header className={`sticky top-0 z-40 border-b border-white/10 ${getOuterPanelBackground(appTheme)} backdrop-blur-md transition-colors duration-300`}>
             <div className="mx-auto flex max-w-7xl items-center justify-between px-3 py-2.5 sm:px-6 gap-2 overflow-x-auto scrollbar-none">
-              <Link
-                to="/"
-                className="flex items-center gap-2.5 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-lg transition-transform group-hover:scale-105 shrink-0">
-                  🐰
-                </div>
-                <span className="whitespace-nowrap">RABBiT TV</span>
-              </Link>
+              <div className="flex items-center gap-3 shrink-0">
+                <Link
+                  to="/"
+                  className="flex items-center gap-2.5 text-base sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-950 via-red-900 to-black border border-red-500/30 shadow-lg text-lg transition-transform group-hover:scale-105 shrink-0">
+                    🐰
+                  </div>
+                  <span className="whitespace-nowrap">RABBiT TV</span>
+                </Link>
+
+                {savedProfileName && (
+                  <div className="hidden md:flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-slate-200">
+                    <span>👋 <strong className="text-white">{savedProfileName}</strong></span>
+                  </div>
+                )}
+              </div>
 
               {!showFirstStartModal && (
                 <div className="flex items-center gap-2 shrink-0">
@@ -484,7 +511,7 @@ function RootComponent() {
                           : `${getSubtlePillBg(appTheme)}`
                       }`}
                     >
-                      Profile Age
+                      Profile
                     </button>
                     <button
                       type="button"
@@ -563,9 +590,26 @@ function RootComponent() {
                     )}
 
                     {activeSettingsTab === "age" && (
-                      <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col sm:flex-row items-center justify-center gap-2 max-w-lg w-full">
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                          <span className="text-xs font-semibold text-slate-300 shrink-0">Age:</span>
+                      <div className="flex flex-col gap-3 max-w-md w-full mx-auto">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-300 w-20 shrink-0">Name:</span>
+                          <input
+                            type="text"
+                            maxLength={20}
+                            value={profileNameInput}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setProfileNameInput(val);
+                              localStorage.setItem("rabtv_profile_name", val.trim());
+                              setSavedProfileName(val.trim());
+                            }}
+                            placeholder="Your Name"
+                            className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1 text-xs font-bold text-white focus:outline-none"
+                          />
+                        </div>
+
+                        <form onSubmit={handleUpdateAgeInSettings} className="flex items-center gap-2 pt-2 border-t border-white/10">
+                          <span className="text-xs font-semibold text-slate-300 w-20 shrink-0">Age / Code:</span>
                           <input
                             type="number"
                             min={1}
@@ -574,16 +618,13 @@ function RootComponent() {
                             onChange={(e) => setUserAgeInput(e.target.value)}
                             className="w-16 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-xs font-bold text-white focus:outline-none"
                           />
-                        </div>
-
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
                           <input
                             type="password"
                             maxLength={10}
-                            placeholder="Passcode Required"
+                            placeholder="Passcode"
                             value={settingsAgeCodeInput}
                             onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
-                            className="w-36 rounded-lg border border-white/10 bg-slate-800 px-3 py-1 text-center text-xs font-bold text-white focus:outline-none"
+                            className="w-28 rounded-lg border border-white/10 bg-slate-800 px-2 py-1 text-center text-xs font-bold text-white focus:outline-none"
                           />
                           <button
                             type="submit"
@@ -591,15 +632,15 @@ function RootComponent() {
                           >
                             Update
                           </button>
-                        </div>
+                        </form>
 
                         {settingsAgeError && (
-                          <span className="text-xs font-semibold text-red-400">⚠️ Invalid Code or Age</span>
+                          <span className="text-xs font-semibold text-red-400 text-center">⚠️ Invalid Code or Age</span>
                         )}
                         {settingsAgeSuccess && (
-                          <span className="text-xs font-semibold text-emerald-400">✓ Age Updated!</span>
+                          <span className="text-xs font-semibold text-emerald-400 text-center">✓ Profile Updated!</span>
                         )}
-                      </form>
+                      </div>
                     )}
 
                     {activeSettingsTab === "backup" && (
@@ -639,7 +680,7 @@ function RootComponent() {
             <Outlet />
           </main>
 
-          {/* Startup Modal with Age Validation Check */}
+          {/* Startup Modal with Name & Age Validation */}
           {showFirstStartModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto">
               <form
@@ -664,8 +705,28 @@ function RootComponent() {
                   </div>
                 </div>
 
-                {/* Friendly Age Prompt (Blank by Default) */}
+                {/* Friendly Name Prompt */}
                 <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                    What's your name? <span className="text-slate-400 font-normal lowercase">(For your welcome greeting!)</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={25}
+                    value={profileNameInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setProfileNameInput(val);
+                      localStorage.setItem("rabtv_profile_name", val.trim());
+                      setSavedProfileName(val.trim());
+                    }}
+                    placeholder="Enter Name"
+                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-2.5 text-center text-base font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
+                  />
+                </div>
+
+                {/* Friendly Age Prompt */}
+                <div className="space-y-2 border-t border-white/10 pt-3">
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
                     How old are you? <span className="text-slate-400 font-normal lowercase">(So we can streamline your experience!)</span>
                   </label>
