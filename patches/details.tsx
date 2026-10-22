@@ -852,14 +852,14 @@ export function DetailsPage() {
             </div>
           )}
 
-          {/* Fixed Bottom Floating Scroll Indicator */}
+          {/* Fixed Bottom Floating Scroll Indicator with 10% Opacity Wrapper */}
           {canScrollDown && (
             <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
-              <div className="flex flex-col items-center gap-0.5 bg-black/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+              <div className="flex flex-col items-center gap-0.5 bg-black/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white opacity-100">
                   More Details Below
                 </span>
-                <span className={`text-xl font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
+                <span className={`text-xl font-black animate-slow-glow ${getThemeArrowColor(appTheme)} opacity-100`}>
                   ⌄
                 </span>
               </div>
