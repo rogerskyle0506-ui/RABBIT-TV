@@ -24,7 +24,7 @@ const TMDB_API_KEY =
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3/";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500";
-const STORAGE_PREFIX = "rabtv_catalog_cache_v14_"; // Incremented cache version
+const STORAGE_PREFIX = "rabtv_catalog_cache_v16_"; // Incremented cache version
 const ITEMS_PER_PAGE = 20;
 
 let lastRequestTimestamp = 0;
@@ -111,10 +111,21 @@ function mapTmdbItemToMediaItem(
   const title = (item.title || item.name) as string | undefined;
   if (!title) return null;
 
+  const releaseDate = (item.release_date || item.first_air_date || "") as string;
+
+  // 🛑 UNIVERSAL RELEASE DATE SCRUBBER (Applies globally to Home, Netflix, Prime, Disney+, Search, etc.)
+  // If a release date is slated more than 30 days into the future, return null so it is discarded everywhere.
+  if (releaseDate) {
+    const releaseTime = new Date(releaseDate).getTime();
+    const maxAllowedTime = Date.now() + 30 * 24 * 60 * 60 * 1000;
+    if (releaseTime > maxAllowedTime) {
+      return null;
+    }
+  }
+
   const tmdbId = item.id;
   const uniqueId = `${mediaType}-${tmdbId}`;
 
-  const releaseDate = (item.release_date || item.first_air_date || "") as string;
   const year = releaseDate.split("-")[0];
   const voteAverage = item.vote_average as number | undefined;
   const rating = voteAverage ? voteAverage.toFixed(1) : "N/A";
@@ -206,6 +217,7 @@ export async function scrapeCategoryContent(
         const providerId = providerIdMap[category];
         const genreId = genreFilter && genreFilter !== "Trending" ? genreNameToId[genreFilter.toLowerCase()] : null;
         const isTvTab = category === "Series" || category === "TV Shows";
+        const isInTheaters = category === "In Theaters";
 
         const discoverParams: Record<string, string> = {
           sort_by: "popularity.desc",
@@ -234,13 +246,17 @@ export async function scrapeCategoryContent(
           discoverParams.watch_region = "CA";
         }
 
-        const endpoint = isTvTab ? "discover/tv" : "discover/movie";
+        let endpoint = isTvTab ? "discover/tv" : "discover/movie";
 
-        if (providerId || cleanSubFeed) {
+        if (isInTheaters) {
+          endpoint = "movie/now_playing";
+        }
+
+        if (providerId || cleanSubFeed || isInTheaters) {
           let data = await fetchTmdb(endpoint, nextApiPage, discoverParams);
           let results = (data.results as Record<string, unknown>[]) || [];
 
-          if (results.length === 0 && genreId && cleanSubFeed) {
+          if (results.length === 0 && genreId && cleanSubFeed && !isInTheaters) {
             delete discoverParams.with_genres;
             data = await fetchTmdb(endpoint, nextApiPage, discoverParams);
             results = (data.results as Record<string, unknown>[]) || [];
@@ -252,7 +268,7 @@ export async function scrapeCategoryContent(
             if (mapped) batch.push(mapped);
           });
 
-          if (category === "Home" && !isTvTab) {
+          if (category === "Home" && !isTvTab && !isInTheaters) {
             const tvData = await fetchTmdb("discover/tv", nextApiPage, discoverParams);
             const tvResults = (tvData.results as Record<string, unknown>[]) || [];
             tvResults.forEach((item) => {
