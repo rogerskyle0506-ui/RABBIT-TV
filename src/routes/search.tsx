@@ -10,6 +10,7 @@ import {
   isAllowedForAge,
 } from "@/lib/settings";
 import { MediaCard } from "@/routes/index";
+import { ScrollPillBar } from "@/components/scroll-pill-bar";
 import React from "react";
 
 const TMDB_API_KEY =
@@ -208,6 +209,22 @@ function SearchPage() {
     cyan: { bg: "bg-gradient-to-br from-slate-950 via-cyan-950/40 to-slate-950", accent: "text-cyan-300", border: "border-cyan-500/30", btn: "bg-cyan-600 hover:bg-cyan-500" },
   }[appTheme] || { bg: "bg-slate-950", accent: "text-violet-300", border: "border-violet-500/30", btn: "bg-violet-600" };
 
+  const getPrimaryBgColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red": return "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 text-white shadow-lg shadow-red-600/30";
+      case "midnight": return "bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white shadow-lg shadow-blue-600/30";
+      case "emerald": return "bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white shadow-lg shadow-emerald-600/30";
+      case "amber": return "bg-gradient-to-r from-amber-500 via-amber-600 to-yellow-600 text-white shadow-lg shadow-amber-600/30";
+      case "cyan": return "bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-600 text-white shadow-lg shadow-cyan-600/30";
+      case "violet":
+      default: return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
+    }
+  };
+
+  const allGenreOptions = useMemo(() => {
+    return [{ id: "All", label: "All" }, ...Object.keys(genreMap).map((g) => ({ id: g, label: g }))];
+  }, []);
+
   return (
     <main className={`min-h-screen ${themeStyles.bg} text-slate-100 px-4 py-6 pb-12`}>
       <div className="mx-auto max-w-7xl space-y-6">
@@ -298,19 +315,16 @@ function SearchPage() {
             </div>
           </div>
 
-          {/* Genre Pills */}
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-slate-400 font-semibold mr-1">Genre:</span>
-            {["All", ...Object.keys(genreMap)].map((genre) => (
-              <button
-                key={genre}
-                type="button"
-                onClick={() => setSelectedGenre(genre)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${selectedGenre === genre ? `${themeStyles.btn} text-white shadow` : "bg-slate-900 border border-white/10 text-slate-300 hover:bg-slate-800"}`}
-              >
-                {genre}
-              </button>
-            ))}
+          {/* Genre Scroll Pill Bar */}
+          <div className="mt-4 space-y-1">
+            <span className="text-xs text-slate-400 font-semibold block px-1">Genre:</span>
+            <ScrollPillBar
+              options={allGenreOptions}
+              activeId={selectedGenre}
+              onSelect={(id) => setSelectedGenre(id)}
+              appTheme={appTheme}
+              getPrimaryBgColor={getPrimaryBgColor}
+            />
           </div>
         </div>
 
