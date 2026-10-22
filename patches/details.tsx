@@ -16,7 +16,6 @@ export function DetailsPage() {
   const search = Route.useSearch() as { id?: string; type?: string };
   const mediaId = search?.id;
   
-  // Dynamic mediaType state that can be corrected immediately upon data fetch
   const [mediaType, setMediaType] = useState<string>(search?.type || "movie");
 
   const [mediaDetails, setMediaDetails] = useState<any>(null);
@@ -24,31 +23,25 @@ export function DetailsPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Active App Theme State synced with root.tsx
   const [appTheme, setAppTheme] = useState<AppTheme>("violet");
 
-  // List Status State
   const [inMyList, setInMyList] = useState(false);
   const [inFavorites, setInFavorites] = useState(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
-  // TV Series Episode State & Season Episodes List
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [autoPlayNext, setAutoPlayNext] = useState(true);
 
-  // Custom Dropdown Open States
   const [isSeasonOpen, setIsSeasonOpen] = useState(false);
   const [isEpisodeOpen, setIsEpisodeOpen] = useState(false);
 
-  // Vertical scroll indicator state
   const [canScrollDown, setCanScrollDown] = useState(false);
 
   const seasonRef = useRef<HTMLDivElement>(null);
   const episodeRef = useRef<HTMLDivElement>(null);
 
-  // Vertical scroll bounds check for bottom scroll indicator
   useEffect(() => {
     const checkVerticalScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
@@ -67,7 +60,6 @@ export function DetailsPage() {
     };
   }, [mediaDetails, similarItems, loading, isPlaying]);
 
-  // Close custom dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (seasonRef.current && !seasonRef.current.contains(event.target as Node)) {
@@ -81,7 +73,6 @@ export function DetailsPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Sync Theme with global settings store
   useEffect(() => {
     const loadTheme = () => {
       setAppTheme(getSavedTheme());
@@ -97,7 +88,6 @@ export function DetailsPage() {
     };
   }, []);
 
-  // Fetch episodes dynamically whenever the selected season changes for a TV show
   useEffect(() => {
     async function fetchSeasonEpisodes() {
       if (mediaType !== "tv" || !mediaId) return;
@@ -121,7 +111,6 @@ export function DetailsPage() {
     fetchSeasonEpisodes();
   }, [season, mediaId, mediaType]);
 
-  // Fetch similar recommendations from TMDB
   useEffect(() => {
     async function fetchSimilarContent() {
       if (!mediaId) return;
@@ -162,7 +151,6 @@ export function DetailsPage() {
     fetchSimilarContent();
   }, [mediaId, mediaType]);
 
-  // Full 6-Theme Background & Card Helpers matching index.tsx
   const getPageBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
@@ -279,7 +267,6 @@ export function DetailsPage() {
 
   const activeTheme = getThemeClasses(appTheme);
 
-  // Check saved state for My List & Favorites
   useEffect(() => {
     if (!mediaId) return;
     const currentId = `${mediaType}-${mediaId}`;
@@ -295,7 +282,6 @@ export function DetailsPage() {
     }
   }, [mediaId, mediaType]);
 
-  // Fetch item details + cast with LocalStorage Caching (6-hour expiry) & Type Auto-Correction
   useEffect(() => {
     async function fetchDetailsWithCache() {
       if (!mediaId) return;
@@ -352,7 +338,6 @@ export function DetailsPage() {
     fetchDetailsWithCache();
   }, [mediaId, mediaType]);
 
-  // Robust inferred type check
   const inferredMediaType = mediaDetails?.seasons || mediaType === "tv" ? "tv" : "movie";
 
   const buildCatalogItem = () => ({
@@ -370,7 +355,6 @@ export function DetailsPage() {
     genreIds: mediaDetails?.genres?.map((g: any) => g.id) || [],
   });
 
-  // Watch History Status Lookup Helper
   const getMediaWatchStatus = () => {
     if (!mediaId) return "none";
     try {
@@ -505,7 +489,7 @@ export function DetailsPage() {
   const watchStatus = getMediaWatchStatus();
 
   return (
-    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-6 text-white md:p-12 overflow-y-auto scroll-smooth transition-colors duration-300`}>
+    <div className={`min-h-screen w-full ${getPageBackground(appTheme)} p-6 text-white md:p-12 overflow-y-auto scroll-smooth transition-colors duration-300 pb-20`}>
       <Link
         className={`mb-6 inline-flex items-center gap-2 text-sm font-semibold ${activeTheme.text} transition hover:opacity-80 hover:underline focus:outline-none focus:ring-4 ${activeTheme.ring} focus:rounded-lg px-2 py-1`}
         to="/"
@@ -519,7 +503,6 @@ export function DetailsPage() {
             <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur transition-colors duration-300`}>
               <div className="flex flex-wrap items-center gap-4 text-sm font-semibold relative">
                 
-                {/* Custom Active Player Season Dropdown */}
                 <div className="relative" ref={seasonRef}>
                   <span className="block text-xs text-slate-400 mb-1">Season</span>
                   <button
@@ -555,7 +538,6 @@ export function DetailsPage() {
                   )}
                 </div>
 
-                {/* Custom Active Player Episode Dropdown */}
                 <div className="relative" ref={episodeRef}>
                   <span className="block text-xs text-slate-400 mb-1">Episode</span>
                   <button
@@ -663,11 +645,9 @@ export function DetailsPage() {
           </div>
         </div>
       ) : (
-        /* Overview Card with Custom Theme-Aware Dropdown Pickers */
         <div className="mx-auto flex max-w-5xl flex-col gap-8">
           
           <div className="flex flex-col gap-8 md:flex-row md:items-start">
-            {/* Movie Poster Cover Art with Watch Status Badge Overlay */}
             <div className="relative h-[450px] w-[300px] self-center md:self-start shrink-0">
               {watchStatus === "completed" && (
                 <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-full bg-emerald-500/90 px-3 py-1 text-xs font-bold text-white shadow-lg backdrop-blur-md border border-emerald-400/30">
@@ -713,11 +693,9 @@ export function DetailsPage() {
                 {overview}
               </p>
 
-              {/* Custom Theme-Aware Season & Episode Dropdown Pickers for TV Series */}
               {inferredMediaType === "tv" && mediaDetails?.seasons && (
                 <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2 transition-colors duration-300`}>
                   
-                  {/* Custom Season Dropdown */}
                   <div className="relative" ref={seasonRef}>
                     <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Season</label>
                     <button
@@ -753,7 +731,6 @@ export function DetailsPage() {
                     )}
                   </div>
 
-                  {/* Custom Episode Dropdown */}
                   <div className="relative" ref={episodeRef}>
                     <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Episode</label>
                     <button
@@ -793,7 +770,6 @@ export function DetailsPage() {
                 </div>
               )}
 
-              {/* Action Bar */}
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
@@ -836,7 +812,6 @@ export function DetailsPage() {
             </div>
           </div>
 
-          {/* Similar Titles Shelf (Placed Directly Below Movie Text Details Box) */}
           {similarItems.length > 0 && (
             <div className="mt-10 pt-8 border-t border-white/10 space-y-4">
               <div className="flex items-center justify-between">
@@ -877,15 +852,16 @@ export function DetailsPage() {
             </div>
           )}
 
-          {/* Vertical Scroll Down Indicator */}
+          {/* Fixed Bottom Floating Scroll Indicator */}
           {canScrollDown && (
-            <div className="my-8 flex w-full items-center justify-center pointer-events-none">
-              <div className={`relative flex w-1/2 sm:w-1/3 items-center justify-center rounded-2xl border ${activeTheme.border}/30 bg-black/60 backdrop-blur-md py-2.5 shadow-2xl`}>
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-                <div className="flex flex-col items-center gap-0.5 z-10">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">More Details Below</span>
-                  <span className={`text-xl font-black transition-colors duration-300 animate-slow-glow ${getThemeArrowColor(appTheme)}`}>⌄</span>
-                </div>
+            <div className="fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none">
+              <div className="flex flex-col items-center gap-0.5 bg-black/70 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">
+                  More Details Below
+                </span>
+                <span className={`text-xl font-black animate-slow-glow ${getThemeArrowColor(appTheme)}`}>
+                  ⌄
+                </span>
               </div>
             </div>
           )}
