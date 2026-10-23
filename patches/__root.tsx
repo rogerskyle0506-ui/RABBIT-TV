@@ -111,6 +111,12 @@ function RootComponent() {
     setHeaderSearchInput("");
   };
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.dispatchEvent(new Event("rabtv_restore_home_state"));
+    navigate({ to: "/" });
+  };
+
   const handleCloseAll = () => {
     setShowSettings(false);
     setShowProfileMenu(false);
@@ -514,9 +520,10 @@ function RootComponent() {
             <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-stretch sm:items-center justify-between px-3 py-2 sm:px-6 gap-2">
               
               <div className="flex items-center justify-between sm:justify-start gap-2">
-                <Link
-                  to="/"
-                  className="flex items-center gap-2 text-sm sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
+                <a
+                  href="/"
+                  onClick={handleLogoClick}
+                  className="flex items-center gap-2 text-sm sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group cursor-pointer"
                 >
                   <img
                     src={HOSTED_ICON_URL}
@@ -524,7 +531,7 @@ function RootComponent() {
                     className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-cover border border-red-500/30 shadow-lg transition-transform group-hover:scale-105 shrink-0"
                   />
                   <span className="whitespace-nowrap">RABBiT TV</span>
-                </Link>
+                </a>
 
                 {savedProfileName && !showFirstStartModal && (
                   <div className="relative">
