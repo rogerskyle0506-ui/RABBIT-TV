@@ -72,7 +72,7 @@ function RootComponent() {
   const [showSettings, setShowSettings] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const lastScrollYRef = useRef(0);
-  
+
   const [activeSettingsTab, setActiveSettingsTab] = useState<"theme" | "scale" | "backup" | null>(null);
 
   const [cardSize, setCardSize] = useState<CardSize>("large");
@@ -141,7 +141,7 @@ function RootComponent() {
   useEffect(() => {
     const handleWindowScroll = () => {
       if (showSettings || showProfileMenu) {
-        if (window.scrollY > lastScrollYRef.current + 15) {
+        if (Math.abs(window.scrollY - lastScrollYRef.current) > 60) {
           handleCloseAll();
         }
       }
@@ -158,10 +158,10 @@ function RootComponent() {
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const ua = navigator.userAgent.toLowerCase();
-      if (ua.includes('silk') || ua.includes('firetv') || ua.includes('amazon')) {
-        document.documentElement.classList.add('fire-os');
+      if (ua.includes("silk") || ua.includes("firetv") || ua.includes("amazon")) {
+        document.documentElement.classList.add("fire-os");
       }
     }
 
@@ -177,9 +177,9 @@ function RootComponent() {
     setHelpfulMouseState(getHelpfulMouse());
     setHistoryOverscaleState(getHistoryOverscale());
     setLargeButtonsState(getLargeButtons());
-    
+
     void updateNativeStatusBar(loadedTheme);
-    
+
     const existingAge = localStorage.getItem("rabtv_user_age");
     if (existingAge) {
       setUserAgeInput(existingAge);
@@ -200,7 +200,7 @@ function RootComponent() {
       setHistoryOverscaleState(getHistoryOverscale());
       setLargeButtonsState(getLargeButtons());
       void updateNativeStatusBar(updatedTheme);
-      
+
       const updatedName = localStorage.getItem("rabtv_profile_name");
       if (updatedName) setSavedProfileName(updatedName);
     };
@@ -379,18 +379,18 @@ function RootComponent() {
   const getCardBackground = (theme: AppTheme) => {
     switch (theme) {
       case "red":
-        return "bg-zinc-900/90 border-red-500/20";
+        return "bg-zinc-900/95 border-red-500/30";
       case "midnight":
-        return "bg-slate-900/90 border-blue-500/20";
+        return "bg-slate-900/95 border-blue-500/30";
       case "emerald":
-        return "bg-slate-900/90 border-emerald-500/20";
+        return "bg-slate-900/95 border-emerald-500/30";
       case "amber":
-        return "bg-stone-900/90 border-amber-500/20";
+        return "bg-stone-900/95 border-amber-500/30";
       case "cyan":
-        return "bg-slate-900/90 border-cyan-500/20";
+        return "bg-slate-900/95 border-cyan-500/30";
       case "violet":
       default:
-        return "bg-slate-900/90 border-violet-500/20";
+        return "bg-slate-900/95 border-violet-500/30";
     }
   };
 
@@ -521,7 +521,7 @@ function RootComponent() {
                   <img
                     src={HOSTED_ICON_URL}
                     alt="RABBiT TV Icon"
-                    className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-cover border border-red-500/30 shadow-lg transition-transform group-hover:scale-105 shrink-0"
+                    className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-cover border border-red-500/30 shadow-lg transition-transform group-hover:scale-105 shrink-0"
                   />
                   <span className="whitespace-nowrap">RABBiT TV</span>
                 </Link>
@@ -599,260 +599,275 @@ function RootComponent() {
                 </div>
               )}
             </div>
+          </header>
 
-            {showProfileMenu && !showFirstStartModal && (
-              <div className={`border-t border-white/15 ${getCardBackground(appTheme)} px-4 py-4 sm:px-6 sm:py-5 backdrop-blur-md shadow-2xl max-h-[85vh] overflow-y-auto`}>
-                <div className="mx-auto flex max-w-lg flex-col gap-4">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                    <h3 className={`text-sm font-black uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
-                      👤 Personal Profile & Accessibility
-                    </h3>
+          {/* FIXED VIEWPORT PROFILE DROPDOWN MENU */}
+          {showProfileMenu && !showFirstStartModal && (
+            <div className={`fixed top-16 right-3 sm:right-6 z-50 w-80 max-w-[92vw] rounded-2xl border ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-xl shadow-2xl max-h-[80vh] overflow-y-auto`}>
+              <div className="mx-auto flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <h3 className={`text-sm font-black uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
+                    👤 Personal Profile & Accessibility
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={handleCloseAll}
+                    className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5"
+                  >
+                    ✕ Close
+                  </button>
+                </div>
+
+                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Name:</span>
+                    <input
+                      type="text"
+                      maxLength={20}
+                      value={profileNameInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProfileNameInput(val);
+                        localStorage.setItem("rabtv_profile_name", val.trim());
+                        setSavedProfileName(val.trim());
+                      }}
+                      placeholder="Your Name"
+                      className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-xs font-bold text-white focus:outline-none"
+                    />
+                  </div>
+
+                  <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Age:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={120}
+                        value={userAgeInput}
+                        onChange={(e) => setUserAgeInput(e.target.value)}
+                        className="w-20 rounded-lg border border-white/10 bg-slate-800 px-2 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="password"
+                        maxLength={10}
+                        placeholder="Passcode"
+                        value={settingsAgeCodeInput}
+                        onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
+                        className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-4 py-1.5 text-xs font-bold whitespace-nowrap shadow`}
+                      >
+                        Update Age
+                      </button>
+                    </div>
+                  </form>
+
+                  {settingsAgeError && (
+                    <span className="text-xs font-semibold text-red-400 text-center block">⚠️ Invalid Code or Age</span>
+                  )}
+                  {settingsAgeSuccess && (
+                    <span className="text-xs font-semibold text-emerald-400 text-center block">✓ Profile Updated!</span>
+                  )}
+                </div>
+
+                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Accessibility</span>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold text-white">XL Mouse Pointer (3x)</p>
+                      <p className="text-[10px] text-slate-400">Enlarges cursor for TVs/projectors.</p>
+                    </div>
                     <button
                       type="button"
-                      onClick={handleCloseAll}
-                      className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5"
+                      onClick={() => handleMouseToggle(!helpfulMouse)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                        helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                      }`}
                     >
-                      ✕ Close
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${helpfulMouse ? "translate-x-6" : "translate-x-1"}`} />
                     </button>
                   </div>
 
-                  <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Name:</span>
-                      <input
-                        type="text"
-                        maxLength={20}
-                        value={profileNameInput}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setProfileNameInput(val);
-                          localStorage.setItem("rabtv_profile_name", val.trim());
-                          setSavedProfileName(val.trim());
-                        }}
-                        placeholder="Your Name"
-                        className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-xs font-bold text-white focus:outline-none"
-                      />
+                  <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-xs font-bold text-white">History Page Overscale</p>
+                        <p className="text-[10px] text-slate-400">Choose card size increase on history page.</p>
+                      </div>
+                      <span className="text-xs font-bold text-violet-400">
+                        {historyOverscale === "off" ? "Off" : `+${historyOverscale}`}
+                      </span>
                     </div>
-
-                    <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col gap-2 pt-2 border-t border-white/10">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Age:</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={120}
-                          value={userAgeInput}
-                          onChange={(e) => setUserAgeInput(e.target.value)}
-                          className="w-20 rounded-lg border border-white/10 bg-slate-800 px-2 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="password"
-                          maxLength={10}
-                          placeholder="Passcode"
-                          value={settingsAgeCodeInput}
-                          onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
-                          className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
-                        />
+                    <div className="grid grid-cols-4 gap-2">
+                      {(["off", "20%", "50%", "80%"] as HistoryScale[]).map((scale) => (
                         <button
-                          type="submit"
-                          className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-4 py-1.5 text-xs font-bold whitespace-nowrap shadow`}
+                          key={scale}
+                          type="button"
+                          onClick={() => handleHistoryOverscaleChange(scale)}
+                          className={`rounded-lg py-1.5 text-xs font-bold capitalize transition ${
+                            historyOverscale === scale
+                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                              : `${getSubtlePillBg(appTheme)}`
+                          }`}
                         >
-                          Update Age
+                          {scale === "off" ? "Off" : `+${scale}`}
                         </button>
-                      </div>
-                    </form>
-
-                    {settingsAgeError && (
-                      <span className="text-xs font-semibold text-red-400 text-center block">⚠️ Invalid Code or Age</span>
-                    )}
-                    {settingsAgeSuccess && (
-                      <span className="text-xs font-semibold text-emerald-400 text-center block">✓ Profile Updated!</span>
-                    )}
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
-                    <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Accessibility</span>
-                    
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-xs font-bold text-white">XL Mouse Pointer (3x)</p>
-                        <p className="text-[10px] text-slate-400">Enlarges cursor for TVs/projectors.</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleMouseToggle(!helpfulMouse)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
-                          helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
-                        }`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${helpfulMouse ? "translate-x-6" : "translate-x-1"}`} />
-                      </button>
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
+                    <div>
+                      <p className="text-xs font-bold text-white">Enlarged Action Buttons (+5%)</p>
+                      <p className="text-[10px] text-slate-400">Makes eye, thumb, and X buttons bigger.</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleLargeButtonsToggle(!largeButtons)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                        largeButtons ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${largeButtons ? "translate-x-6" : "translate-x-1"}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
-                    <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-xs font-bold text-white">History Page Overscale</p>
-                          <p className="text-[10px] text-slate-400">Choose card size increase on history page.</p>
-                        </div>
-                        <span className="text-xs font-bold text-violet-400">
-                          {historyOverscale === "off" ? "Off" : `+${historyOverscale}`}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-2">
-                        {(["off", "20%", "50%", "80%"] as HistoryScale[]).map((scale) => (
+          {/* FIXED VIEWPORT SETTINGS MENU */}
+          {showSettings && !showFirstStartModal && (
+            <div className={`fixed top-16 right-3 sm:right-6 z-50 w-96 max-w-[94vw] rounded-2xl border ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-xl shadow-2xl max-h-[80vh] overflow-y-auto`}>
+              <div className="mx-auto flex flex-col items-center gap-3">
+                <div className="flex items-center justify-between w-full border-b border-white/10 pb-2">
+                  <h3 className={`text-sm font-black uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
+                    ⚙️ App Settings
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={handleCloseAll}
+                    className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5"
+                  >
+                    ✕ Close
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1 overflow-x-auto pb-2 border-b border-white/10 w-full justify-start sm:justify-center scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setActiveSettingsTab(activeSettingsTab === "theme" ? null : "theme")}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                      activeSettingsTab === "theme"
+                        ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                        : `${getSubtlePillBg(appTheme)}`
+                    }`}
+                  >
+                    Theme
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSettingsTab(activeSettingsTab === "scale" ? null : "scale")}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                      activeSettingsTab === "scale"
+                        ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                        : `${getSubtlePillBg(appTheme)}`
+                    }`}
+                  >
+                    Scale
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSettingsTab(activeSettingsTab === "backup" ? null : "backup")}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                      activeSettingsTab === "backup"
+                        ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                        : `${getSubtlePillBg(appTheme)}`
+                    }`}
+                  >
+                    Backup
+                  </button>
+                </div>
+
+                {activeSettingsTab !== null && (
+                  <div className="w-full flex justify-center py-1 max-w-lg mx-auto">
+                    {activeSettingsTab === "theme" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Theme:</span>
+                        {allThemesList.map((t) => (
                           <button
-                            key={scale}
+                            key={t.id}
                             type="button"
-                            onClick={() => handleHistoryOverscaleChange(scale)}
-                            className={`rounded-lg py-1.5 text-xs font-bold capitalize transition ${
-                              historyOverscale === scale
+                            onClick={() => handleThemeChange(t.id)}
+                            className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+                              appTheme === t.id
+                                ? `${getPrimaryBgColor(t.id)} text-white shadow-md`
+                                : `${getSubtlePillBg(appTheme)}`
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSettingsTab === "scale" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Scale:</span>
+                        {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => handleSizeChange(size)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
+                              cardSize === size
                                 ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
                                 : `${getSubtlePillBg(appTheme)}`
                             }`}
                           >
-                            {scale === "off" ? "Off" : `+${scale}`}
+                            {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
                           </button>
                         ))}
                       </div>
-                    </div>
+                    )}
 
-                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
-                      <div>
-                        <p className="text-xs font-bold text-white">Enlarged Action Buttons (+5%)</p>
-                        <p className="text-[10px] text-slate-400">Makes eye, thumb, and X buttons bigger.</p>
+                    {activeSettingsTab === "backup" && (
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full">
+                        <button
+                          type="button"
+                          onClick={handleSaveBackup}
+                          className={`w-full sm:w-auto rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}
+                        >
+                          💾 Export Backup
+                        </button>
+
+                        <label className={`w-full sm:w-auto text-center cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}>
+                          🔄 Restore Backup
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleRestoreBackup}
+                            className="hidden"
+                          />
+                        </label>
+
+                        {backupStatus && (
+                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold text-center w-full`}>
+                            {backupStatus}
+                          </span>
+                        )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleLargeButtonsToggle(!largeButtons)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
-                          largeButtons ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
-                        }`}
-                      >
-                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${largeButtons ? "translate-x-6" : "translate-x-1"}`} />
-                      </button>
-                    </div>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
-            )}
-
-            {showSettings && !showFirstStartModal && (
-              <div className={`border-t border-white/10 ${getCardBackground(appTheme)} px-3 py-3 sm:px-4 sm:py-4 backdrop-blur-md shadow-2xl max-h-[85vh] overflow-y-auto`}>
-                <div className="mx-auto flex max-w-7xl flex-col items-center gap-3">
-                  <div className="flex items-center gap-1 overflow-x-auto pb-2 border-b border-white/10 w-full justify-start sm:justify-center scrollbar-none">
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab(activeSettingsTab === "theme" ? null : "theme")}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
-                        activeSettingsTab === "theme"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
-                    >
-                      Theme
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab(activeSettingsTab === "scale" ? null : "scale")}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
-                        activeSettingsTab === "scale"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
-                    >
-                      Scale
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveSettingsTab(activeSettingsTab === "backup" ? null : "backup")}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
-                        activeSettingsTab === "backup"
-                          ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                          : `${getSubtlePillBg(appTheme)}`
-                      }`}
-                    >
-                      Backup
-                    </button>
-                  </div>
-
-                  {activeSettingsTab !== null && (
-                    <div className="w-full flex justify-center py-1 max-w-lg mx-auto">
-                      {activeSettingsTab === "theme" && (
-                        <div className="flex flex-wrap items-center justify-center gap-2">
-                          <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Theme:</span>
-                          {allThemesList.map((t) => (
-                            <button
-                              key={t.id}
-                              type="button"
-                              onClick={() => handleThemeChange(t.id)}
-                              className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
-                                appTheme === t.id
-                                  ? `${getPrimaryBgColor(t.id)} text-white shadow-md`
-                                  : `${getSubtlePillBg(appTheme)}`
-                              }`}
-                            >
-                              {t.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {activeSettingsTab === "scale" && (
-                        <div className="flex flex-wrap items-center justify-center gap-2">
-                          <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Scale:</span>
-                          {(["small", "medium", "large"] as CardSize[]).map((size) => (
-                            <button
-                              key={size}
-                              type="button"
-                              onClick={() => handleSizeChange(size)}
-                              className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
-                                cardSize === size
-                                  ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
-                                  : `${getSubtlePillBg(appTheme)}`
-                              }`}
-                            >
-                              {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {activeSettingsTab === "backup" && (
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full">
-                          <button
-                            type="button"
-                            onClick={handleSaveBackup}
-                            className={`w-full sm:w-auto rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}
-                          >
-                            💾 Export Backup
-                          </button>
-
-                          <label className={`w-full sm:w-auto text-center cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}>
-                            🔄 Restore Backup
-                            <input
-                              type="file"
-                              accept=".json"
-                              onChange={handleRestoreBackup}
-                              className="hidden"
-                            />
-                          </label>
-
-                          {backupStatus && (
-                            <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold text-center w-full`}>
-                              {backupStatus}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </header>
+            </div>
+          )}
 
           <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden pb-20">
             <Outlet />
@@ -869,7 +884,7 @@ function RootComponent() {
                 className={`my-auto w-full max-w-xl space-y-5 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
               >
                 <div className="text-center space-y-2">
-                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl overflow-hidden border border-red-500/30 shadow-lg bg-black">
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl overflow-hidden border border-red-500/30 shadow-lg bg-black">
                     <img
                       src={HOSTED_ICON_URL}
                       alt="RABBiT TV Logo"
