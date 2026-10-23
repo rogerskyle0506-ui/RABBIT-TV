@@ -1,4 +1,4 @@
-import { Outlet, createRootRoute, HeadContent, Scripts, Link, useNavigate } from "@tanstack/react-router";
+import { Outlet, createRootRoute, HeadContent, Scripts, Link, useNavigate } from "@tanstack/react-router";import { Outlet, createRootRoute, HeadContent, Scripts, Link, useNavigate } from "@tanstack/react-router";
 import { AuthProvider } from "@/components/auth-provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import "@/styles.css";
@@ -144,7 +144,6 @@ function RootComponent() {
     }
   };
 
-  // Optimized scroll listener with { passive: true } for zero jank and memory leak prevention
   useEffect(() => {
     const handleWindowScroll = () => {
       if (showSettings || showProfileMenu) {
@@ -155,10 +154,14 @@ function RootComponent() {
     };
 
     window.addEventListener("scroll", handleWindowScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleWindowScroll);
-    };
+    return () => window.removeEventListener("scroll", handleWindowScroll);
   }, [showSettings, showProfileMenu]);
+
+  const handleModalScrollCheck = (node: HTMLDivElement | null) => {
+    if (!node) return;
+    const { scrollTop, scrollHeight, clientHeight } = node;
+    setCanModalScrollDown(scrollTop + clientHeight < scrollHeight - 30);
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -247,6 +250,118 @@ function RootComponent() {
       setAgeErrorNotice(false);
       setPasscodeInput("");
     }
+  };
+
+  const handleSizeChange = (newSize: CardSize) => {
+    saveCardSize(newSize);
+    setCardSize(newSize);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
+  const handleThemeChange = (newTheme: AppTheme) => {
+    saveTheme(newTheme);
+    setAppTheme(newTheme);
+    void updateNativeStatusBar(newTheme);
+    window.dispatchEvent(new Event("rabtv_settings_updated"));
+  };
+
+  const handleMouseToggle = (enabled: boolean) => {
+    setHelpfulMouse(enabled);
+    setHelpfulMouseState(enabled);
+  };
+
+  const handleHistoryOverscaleChange = (scale: HistoryScale) => {
+    setHistoryOverscale(scale);
+    setHistoryOverscaleState(scale);
+  };
+
+  const handleLargeButtonsToggle = (enabled: boolean) => {
+    setLargeButtons(enabled);
+    setLargeButtonsState(enabled);
+  };
+
+  const handleUpdateAgeInSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (settingsAgeCodeInput.trim() === AUTHORIZATION_CODE) {
+      const parsedAge = parseInt(userAgeInput, 10);
+      if (isNaN(parsedAge)) {
+        setSettingsAgeError(true);
+        return;
+      }
+      saveUserAge(parsedAge);
+      setSettingsAgeError(false);
+      setSettingsAgeSuccess(true);
+      setSettingsAgeCodeInput("");
+      setTimeout(() => setSettingsAgeSuccess(false), 3000);
+      window.dispatchEvent(new Event("rabtv_settings_updated"));
+    } else {
+      setSettingsAgeError(true);
+      setSettingsAgeCodeInput("");
+    }
+  };
+
+  const handleSaveBackup = () => {
+    const backupData = {
+      cardSize,
+      streamQuality,
+      appTheme,
+      helpfulMouse,
+      historyOverscale,
+      largeButtons,
+      userAge: getSavedUserAge(),
+      profileName: savedProfileName,
+      myList: localStorage.getItem("rabtv_my_list"),
+      favorites: localStorage.getItem("rabtv_favorites"),
+      backedUpAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "rabtv_profile_backup.json";
+    a.click();
+    URL.revokeObjectURL(url);
+    setBackupStatus("Profile settings backup saved!");
+    setTimeout(() => setBackupStatus(null), 3000);
+  };
+
+  const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        if (data.cardSize) saveCardSize(data.cardSize);
+        if (data.streamQuality) saveStreamQuality(data.streamQuality);
+        if (data.appTheme) {
+          saveTheme(data.appTheme);
+          setAppTheme(data.appTheme);
+          void updateNativeStatusBar(data.appTheme);
+        }
+        if (typeof data.helpfulMouse === "boolean") setHelpfulMouse(data.helpfulMouse);
+        if (data.historyOverscale) setHistoryOverscale(data.historyOverscale);
+        if (typeof data.largeButtons === "boolean") setLargeButtons(data.largeButtons);
+        if (data.userAge) saveUserAge(data.userAge);
+        if (data.profileName) {
+          localStorage.setItem("rabtv_profile_name", data.profileName);
+          setSavedProfileName(data.profileName);
+        }
+        if (data.myList) localStorage.setItem("rabtv_my_list", data.myList);
+        if (data.favorites) localStorage.setItem("rabtv_favorites", data.favorites);
+
+        localStorage.removeItem(DISCLAIMER_ACCEPTED_KEY);
+        setShowFirstStartModal(true);
+        handleCloseAll();
+        setBackupStatus("Settings restored. Please reinstate your passcode agreement.");
+      } catch {
+        setBackupStatus("Failed to restore backup file.");
+      }
+    };
+    reader.readAsText(file);
   };
 
   const getBodyBackground = (theme: AppTheme) => {
@@ -346,6 +461,27 @@ function RootComponent() {
       default: return "bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-violet-600/30";
     }
   };
+
+  const getSubtlePillBg = (theme: AppTheme) => {
+    switch (theme) {
+      case "red": return "bg-red-950/50 border-red-500/30 text-red-200 hover:bg-red-900/60";
+      case "midnight": return "bg-blue-950/50 border-blue-500/30 text-blue-200 hover:bg-blue-900/60";
+      case "emerald": return "bg-emerald-950/50 border-emerald-500/30 text-emerald-200 hover:bg-emerald-900/60";
+      case "amber": return "bg-yellow-950/50 border-amber-500/30 text-amber-200 hover:bg-yellow-900/60";
+      case "cyan": return "bg-cyan-950/50 border-cyan-500/30 text-cyan-200 hover:bg-cyan-900/60";
+      case "violet":
+      default: return "bg-purple-950/50 border-violet-500/30 text-purple-200 hover:bg-purple-900/60";
+    }
+  };
+
+  const allThemesList: { id: AppTheme; label: string }[] = [
+    { id: "violet", label: "🟣 Violet / Neon" },
+    { id: "red", label: "🔴 Red & Black" },
+    { id: "midnight", label: "🔵 Midnight & Black" },
+    { id: "emerald", label: "🟢 Emerald / Teal" },
+    { id: "amber", label: "🟠 Amber / Gold" },
+    { id: "cyan", label: "🔷 Cyan / Sky" },
+  ];
 
   return (
     <html lang="en" data-theme={appTheme}>
@@ -453,6 +589,321 @@ function RootComponent() {
               )}
             </div>
           </header>
+
+          {/* FIRST START / DISCLAIMER MODAL */}
+          {showFirstStartModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
+              <div className={`w-full max-w-lg rounded-2xl border ${getCardBackground(appTheme)} p-6 shadow-2xl space-y-5 my-auto max-h-[90vh] flex flex-col`}>
+                <div className="text-center space-y-2">
+                  <h2 className={`text-xl font-black uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
+                    Welcome to RABBiT TV
+                  </h2>
+                  <p className="text-xs text-slate-300">
+                    Please configure your preferences and enter your authorization passcode to begin streaming.
+                  </p>
+                </div>
+
+                <div 
+                  ref={handleModalScrollCheck}
+                  onScroll={(e) => handleModalScrollCheck(e.currentTarget)}
+                  className="space-y-4 overflow-y-auto max-h-[50vh] pr-2 scrollbar-thin"
+                >
+                  <form onSubmit={handleFirstTimeAuthorize} id="auth-form" className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-300 block">Your Name:</label>
+                      <input
+                        type="text"
+                        maxLength={20}
+                        value={profileNameInput}
+                        onChange={(e) => setProfileNameInput(e.target.value)}
+                        placeholder="Enter name (e.g. Kyle)"
+                        className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-300 block">Your Age:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={120}
+                        value={userAgeInput}
+                        onChange={(e) => setUserAgeInput(e.target.value)}
+                        placeholder="Enter age (e.g. 18)"
+                        className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white focus:outline-none"
+                      />
+                      {ageErrorNotice && (
+                        <p className="text-xs text-red-400 font-semibold">⚠️ Please enter a valid age before proceeding.</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-300 block">Authorization Passcode:</label>
+                      <input
+                        type="password"
+                        maxLength={10}
+                        value={passcodeInput}
+                        onChange={(e) => setPasscodeInput(e.target.value)}
+                        placeholder="Enter passcode"
+                        className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2.5 text-center text-xs font-bold text-white focus:outline-none"
+                      />
+                      {passcodeError && (
+                        <p className="text-xs text-red-400 font-semibold text-center">⚠️ Invalid Passcode. Please try again.</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-white/10">
+                      <span className="text-xs font-semibold text-slate-300 block">Select App Theme:</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        {allThemesList.map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => handleThemeChange(t.id)}
+                            className={`rounded-xl px-3 py-2 text-xs font-bold text-left transition ${
+                              appTheme === t.id ? `${getPrimaryBgColor(appTheme)} text-white shadow-md` : "bg-white/5 text-slate-300 hover:bg-white/10"
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </form>
+                </div>
+
+                {canModalScrollDown && (
+                  <div className="text-center text-[10px] uppercase font-bold text-violet-400 animate-pulse">
+                    ↓ Scroll down for more options ↓
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  form="auth-form"
+                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-3 text-xs font-black uppercase tracking-widest shadow-xl`}
+                >
+                  Authorize & Start Streaming
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* FIXED VIEWPORT PROFILE DROPDOWN MENU */}
+          {showProfileMenu && !showFirstStartModal && (
+            <div className={`fixed top-16 right-3 sm:right-6 z-50 w-80 max-w-[92vw] rounded-2xl border ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-xl shadow-2xl max-h-[80vh] overflow-y-auto`}>
+              <div className="mx-auto flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <h3 className={`text-sm font-black uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
+                    👤 Personal Profile & Accessibility
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={handleCloseAll}
+                    className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5"
+                  >
+                    ✕ Close
+                  </button>
+                </div>
+
+                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Name:</span>
+                    <input
+                      type="text"
+                      maxLength={20}
+                      value={profileNameInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setProfileNameInput(val);
+                        localStorage.setItem("rabtv_profile_name", val.trim());
+                        setSavedProfileName(val.trim());
+                      }}
+                      placeholder="Your Name"
+                      className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-xs font-bold text-white focus:outline-none"
+                    />
+                  </div>
+
+                  <form onSubmit={handleUpdateAgeInSettings} className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-300 w-16 shrink-0">Age:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={120}
+                        value={userAgeInput}
+                        onChange={(e) => setUserAgeInput(e.target.value)}
+                        className="w-20 rounded-lg border border-white/10 bg-slate-800 px-2 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="password"
+                        maxLength={10}
+                        placeholder="Passcode"
+                        value={settingsAgeCodeInput}
+                        onChange={(e) => setSettingsAgeCodeInput(e.target.value)}
+                        className="flex-1 rounded-lg border border-white/10 bg-slate-800 px-3 py-1.5 text-center text-xs font-bold text-white focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        className={`rounded-lg ${getPrimaryBgColor(appTheme)} px-4 py-1.5 text-xs font-bold whitespace-nowrap shadow`}
+                      >
+                        Update Age
+                      </button>
+                    </div>
+                  </form>
+
+                  {settingsAgeError && (
+                    <span className="text-xs font-semibold text-red-400 text-center block">⚠️ Invalid Code or Age</span>
+                  )}
+                  {settingsAgeSuccess && (
+                    <span className="text-xs font-semibold text-emerald-400 text-center block">✓ Profile Updated!</span>
+                  )}
+                </div>
+
+                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Accessibility</span>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold text-white">XL Mouse Pointer (3x)</p>
+                      <p className="text-[10px] text-slate-400">Enlarges cursor for TVs/projectors.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleMouseToggle(!helpfulMouse)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                        helpfulMouse ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${helpfulMouse ? "translate-x-6" : "translate-x-1"}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-xs font-bold text-white">History Page Overscale</p>
+                        <p className="text-[10px] text-slate-400">Choose card size increase on history page.</p>
+                      </div>
+                      <span className="text-xs font-bold text-violet-400">
+                        {historyOverscale === "off" ? "Off" : `+${historyOverscale}`}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {(["off", "20%", "50%", "80%"] as HistoryScale[]).map((scale) => (
+                        <button
+                          key={scale}
+                          type="button"
+                          onClick={() => handleHistoryOverscaleChange(scale)}
+                          className={`rounded-lg py-1.5 text-xs font-bold capitalize transition ${
+                            historyOverscale === scale
+                              ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                              : `${getSubtlePillBg(appTheme)}`
+                          }`}
+                        >
+                          {scale === "off" ? "Off" : `+${scale}`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
+                    <div>
+                      <p className="text-xs font-bold text-white">Enlarged Action Buttons (+5%)</p>
+                      <p className="text-[10px] text-slate-400">Makes eye, thumb, and X buttons bigger.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleLargeButtonsToggle(!largeButtons)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
+                        largeButtons ? `${getPrimaryBgColor(appTheme).split(" ")[0]} bg-opacity-100` : "bg-slate-700"
+                      }`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${largeButtons ? "translate-x-6" : "translate-x-1"}`} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SETTINGS MODAL / PANEL */}
+          {showSettings && !showFirstStartModal && (
+            <div className={`fixed top-16 right-3 sm:right-6 z-50 w-80 max-w-[92vw] rounded-2xl border ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-xl shadow-2xl max-h-[80vh] overflow-y-auto`}>
+              <div className="mx-auto flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <h3 className={`text-sm font-black uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
+                    ⚙️ Application Settings
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={handleCloseAll}
+                    className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded bg-white/5"
+                  >
+                    ✕ Close
+                  </button>
+                </div>
+
+                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Theme Selection</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {allThemesList.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => handleThemeChange(t.id)}
+                        className={`rounded-xl px-3 py-2 text-xs font-bold text-left transition ${
+                          appTheme === t.id ? `${getPrimaryBgColor(appTheme)} text-white shadow-md` : "bg-white/5 text-slate-300 hover:bg-white/10"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Card Size</span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => handleSizeChange(size)}
+                        className={`rounded-xl py-2 text-xs font-bold capitalize transition ${
+                          cardSize === size ? `${getPrimaryBgColor(appTheme)} text-white shadow-md` : `${getSubtlePillBg(appTheme)}`
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Backup & Restore</span>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveBackup}
+                      className={`w-full rounded-xl py-2 text-xs font-bold ${getPrimaryBgColor(appTheme)} text-white shadow`}
+                    >
+                      💾 Export Settings & List JSON
+                    </button>
+                    <label className={`w-full rounded-xl py-2 text-xs font-bold text-center cursor-pointer ${getSubtlePillBg(appTheme)} block`}>
+                      📂 Import Backup JSON
+                      <input type="file" accept=".json" onChange={handleRestoreBackup} className="hidden" />
+                    </label>
+                    {backupStatus && (
+                      <span className="text-[11px] font-semibold text-emerald-400 text-center block">{backupStatus}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Outlet />
           <Scripts />
