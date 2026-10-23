@@ -82,8 +82,8 @@ function RootComponent() {
   const [historyOverscale, setHistoryOverscaleState] = useState<HistoryScale>("off");
   const [largeButtons, setLargeButtonsState] = useState(false);
   const [userAgeInput, setUserAgeInput] = useState<string>("");
-  const [profileNameInput, setProfileNameInput] = useState<string>("Rabbit");
-  const [savedProfileName, setSavedProfileName] = useState<string>("Rabbit");
+  const [profileNameInput, setProfileNameInput] = useState<string>("");
+  const [savedProfileName, setSavedProfileName] = useState<string>("");
   const [settingsAgeCodeInput, setSettingsAgeCodeInput] = useState<string>("");
   const [settingsAgeError, setSettingsAgeError] = useState<boolean>(false);
   const [settingsAgeSuccess, setSettingsAgeSuccess] = useState<boolean>(false);
@@ -109,12 +109,6 @@ function RootComponent() {
     e.preventDefault();
     navigate({ to: "/search", search: { q: headerSearchInput.trim() } });
     setHeaderSearchInput("");
-  };
-
-  const handleLogoClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.dispatchEvent(new Event("rabtv_restore_home_state"));
-    navigate({ to: "/" });
   };
 
   const handleCloseAll = () => {
@@ -191,7 +185,7 @@ function RootComponent() {
       setUserAgeInput(existingAge);
     }
 
-    const existingName = localStorage.getItem("rabtv_profile_name") || "Rabbit";
+    const existingName = localStorage.getItem("rabtv_profile_name");
     if (existingName) {
       setProfileNameInput(existingName);
       setSavedProfileName(existingName);
@@ -207,7 +201,7 @@ function RootComponent() {
       setLargeButtonsState(getLargeButtons());
       void updateNativeStatusBar(updatedTheme);
 
-      const updatedName = localStorage.getItem("rabtv_profile_name") || "Rabbit";
+      const updatedName = localStorage.getItem("rabtv_profile_name");
       if (updatedName) setSavedProfileName(updatedName);
     };
 
@@ -237,7 +231,7 @@ function RootComponent() {
       const parsedAge = parseInt(trimmedAge, 10);
       saveUserAge(parsedAge);
 
-      const finalName = profileNameInput.trim() || "Rabbit";
+      const finalName = profileNameInput.trim() || "Friend";
       localStorage.setItem("rabtv_profile_name", finalName);
       setSavedProfileName(finalName);
 
@@ -474,6 +468,24 @@ function RootComponent() {
     }
   };
 
+  const getThemeArrowColor = (theme: AppTheme) => {
+    switch (theme) {
+      case "red":
+        return "text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.8)]";
+      case "midnight":
+        return "text-blue-400 drop-shadow-[0_0_8px_rgba(96,165,250,0.8)]";
+      case "emerald":
+        return "text-emerald-300 drop-shadow-[0_0_8px_rgba(110,231,183,0.8)]";
+      case "amber":
+        return "text-amber-300 drop-shadow-[0_0_8px_rgba(252,211,77,0.8)]";
+      case "cyan":
+        return "text-cyan-300 drop-shadow-[0_0_8px_rgba(103,232,249,0.8)]";
+      case "violet":
+      default:
+        return "text-purple-400 drop-shadow-[0_0_8px_rgba(192,132,252,0.8)]";
+    }
+  };
+
   const allThemesList: { id: AppTheme; label: string }[] = [
     { id: "violet", label: "🟣 Violet / Neon" },
     { id: "red", label: "🔴 Red & Black" },
@@ -502,10 +514,9 @@ function RootComponent() {
             <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-stretch sm:items-center justify-between px-3 py-2 sm:px-6 gap-2">
               
               <div className="flex items-center justify-between sm:justify-start gap-2">
-                <a
-                  href="/"
-                  onClick={handleLogoClick}
-                  className="flex items-center gap-2 text-sm sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group cursor-pointer"
+                <Link
+                  to="/"
+                  className="flex items-center gap-2 text-sm sm:text-xl font-black tracking-wider text-white focus:outline-none shrink-0 group"
                 >
                   <img
                     src={HOSTED_ICON_URL}
@@ -513,7 +524,7 @@ function RootComponent() {
                     className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-cover border border-red-500/30 shadow-lg transition-transform group-hover:scale-105 shrink-0"
                   />
                   <span className="whitespace-nowrap">RABBiT TV</span>
-                </a>
+                </Link>
 
                 {savedProfileName && !showFirstStartModal && (
                   <div className="relative">
@@ -589,105 +600,6 @@ function RootComponent() {
               )}
             </div>
           </header>
-
-          {/* FIRST START / DISCLAIMER MODAL */}
-          {showFirstStartModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto">
-              <div className={`w-full max-w-lg rounded-2xl border ${getCardBackground(appTheme)} p-6 shadow-2xl space-y-5 my-auto max-h-[90vh] flex flex-col`}>
-                <div className="text-center space-y-2">
-                  <h2 className={`text-xl font-black uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
-                    Welcome to RABBiT TV
-                  </h2>
-                  <p className="text-xs text-slate-300">
-                    Please configure your preferences and enter your authorization passcode to begin streaming.
-                  </p>
-                </div>
-
-                <div 
-                  ref={handleModalScrollCheck}
-                  onScroll={(e) => handleModalScrollCheck(e.currentTarget)}
-                  className="space-y-4 overflow-y-auto max-h-[50vh] pr-2 scrollbar-thin"
-                >
-                  <form onSubmit={handleFirstTimeAuthorize} id="auth-form" className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-300 block">Your Name:</label>
-                      <input
-                        type="text"
-                        maxLength={20}
-                        value={profileNameInput}
-                        onChange={(e) => setProfileNameInput(e.target.value)}
-                        placeholder="Enter name (e.g. Rabbit)"
-                        className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-300 block">Your Age:</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={120}
-                        value={userAgeInput}
-                        onChange={(e) => setUserAgeInput(e.target.value)}
-                        placeholder="Enter age (e.g. 18)"
-                        className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white focus:outline-none"
-                      />
-                      {ageErrorNotice && (
-                        <p className="text-xs text-red-400 font-semibold">⚠️ Please enter a valid age before proceeding.</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-300 block">Authorization Passcode:</label>
-                      <input
-                        type="password"
-                        maxLength={10}
-                        value={passcodeInput}
-                        onChange={(e) => setPasscodeInput(e.target.value)}
-                        placeholder="Enter passcode"
-                        className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2.5 text-center text-xs font-bold text-white focus:outline-none"
-                      />
-                      {passcodeError && (
-                        <p className="text-xs text-red-400 font-semibold text-center">⚠️ Invalid Passcode. Please try again.</p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2 pt-2 border-t border-white/10">
-                      <span className="text-xs font-semibold text-slate-300 block">Select App Theme:</span>
-                      <div className="grid grid-cols-2 gap-2">
-                        {allThemesList.map((t) => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => handleThemeChange(t.id)}
-                            className={`rounded-xl px-3 py-2 text-xs font-bold text-left transition ${
-                              appTheme === t.id ? `${getPrimaryBgColor(appTheme)} text-white shadow-md` : "bg-white/5 text-slate-300 hover:bg-white/10"
-                            }`}
-                          >
-                            {t.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </form>
-                </div>
-
-                {canModalScrollDown && (
-                  <div className="text-center text-[10px] uppercase font-bold text-violet-400 animate-pulse">
-                    ↓ Scroll down for more options ↓
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  form="auth-form"
-                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-3 text-xs font-black uppercase tracking-widest shadow-xl`}
-                >
-                  Authorize & Start Streaming
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* FIXED VIEWPORT PROFILE DROPDOWN MENU */}
           {showProfileMenu && !showFirstStartModal && (
@@ -829,13 +741,13 @@ function RootComponent() {
             </div>
           )}
 
-          {/* SETTINGS MODAL / PANEL */}
+          {/* FIXED VIEWPORT SETTINGS MENU */}
           {showSettings && !showFirstStartModal && (
-            <div className={`fixed top-16 right-3 sm:right-6 z-50 w-80 max-w-[92vw] rounded-2xl border ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-xl shadow-2xl max-h-[80vh] overflow-y-auto`}>
-              <div className="mx-auto flex flex-col gap-4">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <div className={`fixed top-16 right-3 sm:right-6 z-50 w-96 max-w-[94vw] rounded-2xl border ${getCardBackground(appTheme)} px-4 py-4 backdrop-blur-xl shadow-2xl max-h-[80vh] overflow-y-auto`}>
+              <div className="mx-auto flex flex-col items-center gap-3">
+                <div className="flex items-center justify-between w-full border-b border-white/10 pb-2">
                   <h3 className={`text-sm font-black uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
-                    ⚙️ Application Settings
+                    ⚙️ App Settings
                   </h3>
                   <button
                     type="button"
@@ -846,16 +758,206 @@ function RootComponent() {
                   </button>
                 </div>
 
-                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Theme Selection</span>
-                  <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-1 overflow-x-auto pb-2 border-b border-white/10 w-full justify-start sm:justify-center scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => setActiveSettingsTab(activeSettingsTab === "theme" ? null : "theme")}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                      activeSettingsTab === "theme"
+                        ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                        : `${getSubtlePillBg(appTheme)}`
+                    }`}
+                  >
+                    Theme
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSettingsTab(activeSettingsTab === "scale" ? null : "scale")}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                      activeSettingsTab === "scale"
+                        ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                        : `${getSubtlePillBg(appTheme)}`
+                    }`}
+                  >
+                    Scale
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSettingsTab(activeSettingsTab === "backup" ? null : "backup")}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition shrink-0 ${
+                      activeSettingsTab === "backup"
+                        ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                        : `${getSubtlePillBg(appTheme)}`
+                    }`}
+                  >
+                    Backup
+                  </button>
+                </div>
+
+                {activeSettingsTab !== null && (
+                  <div className="w-full flex justify-center py-1 max-w-lg mx-auto">
+                    {activeSettingsTab === "theme" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Theme:</span>
+                        {allThemesList.map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => handleThemeChange(t.id)}
+                            className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition ${
+                              appTheme === t.id
+                                ? `${getPrimaryBgColor(t.id)} text-white shadow-md`
+                                : `${getSubtlePillBg(appTheme)}`
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSettingsTab === "scale" && (
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <span className="text-xs font-semibold text-slate-300 mr-2 w-full text-center sm:w-auto">Choose Scale:</span>
+                        {(["small", "medium", "large"] as CardSize[]).map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => handleSizeChange(size)}
+                            className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
+                              cardSize === size
+                                ? `${getPrimaryBgColor(appTheme)} text-white shadow-md`
+                                : `${getSubtlePillBg(appTheme)}`
+                            }`}
+                          >
+                            {size} {size === "small" ? "(25%)" : size === "medium" ? "(60%)" : "(100%)"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSettingsTab === "backup" && (
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 w-full">
+                        <button
+                          type="button"
+                          onClick={handleSaveBackup}
+                          className={`w-full sm:w-auto rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}
+                        >
+                          💾 Export Backup
+                        </button>
+
+                        <label className={`w-full sm:w-auto text-center cursor-pointer rounded-lg border px-3 py-2 text-xs font-semibold transition ${getSubtlePillBg(appTheme)}`}>
+                          🔄 Restore Backup
+                          <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleRestoreBackup}
+                            className="hidden"
+                          />
+                        </label>
+
+                        {backupStatus && (
+                          <span className={`text-xs ${getPrimaryAccentColor(appTheme)} font-semibold text-center w-full`}>
+                            {backupStatus}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 overflow-x-hidden pb-20">
+            <Outlet />
+          </main>
+
+          {showFirstStartModal && (
+            <div
+              ref={(node) => handleModalScrollCheck(node)}
+              onScroll={(e) => handleModalScrollCheck(e.currentTarget)}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md overflow-y-auto"
+            >
+              <form
+                onSubmit={handleFirstTimeAuthorize}
+                className={`my-auto w-full max-w-xl space-y-5 rounded-2xl border p-6 text-white shadow-2xl md:p-8 ${getCardBackground(appTheme)}`}
+              >
+                <div className="text-center space-y-2">
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl overflow-hidden border border-red-500/30 shadow-lg bg-black">
+                    <img
+                      src={HOSTED_ICON_URL}
+                      alt="RABBiT TV Logo"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <h2 className={`text-2xl font-bold ${getPrimaryAccentColor(appTheme)}`}>
+                    Welcome to RABBiT TV
+                  </h2>
+                </div>
+
+                <div className="space-y-3 text-sm leading-relaxed text-slate-300 text-center">
+                  <p>
+                    Get all your favorite movies and TV shows right here, streaming smoothly in one place!
+                  </p>
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
+                    <strong>🔒 Friendly Request:</strong> Please try not to share this app around too widely for now, so we can keep server payloads manageable and ensure smooth streaming for everyone.
+                  </div>
+                </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-4">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                    What's your name? <span className="text-slate-400 font-normal lowercase">(For your welcome greeting!)</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={25}
+                    value={profileNameInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setProfileNameInput(val);
+                      localStorage.setItem("rabtv_profile_name", val.trim());
+                      setSavedProfileName(val.trim());
+                    }}
+                    placeholder="Enter Name"
+                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-2.5 text-center text-base font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
+                  />
+                </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-3">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                    How old are you? <span className="text-slate-400 font-normal lowercase">(So we can streamline your experience!)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={userAgeInput}
+                    onChange={(e) => setUserAgeInput(e.target.value)}
+                    placeholder="Enter Age"
+                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-2.5 text-center text-base font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
+                  />
+                  {ageErrorNotice && (
+                    <p className="text-xs font-semibold text-red-400 text-center">
+                      ⚠️ Age was not entered! Please enter your age and passcode to proceed.
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-3">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Select Startup Theme:
+                  </label>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {allThemesList.map((t) => (
                       <button
                         key={t.id}
                         type="button"
                         onClick={() => handleThemeChange(t.id)}
-                        className={`rounded-xl px-3 py-2 text-xs font-bold text-left transition ${
-                          appTheme === t.id ? `${getPrimaryBgColor(appTheme)} text-white shadow-md` : "bg-white/5 text-slate-300 hover:bg-white/10"
+                        className={`rounded-xl border py-2.5 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                          appTheme === t.id
+                            ? `border-white/30 ${getPrimaryBgColor(t.id)} text-white shadow-lg`
+                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
                       >
                         {t.label}
@@ -864,50 +966,95 @@ function RootComponent() {
                   </div>
                 </div>
 
-                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Card Size</span>
-                  <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-2 border-t border-white/10 pt-3">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Select Display Size (Adjustable anytime in settings):
+                  </label>
+
+                  <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     {(["small", "medium", "large"] as CardSize[]).map((size) => (
                       <button
                         key={size}
                         type="button"
                         onClick={() => handleSizeChange(size)}
-                        className={`rounded-xl py-2 text-xs font-bold capitalize transition ${
-                          cardSize === size ? `${getPrimaryBgColor(appTheme)} text-white shadow-md` : `${getSubtlePillBg(appTheme)}`
+                        className={`rounded-xl border py-2.5 text-xs font-bold transition focus:outline-none focus:ring-4 ${
+                          cardSize === size
+                            ? `border-white/30 ${getPrimaryBgColor(appTheme)} text-white shadow-lg`
+                            : "border-white/10 bg-slate-800 text-slate-300 hover:bg-slate-700"
                         }`}
                       >
-                        {size}
+                        {size === "small" ? "Small (25%)" : size === "medium" ? "Medium (60%)" : "Large (100%)"}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="space-y-3 bg-black/30 p-3.5 rounded-xl border border-white/10">
-                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">Backup & Restore</span>
-                  <div className="flex flex-col gap-2">
-                    <button
-                      type="button"
-                      onClick={handleSaveBackup}
-                      className={`w-full rounded-xl py-2 text-xs font-bold ${getPrimaryBgColor(appTheme)} text-white shadow`}
-                    >
-                      💾 Export Settings & List JSON
-                    </button>
-                    <label className={`w-full rounded-xl py-2 text-xs font-bold text-center cursor-pointer ${getSubtlePillBg(appTheme)} block`}>
-                      📂 Import Backup JSON
-                      <input type="file" accept=".json" onChange={handleRestoreBackup} className="hidden" />
+                <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      XL Mouse Pointer
                     </label>
-                    {backupStatus && (
-                      <span className="text-[11px] font-semibold text-emerald-400 text-center block">{backupStatus}</span>
-                    )}
+                    <p className="text-[11px] text-slate-400">Enlarges cursor 3x for easy projector/TV navigation.</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleMouseToggle(!helpfulMouse)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      helpfulMouse ? "bg-violet-600" : "bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        helpfulMouse ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
                 </div>
-              </div>
+
+                <div className="space-y-2 border-t border-white/10 pt-3">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    Enter Personal Passcode:
+                  </label>
+                  <input
+                    type="password"
+                    maxLength={10}
+                    value={passcodeInput}
+                    onChange={(e) => setPasscodeInput(e.target.value)}
+                    placeholder="Enter Passcode"
+                    className="w-full rounded-xl border border-white/10 bg-slate-800 px-4 py-3 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-slate-500"
+                  />
+
+                  {passcodeError && (
+                    <p className="text-xs font-semibold text-red-400 text-center">
+                      ⚠️ Invalid Passcode. Please try again.
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  className={`w-full rounded-xl ${getPrimaryBgColor(appTheme)} py-3.5 text-base font-bold text-white shadow-lg transition active:scale-95 focus:outline-none focus:ring-4`}
+                >
+                  Enter RABBiT TV
+                </button>
+
+                {canModalScrollDown && (
+                  <div className="pointer-events-none fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-0.5 bg-black/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 shadow-2xl">
+                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white opacity-100">
+                        Scroll Down For Passcode
+                      </span>
+                      <span className={`text-lg font-black animate-slow-glow ${getThemeArrowColor(appTheme)} opacity-100`}>
+                        ⌄
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </form>
             </div>
           )}
-
-          <Outlet />
-          <Scripts />
         </AuthProvider>
+        <Scripts />
       </body>
     </html>
   );
