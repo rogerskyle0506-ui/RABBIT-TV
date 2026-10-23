@@ -82,8 +82,8 @@ function RootComponent() {
   const [historyOverscale, setHistoryOverscaleState] = useState<HistoryScale>("off");
   const [largeButtons, setLargeButtonsState] = useState(false);
   const [userAgeInput, setUserAgeInput] = useState<string>("");
-  const [profileNameInput, setProfileNameInput] = useState<string>("");
-  const [savedProfileName, setSavedProfileName] = useState<string>("");
+  const [profileNameInput, setProfileNameInput] = useState<string>("Rabbit");
+  const [savedProfileName, setSavedProfileName] = useState<string>("Rabbit");
   const [settingsAgeCodeInput, setSettingsAgeCodeInput] = useState<string>("");
   const [settingsAgeError, setSettingsAgeError] = useState<boolean>(false);
   const [settingsAgeSuccess, setSettingsAgeSuccess] = useState<boolean>(false);
@@ -191,7 +191,7 @@ function RootComponent() {
       setUserAgeInput(existingAge);
     }
 
-    const existingName = localStorage.getItem("rabtv_profile_name");
+    const existingName = localStorage.getItem("rabtv_profile_name") || "Rabbit";
     if (existingName) {
       setProfileNameInput(existingName);
       setSavedProfileName(existingName);
@@ -207,7 +207,7 @@ function RootComponent() {
       setLargeButtonsState(getLargeButtons());
       void updateNativeStatusBar(updatedTheme);
 
-      const updatedName = localStorage.getItem("rabtv_profile_name");
+      const updatedName = localStorage.getItem("rabtv_profile_name") || "Rabbit";
       if (updatedName) setSavedProfileName(updatedName);
     };
 
@@ -237,7 +237,7 @@ function RootComponent() {
       const parsedAge = parseInt(trimmedAge, 10);
       saveUserAge(parsedAge);
 
-      const finalName = profileNameInput.trim() || "Friend";
+      const finalName = profileNameInput.trim() || "Rabbit";
       localStorage.setItem("rabtv_profile_name", finalName);
       setSavedProfileName(finalName);
 
@@ -616,7 +616,7 @@ function RootComponent() {
                         maxLength={20}
                         value={profileNameInput}
                         onChange={(e) => setProfileNameInput(e.target.value)}
-                        placeholder="Enter name (e.g. Kyle)"
+                        placeholder="Enter name (e.g. Rabbit)"
                         className="w-full rounded-xl border border-white/10 bg-slate-900 px-3.5 py-2.5 text-xs font-bold text-white focus:outline-none"
                       />
                     </div>
