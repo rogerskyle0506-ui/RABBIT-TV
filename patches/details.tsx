@@ -43,6 +43,8 @@ export function DetailsPage() {
   const episodeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (isPlaying) return; // Pause scroll check during playback for performance
+
     const checkVerticalScroll = () => {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight;
@@ -113,7 +115,7 @@ export function DetailsPage() {
 
   useEffect(() => {
     async function fetchSimilarContent() {
-      if (!mediaId) return;
+      if (!mediaId || isPlaying) return; // Skip fetching recommendations while playing video
       try {
         const apiKey =
           (import.meta.env.VITE_TMDB_API_KEY as string) || "9619884fc9c0e58b374a661ab2a692cd";
@@ -149,7 +151,7 @@ export function DetailsPage() {
       }
     }
     fetchSimilarContent();
-  }, [mediaId, mediaType]);
+  }, [mediaId, mediaType, isPlaying]);
 
   const getPageBackground = (theme: AppTheme) => {
     switch (theme) {
@@ -183,7 +185,7 @@ export function DetailsPage() {
         return "bg-cyan-950/60 border-cyan-500/30 shadow-cyan-950/50";
       case "violet":
       default:
-        return "bg-purple-950/60 border-violet-500/30 shadow-purple-950/50";
+        return "bg-purple-950/60 border-violet-500/30 shadow-violet-950/50";
     }
   };
 
@@ -285,7 +287,7 @@ export function DetailsPage() {
   useEffect(() => {
     async function fetchDetailsWithCache() {
       if (!mediaId) return;
-      
+
       let activeFetchType = mediaType;
       const cacheKey = `rabtv_cache_${activeFetchType}_${mediaId}`;
 
@@ -361,7 +363,7 @@ export function DetailsPage() {
       const rawHistory = localStorage.getItem(WATCH_HISTORY_STORAGE_KEY);
       if (!rawHistory) return "none";
       const history = JSON.parse(rawHistory);
-      
+
       const match = history.find((h: any) => {
         const cleanId = String(h.mediaId ?? h.id).replace(/^(movie|tv)-/, "");
         return cleanId === String(mediaId);
@@ -502,7 +504,7 @@ export function DetailsPage() {
           {inferredMediaType === "tv" && (
             <div className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur transition-colors duration-300`}>
               <div className="flex flex-wrap items-center gap-4 text-sm font-semibold relative">
-                
+
                 <div className="relative" ref={seasonRef}>
                   <span className="block text-xs text-slate-400 mb-1">Season</span>
                   <button
@@ -607,7 +609,11 @@ export function DetailsPage() {
             </div>
           )}
 
-          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl shadow-black/50 border border-white/10">
+          {/* HARDWARE-ACCELERATED ISOLATED IFRAME CONTAINER */}
+          <div 
+            className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-2xl shadow-black/50 border border-white/10"
+            style={{ transform: "translateZ(0)", backfaceVisibility: "hidden" }}
+          >
             <iframe
               key={`${inferredMediaType}-${mediaId}-${season}-${episode}`}
               srcDoc={`
@@ -646,7 +652,7 @@ export function DetailsPage() {
         </div>
       ) : (
         <div className="mx-auto flex max-w-5xl flex-col gap-8">
-          
+
           <div className="flex flex-col gap-8 md:flex-row md:items-start">
             <div className="relative h-[450px] w-[300px] self-center md:self-start shrink-0">
               {watchStatus === "completed" && (
@@ -695,7 +701,7 @@ export function DetailsPage() {
 
               {inferredMediaType === "tv" && mediaDetails?.seasons && (
                 <div className={`flex flex-wrap items-center gap-4 rounded-2xl border ${getCardBackground(appTheme)} p-4 backdrop-blur my-2 transition-colors duration-300`}>
-                  
+
                   <div className="relative" ref={seasonRef}>
                     <label className="block text-xs font-semibold text-slate-400 mb-1.5">Select Season</label>
                     <button
