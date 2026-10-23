@@ -216,7 +216,7 @@ function WatchHistoryComponent() {
               <h2 className={`text-sm font-bold text-slate-200 border-l-4 pl-3 uppercase tracking-wider ${getPrimaryAccentColor(appTheme)}`}>
                 Movies - In Progress
               </h2>
-              <div className={`grid ${gridColsClass} gap-8 pt-4`}>
+              <div className={`grid ${gridColsClass} gap-x-6 gap-y-10 pt-2 items-start`}>
                 {inProgressMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
@@ -240,7 +240,7 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-blue-500 pl-3 uppercase tracking-wider">
                 TV Shows - In Progress
               </h2>
-              <div className={`grid ${gridColsClass} gap-8 pt-4`}>
+              <div className={`grid ${gridColsClass} gap-x-6 gap-y-10 pt-2 items-start`}>
                 {inProgressShows.map((show) => (
                   <TvShowCard
                     key={show.showId}
@@ -264,7 +264,7 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-emerald-500 pl-3 uppercase tracking-wider">
                 Completed
               </h2>
-              <div className={`grid ${gridColsClass} gap-8 pt-4`}>
+              <div className={`grid ${gridColsClass} gap-x-6 gap-y-10 pt-2 items-start`}>
                 {completedMovies.map((movie) => (
                   <MovieCard
                     key={movie.showId}
@@ -302,7 +302,7 @@ function WatchHistoryComponent() {
               <h2 className="text-sm font-bold text-slate-200 border-l-4 border-red-500 pl-3 uppercase tracking-wider">
                 Disliked / Removed
               </h2>
-              <div className={`grid ${gridColsClass} gap-4 pt-2`}>
+              <div className={`grid ${gridColsClass} gap-4 pt-2 items-start`}>
                 {dislikedTitles.map((item) => (
                   <div
                     key={item.id}
@@ -417,19 +417,6 @@ const MovieCard = React.memo(function MovieCard({
     }
   };
 
-  const getScaleClass = (scale: HistoryScale | boolean) => {
-    if (scale === true) return "transform scale-105 origin-top transition-transform my-3";
-    switch (scale) {
-      case "20%": return "transform scale-110 origin-top transition-transform my-4";
-      case "50%": return "transform scale-120 origin-top transition-transform my-6";
-      case "80%": return "transform scale-130 origin-top transition-transform my-8";
-      case "off":
-      default:
-        return "my-2";
-    }
-  };
-
-  const overscaleClass = getScaleClass(historyOverscale);
   const btnClass = largeButtons ? "h-7 px-2 text-xs" : "h-6 px-1.5 text-[10px]";
   const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
 
@@ -437,9 +424,9 @@ const MovieCard = React.memo(function MovieCard({
     <div className="w-full">
       <div
         onClick={() => navigate({ to: "/details", search: { id: movie.showId, type: "movie" } })}
-        className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
+        className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)}`}
       >
-        <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
+        <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950 shrink-0">
           {movie.posterPath ? (
             <img
               src={`${TMDB_IMAGE_BASE}${movie.posterPath}`}
@@ -481,7 +468,7 @@ const MovieCard = React.memo(function MovieCard({
           </div>
         </div>
 
-        <div className="p-3">
+        <div className="p-3 shrink-0">
           <h3 className="text-xs font-bold truncate text-white" title={movie.title}>
             {movie.title}
           </h3>
@@ -529,28 +516,15 @@ const TvShowCard = React.memo(function TvShowCard({
     }
   };
 
-  const getScaleClass = (scale: HistoryScale | boolean) => {
-    if (scale === true) return "transform scale-105 origin-top transition-transform my-3";
-    switch (scale) {
-      case "20%": return "transform scale-110 origin-top transition-transform my-4";
-      case "50%": return "transform scale-120 origin-top transition-transform my-6";
-      case "80%": return "transform scale-130 origin-top transition-transform my-8";
-      case "off":
-      default:
-        return "my-2";
-    }
-  };
-
-  const overscaleClass = getScaleClass(historyOverscale);
   const iconBtnClass = largeButtons ? "h-7 w-7 text-sm" : "h-6 w-6 text-xs";
 
   return (
     <div className="w-full">
       <div
         onClick={() => navigate({ to: "/details", search: { id: show.showId, type: "tv" } })}
-        className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)} ${overscaleClass}`}
+        className={`group relative rounded-xl border overflow-hidden shadow-xl flex flex-col justify-between transition hover:brightness-110 cursor-pointer ${getCardThemeStyles(appTheme)}`}
       >
-        <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950">
+        <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-950 shrink-0">
           {show.posterPath ? (
             <img
               src={`${TMDB_IMAGE_BASE}${show.posterPath}`}
@@ -584,7 +558,7 @@ const TvShowCard = React.memo(function TvShowCard({
           </div>
         </div>
 
-        <div className="p-3 space-y-2.5">
+        <div className="p-3 space-y-2.5 shrink-0">
           <h3 className="text-xs font-bold truncate text-white" title={show.title}>
             {show.title}
           </h3>
