@@ -25,6 +25,12 @@ export function toggleMyList(item: MediaItem): boolean {
   }
 
   localStorage.setItem(MY_LIST_KEY, JSON.stringify(updated));
+  
+  // Dispatch event so active catalog views and headers refresh instantly
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("rabtv_catalog_updated"));
+  }
+
   return !exists; // Returns true if added, false if removed
 }
 
@@ -39,6 +45,10 @@ export function saveToWatchHistory(item: MediaItem) {
     const filtered = history.filter((i) => i.id !== item.id);
     const updated = [item, ...filtered].slice(0, 20); // Keep last 20 watched
     localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(updated));
+    
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("rabtv_watch_history_updated"));
+    }
   } catch (e) {
     console.error("Could not save watch history", e);
   }
